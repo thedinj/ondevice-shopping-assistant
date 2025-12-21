@@ -1,0 +1,7 @@
+{
+  "name": "ondevice-shopping-assistant",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}
