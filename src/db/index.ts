@@ -4,21 +4,23 @@ import {
     SQLiteDBConnection,
 } from "@capacitor-community/sqlite";
 import { Capacitor } from "@capacitor/core";
-import { insertStore } from "./store";
+import { getInitializedStore } from "../models/Store";
+import { fakeStores } from "./store";
 
 export const DB_NAME = "shopping_assistant";
 const DB_VERSION = 1;
 
 const sqlite = new SQLiteConnection(CapacitorSQLite);
 
-let db: SQLiteDBConnection | null = null;
-let dbReadyPromise: Promise<void> | null = null;
+let initDbPromise: Promise<SQLiteDBConnection | null> | null = null;
+let initializedDbConnection: SQLiteDBConnection | null = null;
 
 const migrations: Array<{ version: number; up: string[] }> = [
     {
         version: 1,
         up: [
             `PRAGMA foreign_keys = ON;`,
+
             `CREATE TABLE IF NOT EXISTS app_setting (
          key TEXT PRIMARY KEY,
          value TEXT NOT NULL,
@@ -120,71 +122,147 @@ const migrations: Array<{ version: number; up: string[] }> = [
     },
 ];
 
-async function getUserVersion(conn: SQLiteDBConnection): Promise<number> {
+export async function getUserVersion(
+    conn: SQLiteDBConnection
+): Promise<number> {
     const res = await conn.query(`PRAGMA user_version;`);
     return (res.values?.[0]?.user_version as number) ?? 0;
 }
 
-async function setUserVersion(conn: SQLiteDBConnection, v: number) {
+export async function setUserVersion(conn: SQLiteDBConnection, v: number) {
     await conn.execute(`PRAGMA user_version = ${v};`);
 }
 
 async function runMigrations(conn: SQLiteDBConnection) {
     const current = await getUserVersion(conn);
+
     const pending = migrations
         .filter((m) => m.version > current)
         .sort((a, b) => a.version - b.version);
     if (!pending.length) return;
 
-    await conn.execute("BEGIN;");
-    try {
-        for (const m of pending) {
-            for (const stmt of m.up) await conn.execute(stmt);
-            await setUserVersion(conn, m.version);
-        }
-        await conn.execute("COMMIT;");
-    } catch (e) {
-        await conn.execute("ROLLBACK;");
-        throw e;
+    for (const m of pending) {
+        for (const stmt of m.up) await conn.execute(stmt);
+        await setUserVersion(conn, m.version);
     }
 }
 
-export async function getDb(): Promise<SQLiteDBConnection | null> {
-    if (db) {
-        // Already have our singleton
-        return db;
+const ensureOneStore = async (
+    conn?: SQLiteDBConnection | null
+): Promise<undefined> => {
+    const connToUse = conn ?? (await getDb());
+    if (!connToUse) {
+        throw new Error("Database not initialized");
     }
 
-    if (!Capacitor.isNativePlatform()) {
-        //throw new Error("SQLite only available on native platforms");
-        return null;
-    }
-
-    db = await sqlite.createConnection(
-        DB_NAME,
-        false,
-        "no-encryption",
-        DB_VERSION,
-        false
-    );
-    await db.open();
-    await db.execute("PRAGMA foreign_keys = ON;");
-    await runMigrations(db);
-
-    // Insert initial store if none exist
-    const storeCountRes = await db.query(
+    const storeCountRes = await connToUse.query(
         "SELECT COUNT(*) as count FROM store WHERE deleted_at IS NULL"
     );
     if (!storeCountRes.values?.[0]?.count) {
-        await insertStore("Unnamed Store");
+        const newStoreName = `Unnamed Store ${Math.random()}`;
+        const newStore = getInitializedStore(newStoreName);
+        await connToUse.run(
+            "INSERT INTO store (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)",
+            [
+                newStore.id,
+                newStore.name,
+                newStore.created_at,
+                newStore.updated_at,
+            ]
+        );
+    }
+};
+
+export function getDb(): Promise<SQLiteDBConnection | null> {
+    if (!Capacitor.isNativePlatform()) {
+        //throw new Error("SQLite only available on native platforms");
+        return Promise.resolve(null);
     }
 
-    return db;
+    if (initializedDbConnection) {
+        return Promise.resolve(initializedDbConnection);
+    }
+    if (initDbPromise) {
+        return initDbPromise;
+    }
+
+    initDbPromise = (async () => {
+        const conn = await sqlite.createConnection(
+            DB_NAME,
+            false,
+            "no-encryption",
+            DB_VERSION,
+            false
+        );
+        await conn.open();
+
+        await runMigrations(conn); // must not be called anywhere else
+
+        // Insert initial store if none exist
+        await ensureOneStore(conn);
+
+        initializedDbConnection = conn;
+        initDbPromise = null; // clear promise on success
+        return conn;
+    })();
+
+    return initDbPromise;
 }
 
-export function ensureDbReady(): Promise<void> {
-    if (!dbReadyPromise) {
-        dbReadyPromise = getDb().then(() => undefined);
+// TODO: Do we need to be doing this when exiting the app? Capacitor lifecycle events?
+export const closeDb = async (): Promise<void> => {
+    // TODO: This is a bit of a hack, but it's the best we can do for now
+    if (!initializedDbConnection) {
+        if (initDbPromise) {
+            // Special case: we are still initializing the db, wait for it to finish
+            await initDbPromise;
+
+            // REALLY not expected, but if we still don't have a connection after waiting, just return
+            if (!initializedDbConnection) {
+                initDbPromise = null; // clear promise on failure
+                return; // If we still don't have a connection after waiting, just return
+            }
+        } else {
+            return;
+        }
     }
-    return dbReadyPromise;
+
+    await initializedDbConnection.close();
+    await sqlite.closeConnection(DB_NAME, false);
+    initializedDbConnection = null;
+    initDbPromise = null;
+};
+
+export async function resetDatabase(
+    tablesToPersist: string[] = ["app_setting"]
+): Promise<void> {
+    if (!Capacitor.isNativePlatform()) {
+        // TODO: We need to move all of the mock browser stuff to a separate file
+        fakeStores.length = 0;
+        fakeStores.push(
+            getInitializedStore("Unnamed Store (fake), from resetDatabase")
+        );
+        return;
+    }
+
+    const db = await getDb();
+    if (!db) {
+        throw new Error("Failed to open database");
+    }
+
+    const tablesToDelete = [
+        "shopping_list_item",
+        "shopping_list",
+        "store_item",
+        "store_section",
+        "store_aisle",
+        "store",
+        "app_setting",
+    ].filter((t) => !tablesToPersist.includes(t));
+    for (const t of tablesToDelete) {
+        await db.execute(`DELETE FROM ${t};`);
+    }
+
+    // Insert initial store if none exist
+    await ensureOneStore();
 }

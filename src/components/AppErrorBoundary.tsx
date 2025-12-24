@@ -26,8 +26,8 @@ export class AppErrorBoundary extends Component<
         if (this.state.error) {
             return (
                 <div role="alert">
-                    <p>Something went wrong.</p>
-                    <pre>{this.state.error.message}</pre>
+                    <p>Something went wrong!</p>
+                    <p>{this.state.error.message}</p>
                 </div>
             );
         }

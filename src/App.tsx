@@ -13,9 +13,9 @@ import { listCircle, settings, cartOutline } from "ionicons/icons";
 import { Suspense } from "react";
 import { Redirect, Route } from "react-router-dom";
 import AppErrorBoundary from "./components/AppErrorBoundary";
-import Stores from "./pages/Stores";
-import Tab2 from "./pages/Tab2";
-import Tab3 from "./pages/Tab3";
+import StoresList from "./pages/StoresList";
+import ShoppingList from "./pages/ShoppingList";
+import Settings from "./pages/Settings";
 import { StoreDatabaseProvider } from "./state/StoreDatabaseContext";
 
 /* Core CSS required for Ionic components to work properly */
@@ -60,13 +60,13 @@ const App: React.FC = () => {
                             <IonTabs>
                                 <IonRouterOutlet>
                                     <Route exact path="/stores">
-                                        <Stores />
+                                        <StoresList />
                                     </Route>
-                                    <Route exact path="/tab2">
-                                        <Tab2 />
+                                    <Route exact path="/shoppinglist">
+                                        <ShoppingList />
                                     </Route>
-                                    <Route path="/tab3">
-                                        <Tab3 />
+                                    <Route path="/settings">
+                                        <Settings />
                                     </Route>
                                     <Route exact path="/">
                                         <Redirect to="/stores" />
@@ -80,14 +80,20 @@ const App: React.FC = () => {
                                         />
                                         <IonLabel>Stores</IonLabel>
                                     </IonTabButton>
-                                    <IonTabButton tab="tab2" href="/tab2">
+                                    <IonTabButton
+                                        tab="shoppinglist"
+                                        href="/shoppinglist"
+                                    >
                                         <IonIcon
                                             aria-hidden="true"
                                             icon={listCircle}
                                         />
                                         <IonLabel>List</IonLabel>
                                     </IonTabButton>
-                                    <IonTabButton tab="tab3" href="/tab3">
+                                    <IonTabButton
+                                        tab="settings"
+                                        href="/settings"
+                                    >
                                         <IonIcon
                                             aria-hidden="true"
                                             icon={settings}
@@ -105,4 +111,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-

@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { Store } from "../models/Store";
 import { useStoreDatabase } from "../state/storehooks";
 
-const Stores: React.FC = () => {
+const StoresList: React.FC = () => {
     const storeDatabase = useStoreDatabase();
     const [stores, setStores] = useState<Store[]>([]);
 
@@ -50,5 +50,5 @@ const Stores: React.FC = () => {
     );
 };
 
-export default Stores;
+export default StoresList;
 
