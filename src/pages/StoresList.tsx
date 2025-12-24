@@ -8,23 +8,11 @@ import {
     IonTitle,
     IonToolbar,
 } from "@ionic/react";
-import { useEffect, useState } from "react";
-import { Store } from "../models/Store";
-import { useDatabase, useDatabaseChangeToken } from "../state/storehooks";
+import { useStores } from "../db/hooks";
+import type { Store } from "../models/Store";
 
 const StoresList: React.FC = () => {
-    const database = useDatabase();
-    const changeToken = useDatabaseChangeToken();
-    const [stores, setStores] = useState<Store[]>([]);
-
-    useEffect(() => {
-        const fetchStores = async () => {
-            const fetchedStores = await database.loadAllStores();
-            setStores(fetchedStores);
-        };
-
-        fetchStores();
-    }, [database, changeToken]);
+    const { data: stores = [] } = useStores();
 
     return (
         <IonPage>
@@ -40,7 +28,7 @@ const StoresList: React.FC = () => {
                     </IonToolbar>
                 </IonHeader>
                 <IonList>
-                    {stores.map((store) => (
+                    {stores.map((store: Store) => (
                         <IonItem key={store.id}>
                             <IonLabel>{store.name}</IonLabel>
                         </IonItem>
@@ -52,4 +40,3 @@ const StoresList: React.FC = () => {
 };
 
 export default StoresList;
-

@@ -16,7 +16,7 @@ import AppErrorBoundary from "./components/AppErrorBoundary";
 import Settings from "./pages/Settings";
 import ShoppingList from "./pages/ShoppingList";
 import StoresList from "./pages/StoresList";
-import { DatabaseProvider } from "./state/StoreDatabaseContext";
+import { DatabaseProvider } from "./db/DatabaseContext";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";

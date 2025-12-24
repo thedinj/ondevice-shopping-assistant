@@ -1,29 +1,32 @@
 import {
-    IonAlert,
     IonButton,
     IonContent,
     IonHeader,
     IonPage,
     IonTitle,
     IonToolbar,
+    useIonToast,
 } from "@ionic/react";
-import { useCallback, useState } from "react";
-import { useResetDatabase } from "../state/storehooks";
+import { useCallback } from "react";
+import { useResetDatabase } from "../db/hooks";
 
 const Settings: React.FC = () => {
-    const [message, setMessage] = useState<string | null>(null);
-    const resetDatabase = useResetDatabase();
+    const [present] = useIonToast();
+    const { mutateAsync: resetDatabase } = useResetDatabase();
     const resetOnClick = useCallback(async () => {
         try {
-            await resetDatabase();
-            setMessage("Database reset successfully");
+            await resetDatabase(undefined);
+            await present({
+                message: "Database reset successfully",
+                duration: 3000,
+                color: "success",
+                position: "top",
+            });
         } catch (error) {
+            // Error toast is automatically shown by mutation hook
             console.error("Database reset error:", error);
-            const errorMessage =
-                error instanceof Error ? error.message : String(error);
-            setMessage(`Error resetting database: ${errorMessage}`);
         }
-    }, [resetDatabase]);
+    }, [resetDatabase, present]);
 
     return (
         <IonPage>
@@ -39,15 +42,6 @@ const Settings: React.FC = () => {
                     </IonToolbar>
                 </IonHeader> */}
                 <IonButton onClick={resetOnClick}>Reset Database</IonButton>
-                <IonAlert
-                    isOpen={!!message}
-                    header="Message"
-                    message={message ?? ""}
-                    buttons={["OK"]}
-                    onDidDismiss={() => {
-                        setMessage(null);
-                    }}
-                ></IonAlert>
             </IonContent>
         </IonPage>
     );
