@@ -44,7 +44,9 @@ const Settings: React.FC = () => {
                     header="Message"
                     message={message ?? ""}
                     buttons={["OK"]}
-                    onDidDismiss={() => setMessage(null)}
+                    onDidDismiss={() => {
+                        setMessage(null);
+                    }}
                 ></IonAlert>
             </IonContent>
         </IonPage>

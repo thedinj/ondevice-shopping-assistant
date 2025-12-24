@@ -10,20 +10,21 @@ import {
 } from "@ionic/react";
 import { useEffect, useState } from "react";
 import { Store } from "../models/Store";
-import { useStoreDatabase } from "../state/storehooks";
+import { useDatabase, useDatabaseChangeToken } from "../state/storehooks";
 
 const StoresList: React.FC = () => {
-    const storeDatabase = useStoreDatabase();
+    const database = useDatabase();
+    const changeToken = useDatabaseChangeToken();
     const [stores, setStores] = useState<Store[]>([]);
 
     useEffect(() => {
         const fetchStores = async () => {
-            const fetchedStores = await storeDatabase.loadAllStores();
+            const fetchedStores = await database.loadAllStores();
             setStores(fetchedStores);
         };
 
         fetchStores();
-    }, [storeDatabase]);
+    }, [database, changeToken]);
 
     return (
         <IonPage>

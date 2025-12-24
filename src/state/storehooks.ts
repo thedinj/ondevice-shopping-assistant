@@ -1,32 +1,33 @@
 import { createContext, useCallback, useContext } from "react";
-import { StoreDatabase } from "../db/store";
-import { resetDatabase } from "../db";
+import { Database } from "../db/database";
 
-export type StoreDatabaseContextValue = {
-    database: StoreDatabase;
+export type DatabaseContextValue = {
+    database: Database;
+    changeToken: number;
     refresh: () => void;
 };
 
-export const StoreDatabaseContext =
-    createContext<StoreDatabaseContextValue | null>(null);
+export const DatabaseContext = createContext<DatabaseContextValue | null>(null);
 
-const useStoreDatabaseContext = (): StoreDatabaseContextValue => {
-    const ctx = useContext(StoreDatabaseContext);
+const useDatabaseContext = (): DatabaseContextValue => {
+    const ctx = useContext(DatabaseContext);
     if (!ctx)
-        throw new Error(
-            "StoreDatabase hooks must be used within StoreDatabaseProvider"
-        );
+        throw new Error("Database hooks must be used within DatabaseProvider");
     return ctx;
 };
 
-export const useStoreDatabase = (): StoreDatabase => {
-    return useStoreDatabaseContext().database;
+export const useDatabase = (): Database => {
+    return useDatabaseContext().database;
+};
+
+export const useDatabaseChangeToken = (): number => {
+    return useDatabaseContext().changeToken;
 };
 
 export const useResetDatabase = () => {
-    const { refresh } = useStoreDatabaseContext();
+    const { database, refresh } = useDatabaseContext();
     return useCallback(async () => {
-        await resetDatabase();
+        await database.reset();
         refresh();
-    }, [refresh]);
+    }, [database, refresh]);
 };

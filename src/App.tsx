@@ -9,14 +9,14 @@ import {
     setupIonicReact,
 } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
-import { listCircle, settings, cartOutline } from "ionicons/icons";
+import { cartOutline, listCircle, settings } from "ionicons/icons";
 import { Suspense } from "react";
 import { Redirect, Route } from "react-router-dom";
 import AppErrorBoundary from "./components/AppErrorBoundary";
-import StoresList from "./pages/StoresList";
-import ShoppingList from "./pages/ShoppingList";
 import Settings from "./pages/Settings";
-import { StoreDatabaseProvider } from "./state/StoreDatabaseContext";
+import ShoppingList from "./pages/ShoppingList";
+import StoresList from "./pages/StoresList";
+import { DatabaseProvider } from "./state/StoreDatabaseContext";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -56,7 +56,7 @@ const App: React.FC = () => {
             <IonReactRouter>
                 <AppErrorBoundary>
                     <Suspense fallback={<div>Loading...</div>}>
-                        <StoreDatabaseProvider>
+                        <DatabaseProvider>
                             <IonTabs>
                                 <IonRouterOutlet>
                                     <Route exact path="/stores">
@@ -102,7 +102,7 @@ const App: React.FC = () => {
                                     </IonTabButton>
                                 </IonTabBar>
                             </IonTabs>
-                        </StoreDatabaseProvider>
+                        </DatabaseProvider>
                     </Suspense>
                 </AppErrorBoundary>
             </IonReactRouter>

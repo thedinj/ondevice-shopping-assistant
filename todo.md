@@ -1,8 +1,10 @@
+-   [ ] Come up with cool name/icon/package name
 -   [ ] More robust browser faking
 -   [ ] Env file to enable browser faking
--   [ ] Rework database API/context, which encapsulate faking
+-   [ ] Rework database API/context, which encapsulate faking and open us up to remote database
 -   [ ] Edit store basics (name)
 -   [ ] Edit aisles/sections in store
 -   [ ] API key setting for OpenAI
 -   [ ] Generating aisles from OpenAI response
 -   [ ] Editing shopping list, adding new items, etc.
+-   [ ] Confirm Suspense works if database response time is slow
