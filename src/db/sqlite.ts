@@ -180,22 +180,36 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         }
 
         this.initPromise = (async () => {
-            const conn = await this.sqlite.createConnection(
-                DB_NAME,
-                false,
-                "no-encryption",
-                DB_VERSION,
-                false
-            );
-            await conn.open();
-            await this.runMigrations(conn);
-            await this.ensureOneStore(
-                conn,
-                `Unnamed store init ${Math.random()}`
-            );
-            this.connection = conn;
-            this.initPromise = null;
-            this.notifyChange();
+            let conn: SQLiteDBConnection | null = null;
+            try {
+                conn = await this.sqlite.createConnection(
+                    DB_NAME,
+                    false,
+                    "no-encryption",
+                    DB_VERSION,
+                    false
+                );
+                await conn.open();
+                await this.runMigrations(conn);
+
+                const initStoreName = `Unnamed store init ${Math.random()}`;
+                await this.ensureOneStore(conn, initStoreName);
+
+                this.connection = conn;
+            } catch (err) {
+                if (conn) {
+                    try {
+                        await conn.close();
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    } catch (err) {
+                        // Ignore close errors during cleanup
+                    }
+                }
+                throw err;
+            } finally {
+                this.initPromise = null;
+                this.notifyChange();
+            }
         })();
 
         return this.initPromise;
@@ -256,17 +270,19 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         const storeCountRes = await connToUse.query(
             "SELECT COUNT(*) as count FROM store WHERE deleted_at IS NULL"
         );
-        if (!storeCountRes.values?.[0]?.count) {
-            await this.insertStore(name ?? "Unnamed Store");
+        const count = storeCountRes.values?.[0]?.count ?? 0;
+        if (!count) {
+            const nameToUse = name ?? "Unnamed Store";
+            await this.insertStore(nameToUse, connToUse);
         }
     }
 
     // ========== Store Operations ==========
-    async insertStore(name: string): Promise<Store> {
-        const conn = await this.getConnection();
+    async insertStore(name: string, conn?: SQLiteDBConnection): Promise<Store> {
+        const connToUse = conn ?? (await this.getConnection());
         const newStore = getInitializedStore(name);
 
-        await conn.run(
+        await connToUse.run(
             "INSERT INTO store (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)",
             [
                 newStore.id,
