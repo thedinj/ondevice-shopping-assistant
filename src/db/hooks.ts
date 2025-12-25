@@ -473,16 +473,12 @@ export function useCreateItem() {
         mutationFn: ({
             storeId,
             name,
-            defaultQty,
-            notes,
             sectionId,
         }: {
             storeId: string;
             name: string;
-            defaultQty: number;
-            notes?: string | null;
             sectionId?: string | null;
-        }) => database.insertItem(storeId, name, defaultQty, notes, sectionId),
+        }) => database.insertItem(storeId, name, sectionId),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
                 queryKey: ["items", variables.storeId],
@@ -506,17 +502,13 @@ export function useUpdateItem() {
         mutationFn: ({
             id,
             name,
-            defaultQty,
-            notes,
             sectionId,
         }: {
             id: string;
             name: string;
-            defaultQty: number;
-            notes?: string | null;
             sectionId?: string | null;
             storeId: string;
-        }) => database.updateItem(id, name, defaultQty, notes, sectionId),
+        }) => database.updateItem(id, name, sectionId),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
                 queryKey: ["items", variables.storeId],
@@ -549,6 +541,190 @@ export function useDeleteItem() {
         },
         onError: (error: Error) => {
             showError(`Failed to delete item: ${error.message}`);
+        },
+    });
+}
+
+// ========== ShoppingList Hooks ==========
+
+/**
+ * Hook to get or create the active shopping list for a store
+ */
+export function useActiveShoppingList(storeId: string) {
+    const database = useDatabase();
+
+    return useTanstackQuery({
+        queryKey: ["shopping-list", "active", storeId],
+        queryFn: () => database.getOrCreateShoppingListForStore(storeId),
+        enabled: !!storeId,
+    });
+}
+
+/**
+ * Hook to get shopping list items (grouped and sorted)
+ */
+export function useShoppingListItems(listId: string) {
+    const database = useDatabase();
+
+    return useTanstackQuery({
+        queryKey: ["shopping-list-items", listId],
+        queryFn: () => database.getShoppingListItemsGrouped(listId),
+        enabled: !!listId,
+    });
+}
+
+/**
+ * Hook to search store items for autocomplete
+ */
+export function useStoreItemAutocomplete(storeId: string, searchTerm: string) {
+    const database = useDatabase();
+
+    return useTanstackQuery({
+        queryKey: ["store-items", "search", storeId, searchTerm],
+        queryFn: () => database.searchStoreItems(storeId, searchTerm, 10),
+        enabled: !!storeId && searchTerm.length >= 3,
+        staleTime: 30000, // Cache for 30 seconds
+    });
+}
+
+/**
+ * Hook to upsert a shopping list item
+ */
+export function useUpsertShoppingListItem() {
+    const database = useDatabase();
+    const queryClient = useQueryClient();
+    const { showError } = useToast();
+
+    return useTanstackMutation({
+        mutationFn: (params: {
+            id?: string;
+            listId: string;
+            storeId: string;
+            name: string;
+            qty: number;
+            notes: string | null;
+            sectionId: string | null;
+            aisleId: string | null;
+        }) => database.upsertShoppingListItem(params),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: ["shopping-list-items", variables.listId],
+            });
+            // Also invalidate store items for autocomplete
+            queryClient.invalidateQueries({
+                queryKey: ["items", variables.storeId],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["store-items", "search", variables.storeId],
+            });
+        },
+        onError: (error: Error) => {
+            showError(`Failed to save item: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to batch update shopping list items (for reordering)
+ */
+export function useBatchUpdateShoppingListItems() {
+    const database = useDatabase();
+    const queryClient = useQueryClient();
+    const { showError } = useToast();
+
+    return useTanstackMutation({
+        mutationFn: ({
+            updates,
+            listId,
+        }: {
+            updates: Array<{
+                id: string;
+                sort_order: number;
+                aisle_id?: string | null;
+                section_id?: string | null;
+            }>;
+            listId: string;
+        }) => database.batchUpdateShoppingListItems(updates),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: ["shopping-list-items", variables.listId],
+            });
+        },
+        onError: (error: Error) => {
+            showError(`Failed to reorder items: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to toggle shopping list item checked status
+ */
+export function useToggleItemChecked() {
+    const database = useDatabase();
+    const queryClient = useQueryClient();
+    const { showError } = useToast();
+
+    return useTanstackMutation({
+        mutationFn: ({
+            id,
+            isChecked,
+            listId,
+        }: {
+            id: string;
+            isChecked: boolean;
+            listId: string;
+        }) => database.toggleShoppingListItemChecked(id, isChecked),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: ["shopping-list-items", variables.listId],
+            });
+        },
+        onError: (error: Error) => {
+            showError(`Failed to update item: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to delete a shopping list item
+ */
+export function useDeleteShoppingListItem() {
+    const database = useDatabase();
+    const queryClient = useQueryClient();
+    const { showError } = useToast();
+
+    return useTanstackMutation({
+        mutationFn: ({ id, listId }: { id: string; listId: string }) =>
+            database.deleteShoppingListItem(id),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: ["shopping-list-items", variables.listId],
+            });
+        },
+        onError: (error: Error) => {
+            showError(`Failed to delete item: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to clear all checked items from a shopping list
+ */
+export function useClearCheckedItems() {
+    const database = useDatabase();
+    const queryClient = useQueryClient();
+    const { showError } = useToast();
+
+    return useTanstackMutation({
+        mutationFn: ({ listId }: { listId: string }) =>
+            database.clearCheckedShoppingListItems(listId),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: ["shopping-list-items", variables.listId],
+            });
+        },
+        onError: (error: Error) => {
+            showError(`Failed to clear checked items: ${error.message}`);
         },
     });
 }

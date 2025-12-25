@@ -11,6 +11,7 @@ import {
     StoreSection,
     StoreItem,
     getInitializedStore,
+    DEFAULT_STORE_NAME,
 } from "../models/Store";
 import { AppSetting } from "../models/AppSetting";
 
@@ -33,8 +34,7 @@ const migrations: Array<{ version: number; up: string[] }> = [
          id TEXT PRIMARY KEY,
          name TEXT NOT NULL,
          created_at TEXT NOT NULL DEFAULT (datetime('now')),
-         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-         deleted_at TEXT
+         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
        );`,
 
             `CREATE TABLE IF NOT EXISTS store_aisle (
@@ -44,7 +44,6 @@ const migrations: Array<{ version: number; up: string[] }> = [
          sort_order INTEGER NOT NULL DEFAULT 0,
          created_at TEXT NOT NULL DEFAULT (datetime('now')),
          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-         deleted_at TEXT,
          FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE
        );`,
 
@@ -56,7 +55,6 @@ const migrations: Array<{ version: number; up: string[] }> = [
          sort_order INTEGER NOT NULL DEFAULT 0,
          created_at TEXT NOT NULL DEFAULT (datetime('now')),
          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-         deleted_at TEXT,
          FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
          FOREIGN KEY (aisle_id) REFERENCES store_aisle(id) ON DELETE CASCADE
        );`,
@@ -67,20 +65,17 @@ const migrations: Array<{ version: number; up: string[] }> = [
          name TEXT NOT NULL,
          name_norm TEXT NOT NULL,
          section_id TEXT,
-         default_qty REAL NOT NULL DEFAULT 1,
-         notes TEXT,
+         usage_count INTEGER NOT NULL DEFAULT 0,
          last_used_at TEXT,
          is_hidden INTEGER NOT NULL DEFAULT 0,
          created_at TEXT NOT NULL DEFAULT (datetime('now')),
          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-         deleted_at TEXT,
          FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
          FOREIGN KEY (section_id) REFERENCES store_section(id) ON DELETE SET NULL
        );`,
 
             `CREATE UNIQUE INDEX IF NOT EXISTS ux_store_item_store_norm
-         ON store_item(store_id, name_norm)
-         WHERE deleted_at IS NULL;`,
+         ON store_item(store_id, name_norm);`,
 
             `CREATE TABLE IF NOT EXISTS shopping_list (
          id TEXT PRIMARY KEY,
@@ -89,10 +84,8 @@ const migrations: Array<{ version: number; up: string[] }> = [
          created_at TEXT NOT NULL DEFAULT (datetime('now')),
          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
          completed_at TEXT,
-         deleted_at TEXT,
          FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE
        );`,
-
             `CREATE TABLE IF NOT EXISTS shopping_list_item (
          id TEXT PRIMARY KEY,
          list_id TEXT NOT NULL,
@@ -106,11 +99,11 @@ const migrations: Array<{ version: number; up: string[] }> = [
          section_name_snap TEXT,
          aisle_id TEXT,
          aisle_name_snap TEXT,
+         sort_order INTEGER NOT NULL DEFAULT 0,
          is_checked INTEGER NOT NULL DEFAULT 0,
          checked_at TEXT,
          created_at TEXT NOT NULL DEFAULT (datetime('now')),
          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-         deleted_at TEXT,
          FOREIGN KEY (list_id) REFERENCES shopping_list(id) ON DELETE CASCADE,
          FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
          FOREIGN KEY (store_item_id) REFERENCES store_item(id) ON DELETE SET NULL,
@@ -198,8 +191,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
                 await conn.open();
                 await this.runMigrations(conn);
 
-                const initStoreName = `Unnamed store init ${Math.random()}`;
-                await this.ensureOneStore(conn, initStoreName);
+                await this.ensureOneStore(conn);
 
                 this.connection = conn;
             } catch (err) {
@@ -260,10 +252,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             await conn.execute(`DELETE FROM ${t};`);
         }
 
-        await this.ensureOneStore(
-            conn,
-            `Unnamed store after reset ${Math.random()}`
-        );
+        await this.ensureOneStore(conn);
         this.notifyChange();
     }
 
@@ -274,11 +263,11 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         const connToUse = conn ?? (await this.getConnection());
 
         const storeCountRes = await connToUse.query(
-            "SELECT COUNT(*) as count FROM store WHERE deleted_at IS NULL"
+            "SELECT COUNT(*) as count FROM store"
         );
         const count = storeCountRes.values?.[0]?.count ?? 0;
         if (!count) {
-            const nameToUse = name ?? "Unnamed Store";
+            const nameToUse = name ?? DEFAULT_STORE_NAME;
             await this.insertStore(nameToUse, connToUse);
         }
     }
@@ -304,7 +293,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
     async loadAllStores(): Promise<Store[]> {
         const conn = await this.getConnection();
         const res = await conn.query(
-            "SELECT id, name, created_at, updated_at, deleted_at FROM store WHERE deleted_at IS NULL ORDER BY created_at"
+            "SELECT id, name, created_at, updated_at FROM store ORDER BY created_at"
         );
         return res.values || [];
     }
@@ -312,7 +301,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
     async getStoreById(id: string): Promise<Store | null> {
         const conn = await this.getConnection();
         const res = await conn.query(
-            "SELECT id, name, created_at, updated_at, deleted_at FROM store WHERE id = ? AND deleted_at IS NULL",
+            "SELECT id, name, created_at, updated_at FROM store WHERE id = ?",
             [id]
         );
         return res.values?.[0] || null;
@@ -323,7 +312,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         const updated_at = new Date().toISOString();
 
         await conn.run(
-            "UPDATE store SET name = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
+            "UPDATE store SET name = ?, updated_at = ? WHERE id = ?",
             [name, updated_at, id]
         );
 
@@ -337,12 +326,8 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
 
     async deleteStore(id: string): Promise<void> {
         const conn = await this.getConnection();
-        const deleted_at = new Date().toISOString();
 
-        await conn.run(
-            "UPDATE store SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL",
-            [deleted_at, id]
-        );
+        await conn.run("DELETE FROM store WHERE id = ?", [id]);
         this.notifyChange();
     }
 
@@ -377,7 +362,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
 
         // Get max sort_order for this store
         const maxRes = await conn.query(
-            "SELECT COALESCE(MAX(sort_order), -1) as max_order FROM store_aisle WHERE store_id = ? AND deleted_at IS NULL",
+            "SELECT COALESCE(MAX(sort_order), -1) as max_order FROM store_aisle WHERE store_id = ?",
             [storeId]
         );
         const sort_order = (maxRes.values?.[0]?.max_order ?? -1) + 1;
@@ -395,14 +380,13 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             sort_order,
             created_at: now,
             updated_at: now,
-            deleted_at: null,
         };
     }
 
     async getAislesByStore(storeId: string): Promise<StoreAisle[]> {
         const conn = await this.getConnection();
         const res = await conn.query(
-            "SELECT id, store_id, name, sort_order, created_at, updated_at, deleted_at FROM store_aisle WHERE store_id = ? AND deleted_at IS NULL ORDER BY sort_order",
+            "SELECT id, store_id, name, sort_order, created_at, updated_at FROM store_aisle WHERE store_id = ? ORDER BY sort_order",
             [storeId]
         );
         return res.values || [];
@@ -411,7 +395,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
     async getAisleById(id: string): Promise<StoreAisle | null> {
         const conn = await this.getConnection();
         const res = await conn.query(
-            "SELECT id, store_id, name, sort_order, created_at, updated_at, deleted_at FROM store_aisle WHERE id = ? AND deleted_at IS NULL",
+            "SELECT id, store_id, name, sort_order, created_at, updated_at FROM store_aisle WHERE id = ?",
             [id]
         );
         return res.values?.[0] || null;
@@ -422,7 +406,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         const updated_at = new Date().toISOString();
 
         await conn.run(
-            "UPDATE store_aisle SET name = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
+            "UPDATE store_aisle SET name = ?, updated_at = ? WHERE id = ?",
             [name, updated_at, id]
         );
 
@@ -436,12 +420,8 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
 
     async deleteAisle(id: string): Promise<void> {
         const conn = await this.getConnection();
-        const deleted_at = new Date().toISOString();
 
-        await conn.run(
-            "UPDATE store_aisle SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL",
-            [deleted_at, id]
-        );
+        await conn.run("DELETE FROM store_aisle WHERE id = ?", [id]);
         this.notifyChange();
     }
 
@@ -453,7 +433,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
 
         for (const { id, sort_order } of updates) {
             await conn.run(
-                "UPDATE store_aisle SET sort_order = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
+                "UPDATE store_aisle SET sort_order = ?, updated_at = ? WHERE id = ?",
                 [sort_order, updated_at, id]
             );
         }
@@ -472,7 +452,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
 
         // Get max sort_order for this aisle
         const maxRes = await conn.query(
-            "SELECT COALESCE(MAX(sort_order), -1) as max_order FROM store_section WHERE aisle_id = ? AND deleted_at IS NULL",
+            "SELECT COALESCE(MAX(sort_order), -1) as max_order FROM store_section WHERE aisle_id = ?",
             [aisleId]
         );
         const sort_order = (maxRes.values?.[0]?.max_order ?? -1) + 1;
@@ -491,14 +471,13 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             sort_order,
             created_at: now,
             updated_at: now,
-            deleted_at: null,
         };
     }
 
     async getSectionsByStore(storeId: string): Promise<StoreSection[]> {
         const conn = await this.getConnection();
         const res = await conn.query(
-            "SELECT id, store_id, aisle_id, name, sort_order, created_at, updated_at, deleted_at FROM store_section WHERE store_id = ? AND deleted_at IS NULL ORDER BY sort_order",
+            "SELECT id, store_id, aisle_id, name, sort_order, created_at, updated_at FROM store_section WHERE store_id = ? ORDER BY sort_order",
             [storeId]
         );
         return res.values || [];
@@ -507,7 +486,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
     async getSectionById(id: string): Promise<StoreSection | null> {
         const conn = await this.getConnection();
         const res = await conn.query(
-            "SELECT id, store_id, aisle_id, name, sort_order, created_at, updated_at, deleted_at FROM store_section WHERE id = ? AND deleted_at IS NULL",
+            "SELECT id, store_id, aisle_id, name, sort_order, created_at, updated_at FROM store_section WHERE id = ?",
             [id]
         );
         return res.values?.[0] || null;
@@ -522,7 +501,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         const updated_at = new Date().toISOString();
 
         await conn.run(
-            "UPDATE store_section SET name = ?, aisle_id = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
+            "UPDATE store_section SET name = ?, aisle_id = ?, updated_at = ? WHERE id = ?",
             [name, aisleId, updated_at, id]
         );
 
@@ -536,12 +515,8 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
 
     async deleteSection(id: string): Promise<void> {
         const conn = await this.getConnection();
-        const deleted_at = new Date().toISOString();
 
-        await conn.run(
-            "UPDATE store_section SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL",
-            [deleted_at, id]
-        );
+        await conn.run("DELETE FROM store_section WHERE id = ?", [id]);
         this.notifyChange();
     }
 
@@ -553,7 +528,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
 
         for (const { id, sort_order } of updates) {
             await conn.run(
-                "UPDATE store_section SET sort_order = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
+                "UPDATE store_section SET sort_order = ?, updated_at = ? WHERE id = ?",
                 [sort_order, updated_at, id]
             );
         }
@@ -564,8 +539,6 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
     async insertItem(
         storeId: string,
         name: string,
-        defaultQty: number,
-        notes?: string | null,
         sectionId?: string | null
     ): Promise<StoreItem> {
         const conn = await this.getConnection();
@@ -574,19 +547,9 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         const name_norm = name.toLowerCase().trim();
 
         await conn.run(
-            `INSERT INTO store_item (id, store_id, name, name_norm, section_id, default_qty, notes, usage_count, created_at, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
-            [
-                id,
-                storeId,
-                name,
-                name_norm,
-                sectionId ?? null,
-                defaultQty,
-                notes ?? null,
-                now,
-                now,
-            ]
+            `INSERT INTO store_item (id, store_id, name, name_norm, section_id, usage_count, created_at, updated_at) 
+             VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
+            [id, storeId, name, name_norm, sectionId ?? null, now, now]
         );
 
         this.notifyChange();
@@ -596,23 +559,20 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             name,
             name_norm,
             section_id: sectionId ?? null,
-            default_qty: defaultQty,
-            notes: notes ?? null,
             usage_count: 0,
             last_used_at: null,
             is_hidden: 0,
             created_at: now,
             updated_at: now,
-            deleted_at: null,
         };
     }
 
     async getItemsByStore(storeId: string): Promise<StoreItem[]> {
         const conn = await this.getConnection();
         const res = await conn.query(
-            `SELECT id, store_id, name, name_norm, section_id, default_qty, notes, usage_count, last_used_at, is_hidden, created_at, updated_at, deleted_at 
+            `SELECT id, store_id, name, name_norm, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at 
              FROM store_item 
-             WHERE store_id = ? AND deleted_at IS NULL AND is_hidden = 0 
+             WHERE store_id = ? AND is_hidden = 0 
              ORDER BY name_norm`,
             [storeId]
         );
@@ -622,9 +582,9 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
     async getItemById(id: string): Promise<StoreItem | null> {
         const conn = await this.getConnection();
         const res = await conn.query(
-            `SELECT id, store_id, name, name_norm, section_id, default_qty, notes, usage_count, last_used_at, is_hidden, created_at, updated_at, deleted_at 
+            `SELECT id, store_id, name, name_norm, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at 
              FROM store_item 
-             WHERE id = ? AND deleted_at IS NULL`,
+             WHERE id = ?`,
             [id]
         );
         return res.values?.[0] || null;
@@ -633,8 +593,6 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
     async updateItem(
         id: string,
         name: string,
-        defaultQty: number,
-        notes?: string | null,
         sectionId?: string | null
     ): Promise<StoreItem> {
         const conn = await this.getConnection();
@@ -643,17 +601,9 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
 
         await conn.run(
             `UPDATE store_item 
-             SET name = ?, name_norm = ?, default_qty = ?, notes = ?, section_id = ?, updated_at = ? 
-             WHERE id = ? AND deleted_at IS NULL`,
-            [
-                name,
-                name_norm,
-                defaultQty,
-                notes ?? null,
-                sectionId ?? null,
-                updated_at,
-                id,
-            ]
+             SET name = ?, name_norm = ?, section_id = ?, updated_at = ? 
+             WHERE id = ?`,
+            [name, name_norm, sectionId ?? null, updated_at, id]
         );
 
         const item = await this.getItemById(id);
@@ -666,12 +616,414 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
 
     async deleteItem(id: string): Promise<void> {
         const conn = await this.getConnection();
-        const deleted_at = new Date().toISOString();
+
+        await conn.run("DELETE FROM store_item WHERE id = ?", [id]);
+        this.notifyChange();
+    }
+
+    // ========== ShoppingList Operations ==========
+    async getOrCreateShoppingListForStore(storeId: string): Promise<{
+        id: string;
+        store_id: string;
+        title: string | null;
+        created_at: string;
+        updated_at: string;
+        completed_at: string | null;
+    }> {
+        const conn = await this.getConnection();
+
+        // Try to find an active (non-completed) list for this store
+        const res = await conn.query(
+            `SELECT id, store_id, title, created_at, updated_at, completed_at 
+             FROM shopping_list 
+             WHERE store_id = ? AND completed_at IS NULL 
+             ORDER BY created_at DESC 
+             LIMIT 1`,
+            [storeId]
+        );
+
+        if (res.values && res.values.length > 0) {
+            return res.values[0];
+        }
+
+        // Create a new list
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
 
         await conn.run(
-            "UPDATE store_item SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL",
-            [deleted_at, id]
+            `INSERT INTO shopping_list (id, store_id, title, created_at, updated_at) 
+             VALUES (?, ?, ?, ?, ?)`,
+            [id, storeId, null, now, now]
+        );
+
+        this.notifyChange();
+        return {
+            id,
+            store_id: storeId,
+            title: null,
+            created_at: now,
+            updated_at: now,
+            completed_at: null,
+        };
+    }
+
+    async getShoppingListItemsGrouped(listId: string): Promise<
+        Array<{
+            id: string;
+            list_id: string;
+            store_id: string;
+            store_item_id: string | null;
+            name: string;
+            name_norm: string;
+            qty: number;
+            notes: string | null;
+            section_id: string | null;
+            section_name_snap: string | null;
+            section_name: string | null;
+            section_sort_order: number | null;
+            aisle_id: string | null;
+            aisle_name_snap: string | null;
+            aisle_name: string | null;
+            aisle_sort_order: number | null;
+            sort_order: number;
+            is_checked: number;
+            checked_at: string | null;
+            created_at: string;
+            updated_at: string;
+        }>
+    > {
+        const conn = await this.getConnection();
+        const res = await conn.query(
+            `SELECT 
+                sli.id, sli.list_id, sli.store_id, sli.store_item_id,
+                sli.name, sli.name_norm, sli.qty, sli.notes,
+                sli.section_id, sli.section_name_snap, sli.aisle_id, sli.aisle_name_snap,
+                sli.sort_order, sli.is_checked, sli.checked_at,
+                sli.created_at, sli.updated_at,
+                ss.name as section_name, ss.sort_order as section_sort_order,
+                sa.name as aisle_name, sa.sort_order as aisle_sort_order
+             FROM shopping_list_item sli
+             LEFT JOIN store_section ss ON sli.section_id = ss.id
+             LEFT JOIN store_aisle sa ON sli.aisle_id = sa.id
+             WHERE sli.list_id = ?
+             ORDER BY 
+                sli.is_checked ASC,
+                COALESCE(sa.sort_order, 999999) ASC,
+                COALESCE(ss.sort_order, 999999) ASC,
+                sli.sort_order ASC`,
+            [listId]
+        );
+        return res.values || [];
+    }
+
+    async upsertShoppingListItem(params: {
+        id?: string;
+        listId: string;
+        storeId: string;
+        name: string;
+        qty: number;
+        notes: string | null;
+        sectionId: string | null;
+        aisleId: string | null;
+    }): Promise<{
+        id: string;
+        list_id: string;
+        store_id: string;
+        store_item_id: string | null;
+        name: string;
+        name_norm: string;
+        qty: number;
+        notes: string | null;
+        section_id: string | null;
+        section_name_snap: string | null;
+        aisle_id: string | null;
+        aisle_name_snap: string | null;
+        sort_order: number;
+        is_checked: number;
+        checked_at: string | null;
+        created_at: string;
+        updated_at: string;
+    }> {
+        const conn = await this.getConnection();
+        const now = new Date().toISOString();
+        const name_norm = params.name.toLowerCase().trim();
+
+        // Auto-create or update StoreItem
+        let storeItemId: string | null = null;
+        const existingItemRes = await conn.query(
+            `SELECT id, usage_count, last_used_at FROM store_item 
+             WHERE store_id = ? AND name_norm = ?`,
+            [params.storeId, name_norm]
+        );
+
+        if (existingItemRes.values && existingItemRes.values.length > 0) {
+            const existingItem = existingItemRes.values[0];
+            storeItemId = existingItem.id;
+
+            // Update usage tracking
+            await conn.run(
+                `UPDATE store_item 
+                 SET usage_count = ?, last_used_at = ?, section_id = ?, updated_at = ? 
+                 WHERE id = ?`,
+                [
+                    (existingItem.usage_count || 0) + 1,
+                    now,
+                    params.sectionId ?? null,
+                    now,
+                    storeItemId,
+                ]
+            );
+        } else {
+            // Create new StoreItem
+            storeItemId = crypto.randomUUID();
+            await conn.run(
+                `INSERT INTO store_item (id, store_id, name, name_norm, section_id, usage_count, last_used_at, created_at, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+                [
+                    storeItemId,
+                    params.storeId,
+                    params.name,
+                    name_norm,
+                    params.sectionId ?? null,
+                    now,
+                    now,
+                    now,
+                ]
+            );
+        }
+
+        // Get section and aisle name snapshots
+        let sectionNameSnap: string | null = null;
+        let aisleNameSnap: string | null = null;
+
+        if (params.sectionId) {
+            const sectionRes = await conn.query(
+                `SELECT name FROM store_section WHERE id = ?`,
+                [params.sectionId]
+            );
+            sectionNameSnap = sectionRes.values?.[0]?.name || null;
+        }
+
+        if (params.aisleId) {
+            const aisleRes = await conn.query(
+                `SELECT name FROM store_aisle WHERE id = ?`,
+                [params.aisleId]
+            );
+            aisleNameSnap = aisleRes.values?.[0]?.name || null;
+        }
+
+        if (params.id) {
+            // Update existing shopping list item
+            await conn.run(
+                `UPDATE shopping_list_item 
+                 SET name = ?, name_norm = ?, qty = ?, notes = ?, 
+                     section_id = ?, section_name_snap = ?, aisle_id = ?, aisle_name_snap = ?,
+                     store_item_id = ?, updated_at = ? 
+                 WHERE id = ?`,
+                [
+                    params.name,
+                    name_norm,
+                    params.qty,
+                    params.notes,
+                    params.sectionId ?? null,
+                    sectionNameSnap,
+                    params.aisleId ?? null,
+                    aisleNameSnap,
+                    storeItemId,
+                    now,
+                    params.id,
+                ]
+            );
+
+            const itemRes = await conn.query(
+                `SELECT id, list_id, store_id, store_item_id, name, name_norm, qty, notes,
+                        section_id, section_name_snap, aisle_id, aisle_name_snap, sort_order,
+                        is_checked, checked_at, created_at, updated_at
+                 FROM shopping_list_item WHERE id = ?`,
+                [params.id]
+            );
+
+            this.notifyChange();
+            return itemRes.values?.[0];
+        } else {
+            // Insert new shopping list item
+            const id = crypto.randomUUID();
+
+            // Get max sort_order for items in the same section/aisle group (unchecked only)
+            const maxRes = await conn.query(
+                `SELECT COALESCE(MAX(sort_order), -1) as max_order 
+                 FROM shopping_list_item 
+                 WHERE list_id = ? AND is_checked = 0 
+                 AND COALESCE(aisle_id, '') = COALESCE(?, '') 
+                 AND COALESCE(section_id, '') = COALESCE(?, '')`,
+                [
+                    params.listId,
+                    params.aisleId ?? null,
+                    params.sectionId ?? null,
+                ]
+            );
+            const sort_order = (maxRes.values?.[0]?.max_order ?? -1) + 1;
+
+            await conn.run(
+                `INSERT INTO shopping_list_item 
+                 (id, list_id, store_id, store_item_id, name, name_norm, qty, notes,
+                  section_id, section_name_snap, aisle_id, aisle_name_snap, sort_order,
+                  created_at, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    id,
+                    params.listId,
+                    params.storeId,
+                    storeItemId,
+                    params.name,
+                    name_norm,
+                    params.qty,
+                    params.notes,
+                    params.sectionId ?? null,
+                    sectionNameSnap,
+                    params.aisleId ?? null,
+                    aisleNameSnap,
+                    sort_order,
+                    now,
+                    now,
+                ]
+            );
+
+            this.notifyChange();
+            return {
+                id,
+                list_id: params.listId,
+                store_id: params.storeId,
+                store_item_id: storeItemId,
+                name: params.name,
+                name_norm,
+                qty: params.qty,
+                notes: params.notes,
+                section_id: params.sectionId ?? null,
+                section_name_snap: sectionNameSnap,
+                aisle_id: params.aisleId ?? null,
+                aisle_name_snap: aisleNameSnap,
+                sort_order,
+                is_checked: 0,
+                checked_at: null,
+                created_at: now,
+                updated_at: now,
+            };
+        }
+    }
+
+    async batchUpdateShoppingListItems(
+        updates: Array<{
+            id: string;
+            sort_order: number;
+            aisle_id?: string | null;
+            section_id?: string | null;
+        }>
+    ): Promise<void> {
+        const conn = await this.getConnection();
+        const updated_at = new Date().toISOString();
+
+        for (const update of updates) {
+            // Get snapshots if aisle/section changed
+            let sectionNameSnap: string | null = null;
+            let aisleNameSnap: string | null = null;
+
+            if (update.section_id !== undefined) {
+                if (update.section_id) {
+                    const sectionRes = await conn.query(
+                        `SELECT name FROM store_section WHERE id = ?`,
+                        [update.section_id]
+                    );
+                    sectionNameSnap = sectionRes.values?.[0]?.name || null;
+                }
+
+                if (update.aisle_id) {
+                    const aisleRes = await conn.query(
+                        `SELECT name FROM store_aisle WHERE id = ?`,
+                        [update.aisle_id]
+                    );
+                    aisleNameSnap = aisleRes.values?.[0]?.name || null;
+                }
+
+                await conn.run(
+                    `UPDATE shopping_list_item 
+                     SET sort_order = ?, aisle_id = ?, aisle_name_snap = ?, 
+                         section_id = ?, section_name_snap = ?, updated_at = ? 
+                     WHERE id = ?`,
+                    [
+                        update.sort_order,
+                        update.aisle_id ?? null,
+                        aisleNameSnap,
+                        update.section_id ?? null,
+                        sectionNameSnap,
+                        updated_at,
+                        update.id,
+                    ]
+                );
+            } else {
+                // Only update sort_order
+                await conn.run(
+                    `UPDATE shopping_list_item 
+                     SET sort_order = ?, updated_at = ? 
+                     WHERE id = ?`,
+                    [update.sort_order, updated_at, update.id]
+                );
+            }
+        }
+
+        this.notifyChange();
+    }
+
+    async toggleShoppingListItemChecked(
+        id: string,
+        isChecked: boolean
+    ): Promise<void> {
+        const conn = await this.getConnection();
+        const now = new Date().toISOString();
+
+        await conn.run(
+            `UPDATE shopping_list_item 
+             SET is_checked = ?, checked_at = ?, updated_at = ? 
+             WHERE id = ?`,
+            [isChecked ? 1 : 0, isChecked ? now : null, now, id]
+        );
+
+        this.notifyChange();
+    }
+
+    async deleteShoppingListItem(id: string): Promise<void> {
+        const conn = await this.getConnection();
+
+        await conn.run("DELETE FROM shopping_list_item WHERE id = ?", [id]);
+        this.notifyChange();
+    }
+
+    async clearCheckedShoppingListItems(listId: string): Promise<void> {
+        const conn = await this.getConnection();
+
+        await conn.run(
+            "DELETE FROM shopping_list_item WHERE list_id = ? AND is_checked = 1",
+            [listId]
         );
         this.notifyChange();
+    }
+
+    async searchStoreItems(
+        storeId: string,
+        searchTerm: string,
+        limit: number = 10
+    ): Promise<StoreItem[]> {
+        const conn = await this.getConnection();
+        const searchNorm = searchTerm.toLowerCase().trim() + "%";
+
+        const res = await conn.query(
+            `SELECT id, store_id, name, name_norm, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at 
+             FROM store_item 
+             WHERE store_id = ? AND name_norm LIKE ? AND is_hidden = 0 
+             ORDER BY usage_count DESC, last_used_at DESC, name_norm ASC 
+             LIMIT ?`,
+            [storeId, searchNorm, limit]
+        );
+        return res.values || [];
     }
 }

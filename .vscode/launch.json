@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Web: Launch Chrome (Ionic)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:8100",
+            "webRoot": "${workspaceFolder}",
+            "sourceMaps": true,
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**"
+            ],
+            "skipFiles": ["**/node_modules/**", "<node_internals>/**"],
+            "sourceMapPathOverrides": {
+                "webpack:///*": "${webRoot}/*",
+                "vite:///*": "${webRoot}/*",
+                "/*": "${webRoot}/*"
+            }
+        }
+    ]
+}

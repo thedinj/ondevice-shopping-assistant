@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "ionic serve",
+            "type": "shell",
+            "command": "ionic",
+            "args": ["serve", "--no-open"],
+            "isBackground": true,
+            "runOptions": {
+                "runOn": "folderOpen"
+            }
+        },
+        {
+            "label": "Reset Android Emulator Database",
+            "type": "shell",
+            "command": "adb",
+            "args": ["shell", "pm", "clear", "io.ionic.starter"],
+            "problemMatcher": []
+        }
+    ]
+}

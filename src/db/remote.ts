@@ -117,8 +117,6 @@ export class RemoteDatabase extends BaseDatabase implements Database {
     async insertItem(
         _storeId: string,
         _name: string,
-        _defaultQty: number,
-        _notes?: string | null,
         _sectionId?: string | null
     ): Promise<StoreItem> {
         throw new Error("RemoteDatabase not yet implemented");
@@ -135,14 +133,59 @@ export class RemoteDatabase extends BaseDatabase implements Database {
     async updateItem(
         _id: string,
         _name: string,
-        _defaultQty: number,
-        _notes?: string | null,
         _sectionId?: string | null
     ): Promise<StoreItem> {
         throw new Error("RemoteDatabase not yet implemented");
     }
 
     async deleteItem(_id: string): Promise<void> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async searchStoreItems(
+        _storeId: string,
+        _searchTerm: string,
+        _limit?: number
+    ): Promise<StoreItem[]> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    // ========== ShoppingList Operations ==========
+    async getOrCreateShoppingListForStore(_storeId: string): Promise<{
+        id: string;
+        store_id: string;
+        title: string | null;
+        created_at: string;
+        updated_at: string;
+        completed_at: string | null;
+    }> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async getShoppingListItemsGrouped(_listId: string): Promise<any[]> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async upsertShoppingListItem(_params: any): Promise<any> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async batchUpdateShoppingListItems(_updates: any[]): Promise<void> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async toggleShoppingListItemChecked(
+        _id: string,
+        _isChecked: boolean
+    ): Promise<void> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async deleteShoppingListItem(_id: string): Promise<void> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async clearCheckedShoppingListItems(_listId: string): Promise<void> {
         throw new Error("RemoteDatabase not yet implemented");
     }
 }

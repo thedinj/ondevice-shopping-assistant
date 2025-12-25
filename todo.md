@@ -1,11 +1,17 @@
 -   [ ] Come up with cool name/icon/package name
--   [ ] More robust browser faking
 -   [ ] Should we have a better "base" database class that has not-implemented abstract members? And no interfaces?
--   [ ] Env file to enable browser faking
--   [ ] Rework database API/context, which encapsulate faking and open us up to remote database
--   [ ] Edit store basics (name)
--   [ ] Edit aisles/sections in store
--   [ ] API key setting for OpenAI
 -   [ ] Generating aisles from OpenAI response
 -   [ ] Editing shopping list, adding new items, etc.
 -   [ ] Confirm Suspense works if database response time is slow
+-   [ ] Confirm API key is stored more securely
+-   [ ] What is this IonHeader stuff?
+-   [ ] More readable zero states, walk the user through the workflow with a pretty UI
+-   [ ] Move settings to hamburger menu?
+-   [ ] Cool name and animations
+-   [ ] Autofocus on entry forms
+-   [ ] Hard delete over soft delete for more tables
+-   [ ] Reordering store items in a section does not work. Should be able to move individual items around in a section.
+-   [ ] Renaming a store doesn't result in the list being updated, at least in Android.
+-   [ ] Still can't add a shopping list item without selecting an aisle section
+-   [ ] Need to autopopulate aisles if selecting a section first.
+-   [ ] Does deleting a shopping list item also delete the store item? It should.

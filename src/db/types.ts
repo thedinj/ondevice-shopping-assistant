@@ -161,8 +161,6 @@ export interface EntityDatabase {
     insertItem(
         storeId: string,
         name: string,
-        defaultQty: number,
-        notes?: string | null,
         sectionId?: string | null
     ): Promise<StoreItem>;
 
@@ -182,8 +180,6 @@ export interface EntityDatabase {
     updateItem(
         id: string,
         name: string,
-        defaultQty: number,
-        notes?: string | null,
         sectionId?: string | null
     ): Promise<StoreItem>;
 
@@ -192,9 +188,122 @@ export interface EntityDatabase {
      */
     deleteItem(id: string): Promise<void>;
 
-    // TODO: Add operations for other entities as needed:
-    // - ShoppingList
-    // - ShoppingListItem
+    /**
+     * Search for items by name prefix (for autocomplete)
+     */
+    searchStoreItems(
+        storeId: string,
+        searchTerm: string,
+        limit?: number
+    ): Promise<StoreItem[]>;
+
+    // ========== ShoppingList Operations ==========
+    /**
+     * Get or create an active shopping list for a store
+     * Returns the most recent non-completed list or creates a new one
+     */
+    getOrCreateShoppingListForStore(storeId: string): Promise<{
+        id: string;
+        store_id: string;
+        title: string | null;
+        created_at: string;
+        updated_at: string;
+        completed_at: string | null;
+    }>;
+
+    /**
+     * Get all shopping list items for a list, joined with aisle/section info
+     * Ordered by: is_checked, aisle sort_order, section sort_order, item sort_order
+     */
+    getShoppingListItemsGrouped(listId: string): Promise<
+        Array<{
+            id: string;
+            list_id: string;
+            store_id: string;
+            store_item_id: string | null;
+            name: string;
+            name_norm: string;
+            qty: number;
+            notes: string | null;
+            section_id: string | null;
+            section_name_snap: string | null;
+            section_name: string | null;
+            section_sort_order: number | null;
+            aisle_id: string | null;
+            aisle_name_snap: string | null;
+            aisle_name: string | null;
+            aisle_sort_order: number | null;
+            sort_order: number;
+            is_checked: number;
+            checked_at: string | null;
+            created_at: string;
+            updated_at: string;
+        }>
+    >;
+
+    /**
+     * Insert or update a shopping list item
+     * Auto-creates StoreItem if it doesn't exist (by name_norm)
+     * Updates StoreItem usage tracking
+     */
+    upsertShoppingListItem(params: {
+        id?: string;
+        listId: string;
+        storeId: string;
+        name: string;
+        qty: number;
+        notes: string | null;
+        sectionId: string | null;
+        aisleId: string | null;
+    }): Promise<{
+        id: string;
+        list_id: string;
+        store_id: string;
+        store_item_id: string | null;
+        name: string;
+        name_norm: string;
+        qty: number;
+        notes: string | null;
+        section_id: string | null;
+        section_name_snap: string | null;
+        aisle_id: string | null;
+        aisle_name_snap: string | null;
+        sort_order: number;
+        is_checked: number;
+        checked_at: string | null;
+        created_at: string;
+        updated_at: string;
+    }>;
+
+    /**
+     * Batch update shopping list items (for reordering and cross-group moves)
+     */
+    batchUpdateShoppingListItems(
+        updates: Array<{
+            id: string;
+            sort_order: number;
+            aisle_id?: string | null;
+            section_id?: string | null;
+        }>
+    ): Promise<void>;
+
+    /**
+     * Toggle the checked status of a shopping list item
+     */
+    toggleShoppingListItemChecked(
+        id: string,
+        isChecked: boolean
+    ): Promise<void>;
+
+    /**
+     * Soft delete a shopping list item
+     */
+    deleteShoppingListItem(id: string): Promise<void>;
+
+    /**
+     * Clear all checked items from a shopping list
+     */
+    clearCheckedShoppingListItems(listId: string): Promise<void>;
 }
 
 /**

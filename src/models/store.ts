@@ -1,9 +1,10 @@
+export const DEFAULT_STORE_NAME = "Unnamed store";
+
 export type Store = {
     id: string;
     name: string;
     created_at: string;
     updated_at: string;
-    deleted_at: string | null;
 };
 
 export type StoreAisle = {
@@ -13,7 +14,6 @@ export type StoreAisle = {
     sort_order: number;
     created_at: string;
     updated_at: string;
-    deleted_at: string | null;
 };
 
 export type StoreSection = {
@@ -24,7 +24,6 @@ export type StoreSection = {
     sort_order: number;
     created_at: string;
     updated_at: string;
-    deleted_at: string | null;
 };
 
 export type StoreItem = {
@@ -33,14 +32,11 @@ export type StoreItem = {
     name: string;
     name_norm: string;
     section_id: string | null;
-    default_qty: number;
-    notes: string | null;
     usage_count: number;
     last_used_at: string | null;
     is_hidden: number;
     created_at: string;
     updated_at: string;
-    deleted_at: string | null;
 };
 
 export type ShoppingList = {
@@ -50,7 +46,6 @@ export type ShoppingList = {
     created_at: string;
     updated_at: string;
     completed_at: string | null;
-    deleted_at: string | null;
 };
 
 export type ShoppingListItem = {
@@ -66,20 +61,20 @@ export type ShoppingListItem = {
     section_name_snap: string | null;
     aisle_id: string | null;
     aisle_name_snap: string | null;
+    sort_order: number;
     is_checked: number;
     checked_at: string | null;
     created_at: string;
     updated_at: string;
-    deleted_at: string | null;
 };
 
-export const getInitializedStore = (name: string): Store => {
+export const getInitializedStore = (
+    name: string = DEFAULT_STORE_NAME
+): Store => {
     return {
         id: crypto.randomUUID(),
         name,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        deleted_at: null,
     };
 };
-

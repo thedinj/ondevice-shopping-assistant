@@ -5,6 +5,8 @@ import {
     StoreAisle,
     StoreSection,
     StoreItem,
+    ShoppingList,
+    ShoppingListItem,
     getInitializedStore,
 } from "../models/Store";
 import { AppSetting } from "../models/AppSetting";
@@ -17,6 +19,8 @@ export class FakeDatabase extends BaseDatabase implements Database {
     private aisles: Map<string, StoreAisle> = new Map();
     private sections: Map<string, StoreSection> = new Map();
     private items: Map<string, StoreItem> = new Map();
+    private shoppingLists: Map<string, ShoppingList> = new Map();
+    private shoppingListItems: Map<string, ShoppingListItem> = new Map();
     private appSettings: Map<string, AppSetting> = new Map();
     private initialized = false;
 
@@ -26,7 +30,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
         }
 
         // Initialize with one store
-        const initialStore = getInitializedStore("Unnamed Store (Browser)");
+        const initialStore = getInitializedStore();
         this.stores.set(initialStore.id, initialStore);
 
         this.initialized = true;
@@ -55,9 +59,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
 
         // Ensure at least one store exists
         if (this.stores.size === 0) {
-            const newStore = getInitializedStore(
-                "Unnamed Store (Browser), after reset"
-            );
+            const newStore = getInitializedStore();
             this.stores.set(newStore.id, newStore);
         }
 
@@ -73,18 +75,16 @@ export class FakeDatabase extends BaseDatabase implements Database {
     }
 
     async loadAllStores(): Promise<Store[]> {
-        return Array.from(this.stores.values())
-            .filter((store) => !store.deleted_at)
-            .sort(
-                (a, b) =>
-                    new Date(a.created_at).getTime() -
-                    new Date(b.created_at).getTime()
-            );
+        return Array.from(this.stores.values()).sort(
+            (a, b) =>
+                new Date(a.created_at).getTime() -
+                new Date(b.created_at).getTime()
+        );
     }
 
     async getStoreById(id: string): Promise<Store | null> {
         const store = this.stores.get(id);
-        if (!store || store.deleted_at) {
+        if (!store) {
             return null;
         }
         return store;
@@ -92,7 +92,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
 
     async updateStore(id: string, name: string): Promise<Store> {
         const store = this.stores.get(id);
-        if (!store || store.deleted_at) {
+        if (!store) {
             throw new Error(`Store with id ${id} not found`);
         }
 
@@ -108,15 +108,11 @@ export class FakeDatabase extends BaseDatabase implements Database {
 
     async deleteStore(id: string): Promise<void> {
         const store = this.stores.get(id);
-        if (!store || store.deleted_at) {
+        if (!store) {
             return;
         }
 
-        const deletedStore: Store = {
-            ...store,
-            deleted_at: new Date().toISOString(),
-        };
-        this.stores.set(id, deletedStore);
+        this.stores.delete(id);
         this.notifyChange();
     }
 
@@ -140,7 +136,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
         const id = crypto.randomUUID();
         const now = new Date().toISOString();
         const existingAisles = Array.from(this.aisles.values()).filter(
-            (a) => a.store_id === storeId && !a.deleted_at
+            (a) => a.store_id === storeId
         );
         const sort_order = existingAisles.length;
 
@@ -151,7 +147,6 @@ export class FakeDatabase extends BaseDatabase implements Database {
             sort_order,
             created_at: now,
             updated_at: now,
-            deleted_at: null,
         };
         this.aisles.set(id, aisle);
         this.notifyChange();
@@ -160,18 +155,18 @@ export class FakeDatabase extends BaseDatabase implements Database {
 
     async getAislesByStore(storeId: string): Promise<StoreAisle[]> {
         return Array.from(this.aisles.values())
-            .filter((aisle) => aisle.store_id === storeId && !aisle.deleted_at)
+            .filter((aisle) => aisle.store_id === storeId)
             .sort((a, b) => a.sort_order - b.sort_order);
     }
 
     async getAisleById(id: string): Promise<StoreAisle | null> {
         const aisle = this.aisles.get(id);
-        return aisle && !aisle.deleted_at ? aisle : null;
+        return aisle ? aisle : null;
     }
 
     async updateAisle(id: string, name: string): Promise<StoreAisle> {
         const aisle = this.aisles.get(id);
-        if (!aisle || aisle.deleted_at) {
+        if (!aisle) {
             throw new Error(`Aisle with id ${id} not found`);
         }
 
@@ -187,11 +182,8 @@ export class FakeDatabase extends BaseDatabase implements Database {
 
     async deleteAisle(id: string): Promise<void> {
         const aisle = this.aisles.get(id);
-        if (aisle && !aisle.deleted_at) {
-            this.aisles.set(id, {
-                ...aisle,
-                deleted_at: new Date().toISOString(),
-            });
+        if (aisle) {
+            this.aisles.delete(id);
             this.notifyChange();
         }
     }
@@ -202,7 +194,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
         const now = new Date().toISOString();
         for (const { id, sort_order } of updates) {
             const aisle = this.aisles.get(id);
-            if (aisle && !aisle.deleted_at) {
+            if (aisle) {
                 this.aisles.set(id, {
                     ...aisle,
                     sort_order,
@@ -222,7 +214,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
         const id = crypto.randomUUID();
         const now = new Date().toISOString();
         const existingSections = Array.from(this.sections.values()).filter(
-            (s) => s.aisle_id === aisleId && !s.deleted_at
+            (s) => s.aisle_id === aisleId
         );
         const sort_order = existingSections.length;
 
@@ -234,7 +226,6 @@ export class FakeDatabase extends BaseDatabase implements Database {
             sort_order,
             created_at: now,
             updated_at: now,
-            deleted_at: null,
         };
         this.sections.set(id, section);
         this.notifyChange();
@@ -243,15 +234,13 @@ export class FakeDatabase extends BaseDatabase implements Database {
 
     async getSectionsByStore(storeId: string): Promise<StoreSection[]> {
         return Array.from(this.sections.values())
-            .filter(
-                (section) => section.store_id === storeId && !section.deleted_at
-            )
+            .filter((section) => section.store_id === storeId)
             .sort((a, b) => a.sort_order - b.sort_order);
     }
 
     async getSectionById(id: string): Promise<StoreSection | null> {
         const section = this.sections.get(id);
-        return section && !section.deleted_at ? section : null;
+        return section ? section : null;
     }
 
     async updateSection(
@@ -260,7 +249,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
         aisleId: string
     ): Promise<StoreSection> {
         const section = this.sections.get(id);
-        if (!section || section.deleted_at) {
+        if (!section) {
             throw new Error(`Section with id ${id} not found`);
         }
 
@@ -277,11 +266,8 @@ export class FakeDatabase extends BaseDatabase implements Database {
 
     async deleteSection(id: string): Promise<void> {
         const section = this.sections.get(id);
-        if (section && !section.deleted_at) {
-            this.sections.set(id, {
-                ...section,
-                deleted_at: new Date().toISOString(),
-            });
+        if (section) {
+            this.sections.delete(id);
             this.notifyChange();
         }
     }
@@ -292,7 +278,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
         const now = new Date().toISOString();
         for (const { id, sort_order } of updates) {
             const section = this.sections.get(id);
-            if (section && !section.deleted_at) {
+            if (section) {
                 this.sections.set(id, {
                     ...section,
                     sort_order,
@@ -307,8 +293,6 @@ export class FakeDatabase extends BaseDatabase implements Database {
     async insertItem(
         storeId: string,
         name: string,
-        defaultQty: number,
-        notes?: string | null,
         sectionId?: string | null
     ): Promise<StoreItem> {
         const id = crypto.randomUUID();
@@ -321,14 +305,11 @@ export class FakeDatabase extends BaseDatabase implements Database {
             name,
             name_norm,
             section_id: sectionId ?? null,
-            default_qty: defaultQty,
-            notes: notes ?? null,
             usage_count: 0,
             last_used_at: null,
             is_hidden: 0,
             created_at: now,
             updated_at: now,
-            deleted_at: null,
         };
         this.items.set(id, item);
         this.notifyChange();
@@ -337,29 +318,22 @@ export class FakeDatabase extends BaseDatabase implements Database {
 
     async getItemsByStore(storeId: string): Promise<StoreItem[]> {
         return Array.from(this.items.values())
-            .filter(
-                (item) =>
-                    item.store_id === storeId &&
-                    !item.deleted_at &&
-                    item.is_hidden === 0
-            )
+            .filter((item) => item.store_id === storeId && item.is_hidden === 0)
             .sort((a, b) => a.name_norm.localeCompare(b.name_norm));
     }
 
     async getItemById(id: string): Promise<StoreItem | null> {
         const item = this.items.get(id);
-        return item && !item.deleted_at ? item : null;
+        return item ? item : null;
     }
 
     async updateItem(
         id: string,
         name: string,
-        defaultQty: number,
-        notes?: string | null,
         sectionId?: string | null
     ): Promise<StoreItem> {
         const item = this.items.get(id);
-        if (!item || item.deleted_at) {
+        if (!item) {
             throw new Error(`Item with id ${id} not found`);
         }
 
@@ -368,8 +342,6 @@ export class FakeDatabase extends BaseDatabase implements Database {
             ...item,
             name,
             name_norm,
-            default_qty: defaultQty,
-            notes: notes ?? null,
             section_id: sectionId ?? null,
             updated_at: new Date().toISOString(),
         };
@@ -380,12 +352,338 @@ export class FakeDatabase extends BaseDatabase implements Database {
 
     async deleteItem(id: string): Promise<void> {
         const item = this.items.get(id);
-        if (item && !item.deleted_at) {
-            this.items.set(id, {
+        if (item) {
+            this.items.delete(id);
+            this.notifyChange();
+        }
+    }
+
+    async searchStoreItems(
+        storeId: string,
+        searchTerm: string,
+        limit: number = 10
+    ): Promise<StoreItem[]> {
+        const searchNorm = searchTerm.toLowerCase().trim();
+        return Array.from(this.items.values())
+            .filter(
+                (item) =>
+                    item.store_id === storeId &&
+                    item.is_hidden === 0 &&
+                    item.name_norm.startsWith(searchNorm)
+            )
+            .sort((a, b) => {
+                // Sort by usage_count desc, last_used_at desc, then name
+                if (b.usage_count !== a.usage_count) {
+                    return b.usage_count - a.usage_count;
+                }
+                if (a.last_used_at && b.last_used_at) {
+                    return (
+                        new Date(b.last_used_at).getTime() -
+                        new Date(a.last_used_at).getTime()
+                    );
+                }
+                return a.name_norm.localeCompare(b.name_norm);
+            })
+            .slice(0, limit);
+    }
+
+    // ========== ShoppingList Operations ==========
+    async getOrCreateShoppingListForStore(
+        storeId: string
+    ): Promise<ShoppingList> {
+        // Find active list
+        const activeList = Array.from(this.shoppingLists.values()).find(
+            (list) => list.store_id === storeId && !list.completed_at
+        );
+
+        if (activeList) {
+            return activeList;
+        }
+
+        // Create new list
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        const newList: ShoppingList = {
+            id,
+            store_id: storeId,
+            title: null,
+            created_at: now,
+            updated_at: now,
+            completed_at: null,
+        };
+        this.shoppingLists.set(id, newList);
+        this.notifyChange();
+        return newList;
+    }
+
+    async getShoppingListItemsGrouped(listId: string): Promise<
+        Array<{
+            id: string;
+            list_id: string;
+            store_id: string;
+            store_item_id: string | null;
+            name: string;
+            name_norm: string;
+            qty: number;
+            notes: string | null;
+            section_id: string | null;
+            section_name_snap: string | null;
+            section_name: string | null;
+            section_sort_order: number | null;
+            aisle_id: string | null;
+            aisle_name_snap: string | null;
+            aisle_name: string | null;
+            aisle_sort_order: number | null;
+            sort_order: number;
+            is_checked: number;
+            checked_at: string | null;
+            created_at: string;
+            updated_at: string;
+        }>
+    > {
+        const items = Array.from(this.shoppingListItems.values())
+            .filter((item) => item.list_id === listId)
+            .map((item) => {
+                // Join with section and aisle
+                const section = item.section_id
+                    ? this.sections.get(item.section_id)
+                    : null;
+                const aisle = item.aisle_id
+                    ? this.aisles.get(item.aisle_id)
+                    : null;
+
+                return {
+                    ...item,
+                    section_name: section?.name ?? null,
+                    section_sort_order: section?.sort_order ?? null,
+                    aisle_name: aisle?.name ?? null,
+                    aisle_sort_order: aisle?.sort_order ?? null,
+                };
+            })
+            .sort((a, b) => {
+                // Sort by: is_checked, aisle, section, item sort_order
+                if (a.is_checked !== b.is_checked) {
+                    return a.is_checked - b.is_checked;
+                }
+                const aAisleOrder = a.aisle_sort_order ?? 999999;
+                const bAisleOrder = b.aisle_sort_order ?? 999999;
+                if (aAisleOrder !== bAisleOrder) {
+                    return aAisleOrder - bAisleOrder;
+                }
+                const aSectionOrder = a.section_sort_order ?? 999999;
+                const bSectionOrder = b.section_sort_order ?? 999999;
+                if (aSectionOrder !== bSectionOrder) {
+                    return aSectionOrder - bSectionOrder;
+                }
+                return a.sort_order - b.sort_order;
+            });
+
+        return items;
+    }
+
+    async upsertShoppingListItem(params: {
+        id?: string;
+        listId: string;
+        storeId: string;
+        name: string;
+        qty: number;
+        notes: string | null;
+        sectionId: string | null;
+        aisleId: string | null;
+    }): Promise<ShoppingListItem> {
+        const now = new Date().toISOString();
+        const name_norm = params.name.toLowerCase().trim();
+
+        // Auto-create or update StoreItem
+        let storeItemId: string | null = null;
+        const existingItem = Array.from(this.items.values()).find(
+            (item) =>
+                item.store_id === params.storeId && item.name_norm === name_norm
+        );
+
+        if (existingItem) {
+            storeItemId = existingItem.id;
+            // Update usage tracking
+            this.items.set(existingItem.id, {
+                ...existingItem,
+                usage_count: existingItem.usage_count + 1,
+                last_used_at: now,
+                section_id: params.sectionId ?? existingItem.section_id,
+                updated_at: now,
+            });
+        } else {
+            // Create new StoreItem
+            storeItemId = crypto.randomUUID();
+            const newItem: StoreItem = {
+                id: storeItemId,
+                store_id: params.storeId,
+                name: params.name,
+                name_norm,
+                section_id: params.sectionId ?? null,
+                usage_count: 1,
+                last_used_at: now,
+                is_hidden: 0,
+                created_at: now,
+                updated_at: now,
+            };
+            this.items.set(storeItemId, newItem);
+        }
+
+        // Get snapshots
+        const section = params.sectionId
+            ? this.sections.get(params.sectionId)
+            : null;
+        const aisle = params.aisleId ? this.aisles.get(params.aisleId) : null;
+
+        if (params.id) {
+            // Update existing shopping list item
+            const existing = this.shoppingListItems.get(params.id);
+            if (!existing) {
+                throw new Error(`Shopping list item ${params.id} not found`);
+            }
+
+            const updated: ShoppingListItem = {
+                ...existing,
+                name: params.name,
+                name_norm,
+                qty: params.qty,
+                notes: params.notes,
+                section_id: params.sectionId ?? null,
+                section_name_snap: section?.name ?? null,
+                aisle_id: params.aisleId ?? null,
+                aisle_name_snap: aisle?.name ?? null,
+                store_item_id: storeItemId,
+                updated_at: now,
+            };
+            this.shoppingListItems.set(params.id, updated);
+            this.notifyChange();
+            return updated;
+        } else {
+            // Create new shopping list item
+            const id = crypto.randomUUID();
+
+            // Calculate sort_order
+            const sameGroupItems = Array.from(
+                this.shoppingListItems.values()
+            ).filter(
+                (item) =>
+                    item.list_id === params.listId &&
+                    item.is_checked === 0 &&
+                    (item.aisle_id ?? "") === (params.aisleId ?? "") &&
+                    (item.section_id ?? "") === (params.sectionId ?? "")
+            );
+            const sort_order = sameGroupItems.length;
+
+            const newItem: ShoppingListItem = {
+                id,
+                list_id: params.listId,
+                store_id: params.storeId,
+                store_item_id: storeItemId,
+                name: params.name,
+                name_norm,
+                qty: params.qty,
+                notes: params.notes,
+                section_id: params.sectionId ?? null,
+                section_name_snap: section?.name ?? null,
+                aisle_id: params.aisleId ?? null,
+                aisle_name_snap: aisle?.name ?? null,
+                sort_order,
+                is_checked: 0,
+                checked_at: null,
+                created_at: now,
+                updated_at: now,
+            };
+            this.shoppingListItems.set(id, newItem);
+            this.notifyChange();
+            return newItem;
+        }
+    }
+
+    async batchUpdateShoppingListItems(
+        updates: Array<{
+            id: string;
+            sort_order: number;
+            aisle_id?: string | null;
+            section_id?: string | null;
+        }>
+    ): Promise<void> {
+        const now = new Date().toISOString();
+
+        for (const update of updates) {
+            const item = this.shoppingListItems.get(update.id);
+            if (!item) {
+                continue;
+            }
+
+            let sectionNameSnap = item.section_name_snap;
+            let aisleNameSnap = item.aisle_name_snap;
+
+            if (update.section_id !== undefined) {
+                const section = update.section_id
+                    ? this.sections.get(update.section_id)
+                    : null;
+                sectionNameSnap = section?.name ?? null;
+
+                const aisle = update.aisle_id
+                    ? this.aisles.get(update.aisle_id)
+                    : null;
+                aisleNameSnap = aisle?.name ?? null;
+
+                this.shoppingListItems.set(update.id, {
+                    ...item,
+                    sort_order: update.sort_order,
+                    aisle_id: update.aisle_id ?? null,
+                    aisle_name_snap: aisleNameSnap,
+                    section_id: update.section_id ?? null,
+                    section_name_snap: sectionNameSnap,
+                    updated_at: now,
+                });
+            } else {
+                this.shoppingListItems.set(update.id, {
+                    ...item,
+                    sort_order: update.sort_order,
+                    updated_at: now,
+                });
+            }
+        }
+
+        this.notifyChange();
+    }
+
+    async toggleShoppingListItemChecked(
+        id: string,
+        isChecked: boolean
+    ): Promise<void> {
+        const item = this.shoppingListItems.get(id);
+        if (item) {
+            const now = new Date().toISOString();
+            this.shoppingListItems.set(id, {
                 ...item,
-                deleted_at: new Date().toISOString(),
+                is_checked: isChecked ? 1 : 0,
+                checked_at: isChecked ? now : null,
+                updated_at: now,
             });
             this.notifyChange();
         }
+    }
+
+    async deleteShoppingListItem(id: string): Promise<void> {
+        const item = this.shoppingListItems.get(id);
+        if (item) {
+            this.shoppingListItems.delete(id);
+            this.notifyChange();
+        }
+    }
+
+    async clearCheckedShoppingListItems(listId: string): Promise<void> {
+        const items = Array.from(this.shoppingListItems.values()).filter(
+            (item) => item.list_id === listId && item.is_checked === 1
+        );
+
+        for (const item of items) {
+            this.shoppingListItems.delete(item.id);
+        }
+
+        this.notifyChange();
     }
 }

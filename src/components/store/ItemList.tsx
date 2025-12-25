@@ -39,8 +39,6 @@ const itemFormSchema = z.object({
         .string()
         .min(1, "Name is required")
         .transform((val) => val.trim()),
-    default_qty: z.number().min(1, "Quantity must be at least 1"),
-    notes: z.string().optional().nullable(),
     section_id: z.string().nullable().optional(),
 });
 
@@ -61,8 +59,6 @@ const ItemList = forwardRef<ListHandle, ItemListProps>(({ storeId }, ref) => {
     const [editingItem, setEditingItem] = useState<{
         id: string;
         name: string;
-        default_qty: number;
-        notes?: string | null;
         section_id?: string | null;
     } | null>(null);
     const [deleteAlert, setDeleteAlert] = useState<{
@@ -80,15 +76,13 @@ const ItemList = forwardRef<ListHandle, ItemListProps>(({ storeId }, ref) => {
         mode: "onChange",
         defaultValues: {
             name: "",
-            default_qty: 1,
-            notes: null,
             section_id: null,
         },
     });
 
     const openCreateModal = () => {
         setEditingItem(null);
-        reset({ name: "", default_qty: 1, notes: null, section_id: null });
+        reset({ name: "", section_id: null });
         setIsModalOpen(true);
     };
 
@@ -99,15 +93,11 @@ const ItemList = forwardRef<ListHandle, ItemListProps>(({ storeId }, ref) => {
     const openEditModal = (item: {
         id: string;
         name: string;
-        default_qty: number;
-        notes?: string | null;
         section_id?: string | null;
     }) => {
         setEditingItem(item);
         reset({
             name: item.name,
-            default_qty: item.default_qty,
-            notes: item.notes || null,
             section_id: item.section_id || null,
         });
         setIsModalOpen(true);
@@ -116,7 +106,7 @@ const ItemList = forwardRef<ListHandle, ItemListProps>(({ storeId }, ref) => {
     const closeModal = () => {
         setIsModalOpen(false);
         setEditingItem(null);
-        reset({ name: "", default_qty: 1, notes: null, section_id: null });
+        reset({ name: "", section_id: null });
     };
 
     const onSubmit = async (data: ItemFormData) => {
@@ -124,8 +114,6 @@ const ItemList = forwardRef<ListHandle, ItemListProps>(({ storeId }, ref) => {
             await updateItem.mutateAsync({
                 id: editingItem.id,
                 name: data.name,
-                defaultQty: data.default_qty,
-                notes: data.notes || null,
                 sectionId: data.section_id || null,
                 storeId,
             });
@@ -133,8 +121,6 @@ const ItemList = forwardRef<ListHandle, ItemListProps>(({ storeId }, ref) => {
             await createItem.mutateAsync({
                 storeId,
                 name: data.name,
-                defaultQty: data.default_qty,
-                notes: data.notes || null,
                 sectionId: data.section_id || null,
             });
         }
@@ -196,17 +182,11 @@ const ItemList = forwardRef<ListHandle, ItemListProps>(({ storeId }, ref) => {
                         <IonItem>
                             <IonLabel>
                                 <h2>{item.name}</h2>
-                                <p>
-                                    Qty: {item.default_qty}
-                                    {item.section_id &&
-                                        ` • Section: ${
-                                            sectionMap.get(item.section_id) ||
-                                            "Unknown"
-                                        }`}
-                                </p>
-                                {item.notes && (
-                                    <p style={{ fontStyle: "italic" }}>
-                                        {item.notes}
+                                {item.section_id && (
+                                    <p>
+                                        Section:{" "}
+                                        {sectionMap.get(item.section_id) ||
+                                            "Unknown"}
                                     </p>
                                 )}
                             </IonLabel>
@@ -275,42 +255,6 @@ const ItemList = forwardRef<ListHandle, ItemListProps>(({ storeId }, ref) => {
                         )}
 
                         <Controller
-                            name="default_qty"
-                            control={control}
-                            render={({ field }) => (
-                                <IonItem>
-                                    <IonLabel position="stacked">
-                                        Default Quantity
-                                    </IonLabel>
-                                    <IonInput
-                                        value={field.value}
-                                        type="number"
-                                        min="1"
-                                        placeholder="1"
-                                        onIonInput={(e) => {
-                                            const val = e.detail.value;
-                                            field.onChange(
-                                                val ? Number(val) : 1
-                                            );
-                                        }}
-                                    />
-                                </IonItem>
-                            )}
-                        />
-                        {errors.default_qty && (
-                            <IonText color="danger">
-                                <p
-                                    style={{
-                                        fontSize: "12px",
-                                        marginLeft: "16px",
-                                    }}
-                                >
-                                    {errors.default_qty.message}
-                                </p>
-                            </IonText>
-                        )}
-
-                        <Controller
                             name="section_id"
                             control={control}
                             render={({ field }) => (
@@ -337,28 +281,6 @@ const ItemList = forwardRef<ListHandle, ItemListProps>(({ storeId }, ref) => {
                                             </IonSelectOption>
                                         ))}
                                     </IonSelect>
-                                </IonItem>
-                            )}
-                        />
-
-                        <Controller
-                            name="notes"
-                            control={control}
-                            render={({ field }) => (
-                                <IonItem>
-                                    <IonLabel position="stacked">
-                                        Notes (Optional)
-                                    </IonLabel>
-                                    <IonInput
-                                        {...field}
-                                        value={field.value || ""}
-                                        placeholder="Enter any notes"
-                                        onIonInput={(e) =>
-                                            field.onChange(
-                                                e.detail.value || null
-                                            )
-                                        }
-                                    />
                                 </IonItem>
                             )}
                         />
