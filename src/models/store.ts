@@ -19,7 +19,7 @@ export type StoreAisle = {
 export type StoreSection = {
     id: string;
     store_id: string;
-    aisle_id: string | null;
+    aisle_id: string;
     name: string;
     sort_order: number;
     created_at: string;

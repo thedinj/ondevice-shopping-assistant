@@ -5,7 +5,13 @@ import {
 } from "@capacitor-community/sqlite";
 import { Database, DEFAULT_TABLES_TO_PERSIST } from "./types";
 import { BaseDatabase } from "./base";
-import { Store, getInitializedStore } from "../models/Store";
+import {
+    Store,
+    StoreAisle,
+    StoreSection,
+    StoreItem,
+    getInitializedStore,
+} from "../models/Store";
 import { AppSetting } from "../models/AppSetting";
 
 const DB_NAME = "shopping_assistant";
@@ -45,14 +51,14 @@ const migrations: Array<{ version: number; up: string[] }> = [
             `CREATE TABLE IF NOT EXISTS store_section (
          id TEXT PRIMARY KEY,
          store_id TEXT NOT NULL,
-         aisle_id TEXT,
+         aisle_id TEXT NOT NULL,
          name TEXT NOT NULL,
          sort_order INTEGER NOT NULL DEFAULT 0,
          created_at TEXT NOT NULL DEFAULT (datetime('now')),
          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
          deleted_at TEXT,
          FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
-         FOREIGN KEY (aisle_id) REFERENCES store_aisle(id) ON DELETE SET NULL
+         FOREIGN KEY (aisle_id) REFERENCES store_aisle(id) ON DELETE CASCADE
        );`,
 
             `CREATE TABLE IF NOT EXISTS store_item (
@@ -359,6 +365,312 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
              VALUES (?, ?, ?)
              ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = ?`,
             [key, value, updated_at, value, updated_at]
+        );
+        this.notifyChange();
+    }
+
+    // ========== StoreAisle Operations ==========
+    async insertAisle(storeId: string, name: string): Promise<StoreAisle> {
+        const conn = await this.getConnection();
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+
+        // Get max sort_order for this store
+        const maxRes = await conn.query(
+            "SELECT COALESCE(MAX(sort_order), -1) as max_order FROM store_aisle WHERE store_id = ? AND deleted_at IS NULL",
+            [storeId]
+        );
+        const sort_order = (maxRes.values?.[0]?.max_order ?? -1) + 1;
+
+        await conn.run(
+            "INSERT INTO store_aisle (id, store_id, name, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+            [id, storeId, name, sort_order, now, now]
+        );
+
+        this.notifyChange();
+        return {
+            id,
+            store_id: storeId,
+            name,
+            sort_order,
+            created_at: now,
+            updated_at: now,
+            deleted_at: null,
+        };
+    }
+
+    async getAislesByStore(storeId: string): Promise<StoreAisle[]> {
+        const conn = await this.getConnection();
+        const res = await conn.query(
+            "SELECT id, store_id, name, sort_order, created_at, updated_at, deleted_at FROM store_aisle WHERE store_id = ? AND deleted_at IS NULL ORDER BY sort_order",
+            [storeId]
+        );
+        return res.values || [];
+    }
+
+    async getAisleById(id: string): Promise<StoreAisle | null> {
+        const conn = await this.getConnection();
+        const res = await conn.query(
+            "SELECT id, store_id, name, sort_order, created_at, updated_at, deleted_at FROM store_aisle WHERE id = ? AND deleted_at IS NULL",
+            [id]
+        );
+        return res.values?.[0] || null;
+    }
+
+    async updateAisle(id: string, name: string): Promise<StoreAisle> {
+        const conn = await this.getConnection();
+        const updated_at = new Date().toISOString();
+
+        await conn.run(
+            "UPDATE store_aisle SET name = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
+            [name, updated_at, id]
+        );
+
+        const aisle = await this.getAisleById(id);
+        if (!aisle) {
+            throw new Error(`Aisle with id ${id} not found`);
+        }
+        this.notifyChange();
+        return aisle;
+    }
+
+    async deleteAisle(id: string): Promise<void> {
+        const conn = await this.getConnection();
+        const deleted_at = new Date().toISOString();
+
+        await conn.run(
+            "UPDATE store_aisle SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL",
+            [deleted_at, id]
+        );
+        this.notifyChange();
+    }
+
+    async reorderAisles(
+        updates: Array<{ id: string; sort_order: number }>
+    ): Promise<void> {
+        const conn = await this.getConnection();
+        const updated_at = new Date().toISOString();
+
+        for (const { id, sort_order } of updates) {
+            await conn.run(
+                "UPDATE store_aisle SET sort_order = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
+                [sort_order, updated_at, id]
+            );
+        }
+        this.notifyChange();
+    }
+
+    // ========== StoreSection Operations ==========
+    async insertSection(
+        storeId: string,
+        name: string,
+        aisleId: string
+    ): Promise<StoreSection> {
+        const conn = await this.getConnection();
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+
+        // Get max sort_order for this aisle
+        const maxRes = await conn.query(
+            "SELECT COALESCE(MAX(sort_order), -1) as max_order FROM store_section WHERE aisle_id = ? AND deleted_at IS NULL",
+            [aisleId]
+        );
+        const sort_order = (maxRes.values?.[0]?.max_order ?? -1) + 1;
+
+        await conn.run(
+            "INSERT INTO store_section (id, store_id, aisle_id, name, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [id, storeId, aisleId, name, sort_order, now, now]
+        );
+
+        this.notifyChange();
+        return {
+            id,
+            store_id: storeId,
+            aisle_id: aisleId,
+            name,
+            sort_order,
+            created_at: now,
+            updated_at: now,
+            deleted_at: null,
+        };
+    }
+
+    async getSectionsByStore(storeId: string): Promise<StoreSection[]> {
+        const conn = await this.getConnection();
+        const res = await conn.query(
+            "SELECT id, store_id, aisle_id, name, sort_order, created_at, updated_at, deleted_at FROM store_section WHERE store_id = ? AND deleted_at IS NULL ORDER BY sort_order",
+            [storeId]
+        );
+        return res.values || [];
+    }
+
+    async getSectionById(id: string): Promise<StoreSection | null> {
+        const conn = await this.getConnection();
+        const res = await conn.query(
+            "SELECT id, store_id, aisle_id, name, sort_order, created_at, updated_at, deleted_at FROM store_section WHERE id = ? AND deleted_at IS NULL",
+            [id]
+        );
+        return res.values?.[0] || null;
+    }
+
+    async updateSection(
+        id: string,
+        name: string,
+        aisleId: string
+    ): Promise<StoreSection> {
+        const conn = await this.getConnection();
+        const updated_at = new Date().toISOString();
+
+        await conn.run(
+            "UPDATE store_section SET name = ?, aisle_id = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
+            [name, aisleId, updated_at, id]
+        );
+
+        const section = await this.getSectionById(id);
+        if (!section) {
+            throw new Error(`Section with id ${id} not found`);
+        }
+        this.notifyChange();
+        return section;
+    }
+
+    async deleteSection(id: string): Promise<void> {
+        const conn = await this.getConnection();
+        const deleted_at = new Date().toISOString();
+
+        await conn.run(
+            "UPDATE store_section SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL",
+            [deleted_at, id]
+        );
+        this.notifyChange();
+    }
+
+    async reorderSections(
+        updates: Array<{ id: string; sort_order: number }>
+    ): Promise<void> {
+        const conn = await this.getConnection();
+        const updated_at = new Date().toISOString();
+
+        for (const { id, sort_order } of updates) {
+            await conn.run(
+                "UPDATE store_section SET sort_order = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
+                [sort_order, updated_at, id]
+            );
+        }
+        this.notifyChange();
+    }
+
+    // ========== StoreItem Operations ==========
+    async insertItem(
+        storeId: string,
+        name: string,
+        defaultQty: number,
+        notes?: string | null,
+        sectionId?: string | null
+    ): Promise<StoreItem> {
+        const conn = await this.getConnection();
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        const name_norm = name.toLowerCase().trim();
+
+        await conn.run(
+            `INSERT INTO store_item (id, store_id, name, name_norm, section_id, default_qty, notes, usage_count, created_at, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+            [
+                id,
+                storeId,
+                name,
+                name_norm,
+                sectionId ?? null,
+                defaultQty,
+                notes ?? null,
+                now,
+                now,
+            ]
+        );
+
+        this.notifyChange();
+        return {
+            id,
+            store_id: storeId,
+            name,
+            name_norm,
+            section_id: sectionId ?? null,
+            default_qty: defaultQty,
+            notes: notes ?? null,
+            usage_count: 0,
+            last_used_at: null,
+            is_hidden: 0,
+            created_at: now,
+            updated_at: now,
+            deleted_at: null,
+        };
+    }
+
+    async getItemsByStore(storeId: string): Promise<StoreItem[]> {
+        const conn = await this.getConnection();
+        const res = await conn.query(
+            `SELECT id, store_id, name, name_norm, section_id, default_qty, notes, usage_count, last_used_at, is_hidden, created_at, updated_at, deleted_at 
+             FROM store_item 
+             WHERE store_id = ? AND deleted_at IS NULL AND is_hidden = 0 
+             ORDER BY name_norm`,
+            [storeId]
+        );
+        return res.values || [];
+    }
+
+    async getItemById(id: string): Promise<StoreItem | null> {
+        const conn = await this.getConnection();
+        const res = await conn.query(
+            `SELECT id, store_id, name, name_norm, section_id, default_qty, notes, usage_count, last_used_at, is_hidden, created_at, updated_at, deleted_at 
+             FROM store_item 
+             WHERE id = ? AND deleted_at IS NULL`,
+            [id]
+        );
+        return res.values?.[0] || null;
+    }
+
+    async updateItem(
+        id: string,
+        name: string,
+        defaultQty: number,
+        notes?: string | null,
+        sectionId?: string | null
+    ): Promise<StoreItem> {
+        const conn = await this.getConnection();
+        const updated_at = new Date().toISOString();
+        const name_norm = name.toLowerCase().trim();
+
+        await conn.run(
+            `UPDATE store_item 
+             SET name = ?, name_norm = ?, default_qty = ?, notes = ?, section_id = ?, updated_at = ? 
+             WHERE id = ? AND deleted_at IS NULL`,
+            [
+                name,
+                name_norm,
+                defaultQty,
+                notes ?? null,
+                sectionId ?? null,
+                updated_at,
+                id,
+            ]
+        );
+
+        const item = await this.getItemById(id);
+        if (!item) {
+            throw new Error(`Item with id ${id} not found`);
+        }
+        this.notifyChange();
+        return item;
+    }
+
+    async deleteItem(id: string): Promise<void> {
+        const conn = await this.getConnection();
+        const deleted_at = new Date().toISOString();
+
+        await conn.run(
+            "UPDATE store_item SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL",
+            [deleted_at, id]
         );
         this.notifyChange();
     }

@@ -2,31 +2,33 @@ import {
     IonButton,
     IonContent,
     IonHeader,
+    IonList,
+    IonListHeader,
     IonPage,
+    IonSkeletonText,
     IonTitle,
     IonToolbar,
-    useIonToast,
 } from "@ionic/react";
 import { useCallback } from "react";
+import { FormPasswordInput } from "../components/form/FormPasswordInput";
 import { useResetDatabase } from "../db/hooks";
+import { useToast } from "../hooks/useToast";
+import { useSettingsForm } from "../settings/useSettingsForm";
 
 const Settings: React.FC = () => {
-    const [present] = useIonToast();
+    const { showSuccess } = useToast();
     const { mutateAsync: resetDatabase } = useResetDatabase();
+    const { form, onSubmit, isLoading, isSubmitting } = useSettingsForm();
+
     const resetOnClick = useCallback(async () => {
         try {
             await resetDatabase(undefined);
-            await present({
-                message: "Database reset successfully",
-                duration: 3000,
-                color: "success",
-                position: "top",
-            });
+            showSuccess("Database reset successfully");
         } catch (error) {
             // Error toast is automatically shown by mutation hook
             console.error("Database reset error:", error);
         }
-    }, [resetDatabase, present]);
+    }, [resetDatabase, showSuccess]);
 
     return (
         <IonPage>
@@ -36,12 +38,56 @@ const Settings: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>
-                {/* <IonHeader collapse="condense">
-                    <IonToolbar>
-                        <IonTitle size="large">Tab 3</IonTitle>
-                    </IonToolbar>
-                </IonHeader> */}
-                <IonButton onClick={resetOnClick}>Reset Database</IonButton>
+                <form onSubmit={onSubmit}>
+                    {/* API Settings Section */}
+                    <IonList>
+                        <IonListHeader>
+                            <h2>API Configuration</h2>
+                        </IonListHeader>
+
+                        {isLoading ? (
+                            <IonSkeletonText
+                                animated
+                                style={{ height: "60px", margin: "10px" }}
+                            />
+                        ) : (
+                            <FormPasswordInput
+                                name="openaiApiKey"
+                                control={form.control}
+                                label="OpenAI API Key"
+                                placeholder="sk-..."
+                                helperText="Enter your OpenAI API key for AI-powered features"
+                                disabled={isSubmitting}
+                            />
+                        )}
+
+                        <div className="ion-padding">
+                            <IonButton
+                                expand="block"
+                                type="submit"
+                                disabled={isSubmitting || isLoading}
+                            >
+                                {isSubmitting ? "Saving..." : "Save Settings"}
+                            </IonButton>
+                        </div>
+                    </IonList>
+
+                    {/* Database Section */}
+                    <IonList>
+                        <IonListHeader>
+                            <h2>Database</h2>
+                        </IonListHeader>
+                        <div className="ion-padding">
+                            <IonButton
+                                expand="block"
+                                color="danger"
+                                onClick={resetOnClick}
+                            >
+                                Reset Database
+                            </IonButton>
+                        </div>
+                    </IonList>
+                </form>
             </IonContent>
         </IonPage>
     );

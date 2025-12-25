@@ -1,0 +1,18 @@
+.loading-fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    gap: 1rem;
+}
+
+.loading-fallback ion-spinner {
+    width: 3rem;
+    height: 3rem;
+}
+
+.loading-fallback p {
+    margin: 0;
+    font-size: 1rem;
+}

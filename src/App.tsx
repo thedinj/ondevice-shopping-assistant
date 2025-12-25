@@ -13,9 +13,11 @@ import { cartOutline, listCircle, settings } from "ionicons/icons";
 import { Suspense } from "react";
 import { Redirect, Route } from "react-router-dom";
 import AppErrorBoundary from "./components/AppErrorBoundary";
+import LoadingFallback from "./components/LoadingFallback";
 import Settings from "./pages/Settings";
 import ShoppingList from "./pages/ShoppingList";
 import StoresList from "./pages/StoresList";
+import StoreDetail from "./pages/StoreDetail";
 import { DatabaseProvider } from "./db/DatabaseContext";
 
 /* Core CSS required for Ionic components to work properly */
@@ -55,12 +57,15 @@ const App: React.FC = () => {
         <IonApp>
             <IonReactRouter>
                 <AppErrorBoundary>
-                    <Suspense fallback={<div>Loading...</div>}>
+                    <Suspense fallback={<LoadingFallback />}>
                         <DatabaseProvider>
                             <IonTabs>
                                 <IonRouterOutlet>
                                     <Route exact path="/stores">
                                         <StoresList />
+                                    </Route>
+                                    <Route exact path="/stores/:id">
+                                        <StoreDetail />
                                     </Route>
                                     <Route exact path="/shoppinglist">
                                         <ShoppingList />

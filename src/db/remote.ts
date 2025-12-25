@@ -1,4 +1,4 @@
-import { Database } from "./types";
+import { Database, StoreAisle, StoreSection, StoreItem } from "./types";
 import { BaseDatabase } from "./base";
 import { Store } from "../models/Store";
 import { AppSetting } from "../models/AppSetting";
@@ -48,6 +48,101 @@ export class RemoteDatabase extends BaseDatabase implements Database {
     }
 
     async setAppSetting(_key: string, _value: string): Promise<void> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    // ========== StoreAisle Operations ==========
+    async insertAisle(_storeId: string, _name: string): Promise<StoreAisle> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async getAislesByStore(_storeId: string): Promise<StoreAisle[]> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async getAisleById(_id: string): Promise<StoreAisle | null> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async updateAisle(_id: string, _name: string): Promise<StoreAisle> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async deleteAisle(_id: string): Promise<void> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async reorderAisles(
+        _updates: Array<{ id: string; sort_order: number }>
+    ): Promise<void> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    // ========== StoreSection Operations ==========
+    async insertSection(
+        _storeId: string,
+        _name: string,
+        _aisleId: string
+    ): Promise<StoreSection> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async getSectionsByStore(_storeId: string): Promise<StoreSection[]> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async getSectionById(_id: string): Promise<StoreSection | null> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async updateSection(
+        _id: string,
+        _name: string,
+        _aisleId: string
+    ): Promise<StoreSection> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async deleteSection(_id: string): Promise<void> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async reorderSections(
+        _updates: Array<{ id: string; sort_order: number }>
+    ): Promise<void> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    // ========== StoreItem Operations ==========
+    async insertItem(
+        _storeId: string,
+        _name: string,
+        _defaultQty: number,
+        _notes?: string | null,
+        _sectionId?: string | null
+    ): Promise<StoreItem> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async getItemsByStore(_storeId: string): Promise<StoreItem[]> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async getItemById(_id: string): Promise<StoreItem | null> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async updateItem(
+        _id: string,
+        _name: string,
+        _defaultQty: number,
+        _notes?: string | null,
+        _sectionId?: string | null
+    ): Promise<StoreItem> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async deleteItem(_id: string): Promise<void> {
         throw new Error("RemoteDatabase not yet implemented");
     }
 }

@@ -1,5 +1,6 @@
 -   [ ] Come up with cool name/icon/package name
 -   [ ] More robust browser faking
+-   [ ] Should we have a better "base" database class that has not-implemented abstract members? And no interfaces?
 -   [ ] Env file to enable browser faking
 -   [ ] Rework database API/context, which encapsulate faking and open us up to remote database
 -   [ ] Edit store basics (name)
