@@ -1,17 +1,17 @@
--   [ ] Why isn't the item name appearing in the shopping list item editor? Better way to get to editor?
--   [ ] We aren't storing the store item id in the shopping list id table. We should, right?
--   [ ] Favorite items/store item tab/editor on shopping list
--   [ ] Avoid slide-to-edit UX for editing shopping list items (and store items, and maybe even stores/aisles/sections?)
--   [ ] Come up with cool name/icon/package name
--   [ ] Generating aisles from OpenAI response
--   [ ] Confirm Suspense works if database response time is slow
--   [ ] Consider making a cooler suspender--maybe the robot head swirling around
--   [ ] Confirm API key is stored more securely
--   [ ] What is this IonHeader stuff?
--   [ ] More readable zero states, walk the user through the workflow with a pretty UI
--   [ ] Move settings to hamburger menu?
--   [ ] Cool name and animations
--   [ ] Switch to quickbuttons for some inputs, like aisle vs section. And some simpler dropdowns?
--   [ ] Does deleting a shopping list item also delete the store item? It should. REVIEW THIS CODE.
--   [ ] Define some mock test data that is applied when an env setting is set and the database is empty
--   [ ] Cool animations
+-   Review shopping list item changes one more time
+-   Allow units? And decimal quantities?
+-   Favorite items/store item tab/editor on shopping list
+-   Avoid slide-to-edit UX for editing shopping list items (and store items, and maybe even stores/aisles/sections?)
+-   Come up with cool name/icon/package name
+-   Generating aisles from OpenAI response
+-   Confirm Suspense works if database response time is slow
+-   Consider making a cooler suspender--maybe the robot head swirling around
+-   Confirm API key is stored more securely
+-   What is this IonHeader stuff?
+-   More readable zero states, walk the user through the workflow with a pretty UI
+-   Move settings to hamburger menu?
+-   Cool name and animations
+-   Switch to quickbuttons for some inputs, like aisle vs section. And some simpler dropdowns?
+-   Does deleting a shopping list item also delete the store item? It should. REVIEW THIS CODE.
+-   Define some mock test data that is applied when an env setting is set and the database is empty
+-   Cool animations

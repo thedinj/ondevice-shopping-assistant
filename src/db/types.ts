@@ -212,6 +212,18 @@ export interface EntityDatabase {
         limit?: number
     ): Promise<StoreItem[]>;
 
+    /**
+     * Get or create a store item by name
+     * Updates usage count and location if item exists
+     * Creates new item if it doesn't exist
+     */
+    getOrCreateStoreItemByName(
+        storeId: string,
+        name: string,
+        aisleId?: string | null,
+        sectionId?: string | null
+    ): Promise<StoreItem>;
+
     // ========== ShoppingList Operations ==========
     /**
      * Get or create an active shopping list for a store

@@ -160,6 +160,15 @@ export class RemoteDatabase extends BaseDatabase {
         throw new Error("RemoteDatabase not yet implemented");
     }
 
+    async getOrCreateStoreItemByName(
+        _storeId: string,
+        _name: string,
+        _aisleId?: string | null,
+        _sectionId?: string | null
+    ): Promise<StoreItem> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
     async searchStoreItems(
         _storeId: string,
         _searchTerm: string,

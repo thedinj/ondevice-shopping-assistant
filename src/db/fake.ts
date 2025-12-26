@@ -433,19 +433,29 @@ export class FakeDatabase extends BaseDatabase {
         const items = Array.from(this.shoppingListItems.values())
             .filter((item) => item.list_id === listId)
             .map((item) => {
-                // Join with section and aisle
-                const section = item.section_id
-                    ? this.sections.get(item.section_id)
+                // Join with store_item
+                const storeItem = this.items.get(item.store_item_id);
+                if (!storeItem) {
+                    throw new Error(
+                        `Store item ${item.store_item_id} not found for shopping list item ${item.id}`
+                    );
+                }
+
+                // Join with section and aisle from store_item
+                const section = storeItem.section_id
+                    ? this.sections.get(storeItem.section_id)
                     : null;
                 // Prefer section's aisle_id over item's direct aisle_id
                 const calculatedAisleId =
-                    section?.aisle_id ?? item.aisle_id ?? null;
+                    section?.aisle_id ?? storeItem.aisle_id ?? null;
                 const aisle = calculatedAisleId
                     ? this.aisles.get(calculatedAisleId)
                     : null;
 
                 return {
                     ...item,
+                    item_name: storeItem.name,
+                    section_id: section?.id ?? null,
                     aisle_id: calculatedAisleId,
                     section_name: section?.name ?? null,
                     section_sort_order: section?.sort_order ?? null,
@@ -468,76 +478,54 @@ export class FakeDatabase extends BaseDatabase {
                 if (aSectionOrder !== bSectionOrder) {
                     return aSectionOrder - bSectionOrder;
                 }
-                return a.name.localeCompare(b.name);
+                return a.item_name.localeCompare(b.item_name);
             });
 
         return items;
     }
 
-    async upsertShoppingListItem(
-        params: ShoppingListItemOptionalId
-    ): Promise<ShoppingListItem> {
+    async getOrCreateStoreItemByName(
+        storeId: string,
+        name: string,
+        aisleId?: string | null,
+        sectionId?: string | null
+    ): Promise<StoreItem> {
         const now = new Date().toISOString();
-        const name_norm = params.name.toLowerCase().trim();
+        const name_norm = name.toLowerCase().trim();
 
-        // Auto-create or update StoreItem
-        let storeItemId: string | null = null;
+        // Try to find existing item
         const existingItem = Array.from(this.items.values()).find(
-            (item) =>
-                item.store_id === params.store_id &&
-                item.name_norm === name_norm
+            (item) => item.store_id === storeId && item.name_norm === name_norm
         );
 
         if (existingItem) {
-            storeItemId = existingItem.id;
-
-            // Normalize: store only section when present (null aisle), else store aisle
-            const normalizedAisleId = params.section_id
+            // Update usage count, last_used_at, and location if provided
+            const normalizedAisleId = sectionId
                 ? null
-                : params.aisle_id ?? existingItem.aisle_id;
-            const normalizedSectionId =
-                params.section_id ?? existingItem.section_id;
+                : aisleId ?? existingItem.aisle_id;
+            const normalizedSectionId = sectionId ?? existingItem.section_id;
 
-            // Update usage tracking
-            this.items.set(existingItem.id, {
+            const updatedItem: StoreItem = {
                 ...existingItem,
                 usage_count: existingItem.usage_count + 1,
                 last_used_at: now,
                 aisle_id: normalizedAisleId,
                 section_id: normalizedSectionId,
                 updated_at: now,
-            });
-        } else {
-            // Create new StoreItem
-            storeItemId = crypto.randomUUID();
-
-            // Normalize: store only section when present (null aisle), else store aisle
-            const normalizedAisleId = params.section_id
-                ? null
-                : params.aisle_id ?? null;
-            const normalizedSectionId = params.section_id ?? null;
-
-            const newItem: StoreItem = {
-                id: storeItemId,
-                store_id: params.store_id,
-                name: params.name,
-                name_norm,
-                aisle_id: normalizedAisleId,
-                section_id: normalizedSectionId,
-                usage_count: 1,
-                last_used_at: now,
-                is_hidden: 0,
-                created_at: now,
-                updated_at: now,
             };
-            this.items.set(storeItemId, newItem);
+            this.items.set(existingItem.id, updatedItem);
+            this.notifyChange();
+            return updatedItem;
+        } else {
+            // Create new item
+            return await this.insertItem(storeId, name, aisleId, sectionId);
         }
+    }
 
-        // Normalize: store only section when present (null aisle), else store aisle
-        const normalizedAisleId = params.section_id
-            ? null
-            : params.aisle_id ?? null;
-        const normalizedSectionId = params.section_id ?? null;
+    async upsertShoppingListItem(
+        params: ShoppingListItemOptionalId
+    ): Promise<ShoppingListItem> {
+        const now = new Date().toISOString();
 
         if (params.id) {
             // Update existing shopping list item
@@ -548,13 +536,9 @@ export class FakeDatabase extends BaseDatabase {
 
             const updated: ShoppingListItem = {
                 ...existing,
-                name: params.name,
-                name_norm,
+                store_item_id: params.store_item_id,
                 qty: params.qty,
                 notes: params.notes,
-                section_id: normalizedSectionId,
-                aisle_id: normalizedAisleId,
-                store_item_id: storeItemId,
                 updated_at: now,
             };
             this.shoppingListItems.set(params.id, updated);
@@ -568,13 +552,9 @@ export class FakeDatabase extends BaseDatabase {
                 id,
                 list_id: params.list_id,
                 store_id: params.store_id,
-                store_item_id: storeItemId,
-                name: params.name,
-                name_norm,
+                store_item_id: params.store_item_id,
                 qty: params.qty,
                 notes: params.notes,
-                section_id: normalizedSectionId,
-                aisle_id: normalizedAisleId,
                 is_checked: 0,
                 checked_at: null,
                 created_at: now,

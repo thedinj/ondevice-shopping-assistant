@@ -5,11 +5,7 @@ import {
     UseFormSetValue,
     UseFormWatch,
 } from "react-hook-form";
-import {
-    useStoreAisles,
-    useStoreItemAutocomplete,
-    useStoreSections,
-} from "../../db/hooks";
+import { useStoreAisles, useStoreSections } from "../../db/hooks";
 import {
     ItemEditorContext,
     ItemEditorContextType,
@@ -30,16 +26,15 @@ export const ItemEditorProvider: React.FC<
 > = ({ storeId, control, errors, setValue, watch, children }) => {
     const { data: aisles } = useStoreAisles(storeId);
     const { data: sections } = useStoreSections(storeId);
-    const { data: autocompleteResults } = useStoreItemAutocomplete(storeId, "");
 
     const value: ItemEditorContextType = {
         control,
         errors,
         setValue,
         watch,
+        storeId,
         aisles,
         sections,
-        autocompleteResults,
     };
 
     return (

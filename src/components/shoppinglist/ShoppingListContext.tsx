@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { ShoppingListItem } from "../../models/Store";
+import { ShoppingListItemWithDetails } from "../../models/Store";
 
 export interface ShoppingListContextValue {
     // Selected store
@@ -8,9 +8,9 @@ export interface ShoppingListContextValue {
 
     // Modal states
     isItemModalOpen: boolean;
-    editingItem: ShoppingListItem | null;
+    editingItem: ShoppingListItemWithDetails | null;
     openCreateModal: () => void;
-    openEditModal: (item: ShoppingListItem) => void;
+    openEditModal: (item: ShoppingListItemWithDetails) => void;
     closeItemModal: () => void;
 
     // Delete confirmation

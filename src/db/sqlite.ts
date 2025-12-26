@@ -94,23 +94,16 @@ const migrations: Array<{ version: number; up: string[] }> = [
          id TEXT PRIMARY KEY,
          list_id TEXT NOT NULL,
          store_id TEXT NOT NULL,
-         store_item_id TEXT,
-         name TEXT NOT NULL,
-         name_norm TEXT NOT NULL,
+         store_item_id TEXT NOT NULL,
          qty REAL NOT NULL DEFAULT 1,
          notes TEXT,
-         section_id TEXT,
-         aisle_id TEXT,
-         sort_order INTEGER NOT NULL DEFAULT 0,
          is_checked INTEGER NOT NULL DEFAULT 0,
          checked_at TEXT,
          created_at TEXT NOT NULL DEFAULT (datetime('now')),
          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
          FOREIGN KEY (list_id) REFERENCES shopping_list(id) ON DELETE CASCADE,
          FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
-         FOREIGN KEY (store_item_id) REFERENCES store_item(id) ON DELETE SET NULL,
-         FOREIGN KEY (section_id) REFERENCES store_section(id) ON DELETE SET NULL,
-         FOREIGN KEY (aisle_id) REFERENCES store_aisle(id) ON DELETE SET NULL
+         FOREIGN KEY (store_item_id) REFERENCES store_item(id) ON DELETE CASCADE
        );`,
 
             `CREATE INDEX IF NOT EXISTS ix_list_item_list_checked
@@ -695,52 +688,57 @@ export class SQLiteDatabase extends BaseDatabase {
         const res = await conn.query(
             `SELECT 
                 sli.id, sli.list_id, sli.store_id, sli.store_item_id,
-                sli.name, sli.name_norm, sli.qty, sli.notes,
-                sli.section_id, COALESCE(ss.aisle_id, sli.aisle_id) as aisle_id,
+                sli.qty, sli.notes,
                 sli.is_checked, sli.checked_at,
                 sli.created_at, sli.updated_at,
+                si.name as item_name,
+                COALESCE(ss.id, si.section_id) as section_id,
+                COALESCE(ss.aisle_id, si.aisle_id) as aisle_id,
                 ss.name as section_name, ss.sort_order as section_sort_order,
                 sa.name as aisle_name, sa.sort_order as aisle_sort_order
              FROM shopping_list_item sli
-             LEFT JOIN store_section ss ON sli.section_id = ss.id
-             LEFT JOIN store_aisle sa ON COALESCE(ss.aisle_id, sli.aisle_id) = sa.id
+             INNER JOIN store_item si ON sli.store_item_id = si.id
+             LEFT JOIN store_section ss ON si.section_id = ss.id
+             LEFT JOIN store_aisle sa ON COALESCE(ss.aisle_id, si.aisle_id) = sa.id
              WHERE sli.list_id = ?
              ORDER BY 
                 sli.is_checked ASC,
                 COALESCE(sa.sort_order, 999999) ASC,
                 COALESCE(ss.sort_order, 999999) ASC,
-                sli.name ASC`,
+                si.name ASC`,
             [listId]
         );
         return res.values || [];
     }
 
-    async upsertShoppingListItem(
-        params: ShoppingListItemOptionalId
-    ): Promise<ShoppingListItem> {
+    async getOrCreateStoreItemByName(
+        storeId: string,
+        name: string,
+        aisleId?: string | null,
+        sectionId?: string | null
+    ): Promise<StoreItem> {
         const conn = await this.getConnection();
         const now = new Date().toISOString();
-        const name_norm = params.name.toLowerCase().trim();
+        const name_norm = name.toLowerCase().trim();
 
-        // Auto-create or update StoreItem
-        let storeItemId: string | null = null;
+        // Try to find existing item
         const existingItemRes = await conn.query(
-            `SELECT id, usage_count, last_used_at FROM store_item 
+            `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at
+             FROM store_item 
              WHERE store_id = ? AND name_norm = ?`,
-            [params.store_id, name_norm]
+            [storeId, name_norm]
         );
 
         if (existingItemRes.values && existingItemRes.values.length > 0) {
             const existingItem = existingItemRes.values[0];
-            storeItemId = existingItem.id;
 
-            // Normalize: store only section when present (null aisle), else store aisle
-            const normalizedAisleId = params.section_id
+            // Update usage count and last_used_at
+            // Also update location if provided
+            const normalizedAisleId = sectionId
                 ? null
-                : params.aisle_id ?? null;
-            const normalizedSectionId = params.section_id ?? null;
+                : aisleId ?? existingItem.aisle_id;
+            const normalizedSectionId = sectionId ?? existingItem.section_id;
 
-            // Update usage tracking
             await conn.run(
                 `UPDATE store_item 
                  SET usage_count = ?, last_used_at = ?, aisle_id = ?, section_id = ?, updated_at = ? 
@@ -751,66 +749,40 @@ export class SQLiteDatabase extends BaseDatabase {
                     normalizedAisleId,
                     normalizedSectionId,
                     now,
-                    storeItemId,
+                    existingItem.id,
                 ]
             );
+
+            // Return updated item
+            const updatedRes = await conn.query(
+                `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at
+                 FROM store_item WHERE id = ?`,
+                [existingItem.id]
+            );
+            return updatedRes.values![0];
         } else {
-            // Create new StoreItem
-            storeItemId = crypto.randomUUID();
-
-            // Normalize: store only section when present (null aisle), else store aisle
-            const normalizedAisleId = params.section_id
-                ? null
-                : params.aisle_id ?? null;
-            const normalizedSectionId = params.section_id ?? null;
-
-            await conn.run(
-                `INSERT INTO store_item (id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, created_at, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
-                [
-                    storeItemId,
-                    params.store_id,
-                    params.name,
-                    name_norm,
-                    normalizedAisleId,
-                    normalizedSectionId,
-                    now,
-                    now,
-                    now,
-                ]
-            );
+            // Create new item
+            return await this.insertItem(storeId, name, aisleId, sectionId);
         }
+    }
 
-        // Normalize: store only section when present (null aisle), else store aisle
-        const normalizedAisleId = params.section_id
-            ? null
-            : params.aisle_id ?? null;
-        const normalizedSectionId = params.section_id ?? null;
+    async upsertShoppingListItem(
+        params: ShoppingListItemOptionalId
+    ): Promise<ShoppingListItem> {
+        const conn = await this.getConnection();
+        const now = new Date().toISOString();
 
         if (params.id) {
             // Update existing shopping list item
             await conn.run(
                 `UPDATE shopping_list_item 
-                 SET name = ?, name_norm = ?, qty = ?, notes = ?, 
-                     section_id = ?, aisle_id = ?,
-                     store_item_id = ?, updated_at = ? 
+                 SET store_item_id = ?, qty = ?, notes = ?, updated_at = ? 
                  WHERE id = ?`,
-                [
-                    params.name,
-                    name_norm,
-                    params.qty,
-                    params.notes,
-                    normalizedSectionId,
-                    normalizedAisleId,
-                    storeItemId,
-                    now,
-                    params.id,
-                ]
+                [params.store_item_id, params.qty, params.notes, now, params.id]
             );
 
             const itemRes = await conn.query(
-                `SELECT id, list_id, store_id, store_item_id, name, name_norm, qty, notes,
-                        section_id, aisle_id,
+                `SELECT id, list_id, store_id, store_item_id, qty, notes,
                         is_checked, checked_at, created_at, updated_at
                  FROM shopping_list_item WHERE id = ?`,
                 [params.id]
@@ -824,21 +796,15 @@ export class SQLiteDatabase extends BaseDatabase {
 
             await conn.run(
                 `INSERT INTO shopping_list_item 
-                 (id, list_id, store_id, store_item_id, name, name_norm, qty, notes,
-                  section_id, aisle_id,
-                  created_at, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                 (id, list_id, store_id, store_item_id, qty, notes, created_at, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     id,
                     params.list_id,
                     params.store_id,
-                    storeItemId,
-                    params.name,
-                    name_norm,
+                    params.store_item_id,
                     params.qty,
                     params.notes,
-                    normalizedSectionId,
-                    normalizedAisleId,
                     now,
                     now,
                 ]
@@ -849,13 +815,9 @@ export class SQLiteDatabase extends BaseDatabase {
                 id,
                 list_id: params.list_id,
                 store_id: params.store_id,
-                store_item_id: storeItemId,
-                name: params.name,
-                name_norm,
+                store_item_id: params.store_item_id,
                 qty: params.qty,
                 notes: params.notes,
-                section_id: normalizedSectionId,
-                aisle_id: normalizedAisleId,
                 is_checked: 0,
                 checked_at: null,
                 created_at: now,

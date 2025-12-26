@@ -524,9 +524,51 @@ export function useUpdateItem() {
             queryClient.invalidateQueries({
                 queryKey: ["items", "detail", variables.id],
             });
+            // Also invalidate shopping list items since they display store item data
+            queryClient.invalidateQueries({
+                queryKey: ["shoppingListItems"],
+            });
         },
         onError: (error: Error) => {
             showError(`Failed to update item: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to get or create a store item by name
+ * Useful for adding items to shopping lists - finds existing or creates new
+ */
+export function useGetOrCreateStoreItem() {
+    const database = useDatabase();
+    const queryClient = useQueryClient();
+    const { showError } = useToast();
+
+    return useTanstackMutation({
+        mutationFn: ({
+            storeId,
+            name,
+            aisleId,
+            sectionId,
+        }: {
+            storeId: string;
+            name: string;
+            aisleId?: string | null;
+            sectionId?: string | null;
+        }) =>
+            database.getOrCreateStoreItemByName(
+                storeId,
+                name,
+                aisleId,
+                sectionId
+            ),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: ["items", variables.storeId],
+            });
+        },
+        onError: (error: Error) => {
+            showError(`Failed to get or create item: ${error.message}`);
         },
     });
 }

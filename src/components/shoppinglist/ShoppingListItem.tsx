@@ -1,22 +1,22 @@
 import {
-    IonItem,
-    IonLabel,
     IonCheckbox,
-    IonItemSliding,
-    IonItemOptions,
-    IonItemOption,
     IonIcon,
+    IonItem,
+    IonItemOption,
+    IonItemOptions,
+    IonItemSliding,
+    IonLabel,
 } from "@ionic/react";
 import { create, trash } from "ionicons/icons";
-import { useShoppingListContext } from "./useShoppingListContext";
 import { useToggleItemChecked } from "../../db/hooks";
-import { ShoppingListItem as ShoppingListItemType } from "../../models/Store";
+import { ShoppingListItemWithDetails } from "../../models/Store";
+import { useShoppingListContext } from "./useShoppingListContext";
 
 interface ShoppingListItemProps {
     item: {
         id: string;
         list_id: string;
-        name: string;
+        item_name: string; // From store_item via JOIN
         qty: number;
         notes: string | null;
         section_name: string | null;
@@ -81,15 +81,8 @@ export const ShoppingListItem = ({
                 </div>
                 <IonLabel style={{ cursor: "default" }}>
                     <h2>
-                        {item.name} {item.qty > 1 && `(${item.qty})`}
+                        {item.item_name} {item.qty > 1 && `(${item.qty})`}
                     </h2>
-                    {!isChecked && (item.aisle_name || item.section_name) && (
-                        <p>
-                            {item.aisle_name}
-                            {item.aisle_name && item.section_name && " • "}
-                            {item.section_name}
-                        </p>
-                    )}
                     {item.notes && (
                         <p style={{ fontStyle: "italic" }}>{item.notes}</p>
                     )}
@@ -99,14 +92,14 @@ export const ShoppingListItem = ({
                 <IonItemOption
                     color="primary"
                     onClick={() =>
-                        openEditModal(item as unknown as ShoppingListItemType)
+                        openEditModal(item as ShoppingListItemWithDetails)
                     }
                 >
                     <IonIcon slot="icon-only" icon={create} />
                 </IonItemOption>
                 <IonItemOption
                     color="danger"
-                    onClick={() => confirmDelete(item.id, item.name)}
+                    onClick={() => confirmDelete(item.id, item.item_name)}
                 >
                     <IonIcon slot="icon-only" icon={trash} />
                 </IonItemOption>

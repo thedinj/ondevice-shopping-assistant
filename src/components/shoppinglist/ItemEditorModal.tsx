@@ -11,7 +11,11 @@ import {
 import { UseMutationResult } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useUpsertShoppingListItem } from "../../db/hooks";
+import {
+    useUpsertShoppingListItem,
+    useGetOrCreateStoreItem,
+    useUpdateItem,
+} from "../../db/hooks";
 import {
     ShoppingListItem,
     ShoppingListItemOptionalId,
@@ -33,6 +37,8 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
     const { isItemModalOpen, editingItem, closeItemModal } =
         useShoppingListContext();
     const upsertItem = useUpsertShoppingListItem();
+    const getOrCreateStoreItem = useGetOrCreateStoreItem();
+    const updateItem = useUpdateItem();
 
     const {
         control,
@@ -57,7 +63,7 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
     useEffect(() => {
         if (isItemModalOpen && editingItem) {
             reset({
-                name: editingItem.name,
+                name: editingItem.item_name,
                 qty: editingItem.qty,
                 notes: editingItem.notes,
                 aisleId: editingItem.aisle_id,
@@ -75,15 +81,37 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
     }, [isItemModalOpen, editingItem, reset]);
 
     const onSubmit = async (data: ItemFormData) => {
+        let storeItemId: string;
+
+        if (editingItem) {
+            // Update existing store item
+            await updateItem.mutateAsync({
+                id: editingItem.store_item_id,
+                name: data.name,
+                aisleId: data.aisleId || null,
+                sectionId: data.sectionId || null,
+                storeId,
+            });
+            storeItemId = editingItem.store_item_id;
+        } else {
+            // Get or create store item
+            const storeItem = await getOrCreateStoreItem.mutateAsync({
+                storeId,
+                name: data.name,
+                aisleId: data.aisleId || null,
+                sectionId: data.sectionId || null,
+            });
+            storeItemId = storeItem.id;
+        }
+
+        // Update or create shopping list item
         await upsertItem.mutateAsync({
             id: editingItem?.id,
             list_id: listId,
             store_id: storeId,
-            name: data.name,
+            store_item_id: storeItemId,
             qty: data.qty,
             notes: data.notes || null,
-            aisle_id: data.aisleId || null,
-            section_id: data.sectionId || null,
         });
         closeItemModal();
     };

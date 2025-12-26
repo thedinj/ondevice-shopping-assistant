@@ -57,15 +57,9 @@ export type ShoppingListItem = {
     id: string;
     list_id: string;
     store_id: string;
-    store_item_id: string | null;
-    name: string;
-    name_norm: string;
+    store_item_id: string; // Non-nullable - shopping list items must reference a store item
     qty: number;
     notes: string | null;
-    // Only section_id is stored when present; aisle_id is null (aisle derived from section)
-    // Only aisle_id is stored when no section specified
-    section_id: string | null;
-    aisle_id: string | null;
     is_checked: number;
     checked_at: string | null;
     created_at: string;
@@ -76,19 +70,19 @@ export type ShoppingListItem = {
  * Shopping list item input for upsert operations.
  * Only requires user-provided fields; auto-generated fields are handled by the database.
  */
-export type ShoppingListItemOptionalId = PartialPick<
-    ShoppingListItem,
-    "id"
-> &
+export type ShoppingListItemOptionalId = PartialPick<ShoppingListItem, "id"> &
     Pick<
         ShoppingListItem,
-        "list_id" | "store_id" | "name" | "qty" | "notes" | "aisle_id" | "section_id"
+        "list_id" | "store_id" | "store_item_id" | "qty" | "notes"
     >;
 
 /**
- * Shopping list item with joined aisle and section details from the database
+ * Shopping list item with joined store item and location details from the database
  */
 export type ShoppingListItemWithDetails = ShoppingListItem & {
+    item_name: string; // From store_item.name via JOIN
+    section_id: string | null; // From store_item or section JOIN
+    aisle_id: string | null; // From store_item or section's aisle
     section_name: string | null;
     section_sort_order: number | null;
     aisle_name: string | null;

@@ -3,7 +3,7 @@ import {
     ShoppingListContext,
     ShoppingListContextValue,
 } from "./ShoppingListContext";
-import { ShoppingListItem } from "../../models/Store";
+import { ShoppingListItemWithDetails } from "../../models/Store";
 import { useDeleteShoppingListItem, useStores } from "../../db/hooks";
 
 interface ShoppingListProviderProps {
@@ -17,9 +17,8 @@ export const ShoppingListProvider = ({
 }: ShoppingListProviderProps) => {
     const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState<ShoppingListItem | null>(
-        null
-    );
+    const [editingItem, setEditingItem] =
+        useState<ShoppingListItemWithDetails | null>(null);
     const [deleteAlert, setDeleteAlert] = useState<{
         id: string;
         name: string;
@@ -40,7 +39,7 @@ export const ShoppingListProvider = ({
         setIsItemModalOpen(true);
     };
 
-    const openEditModal = (item: ShoppingListItem) => {
+    const openEditModal = (item: ShoppingListItemWithDetails) => {
         setEditingItem(item);
         setIsItemModalOpen(true);
     };

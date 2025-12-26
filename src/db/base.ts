@@ -82,6 +82,12 @@ export abstract class BaseDatabase implements Database {
         searchTerm: string,
         limit?: number
     ): Promise<StoreItem[]>;
+    abstract getOrCreateStoreItemByName(
+        storeId: string,
+        name: string,
+        aisleId?: string | null,
+        sectionId?: string | null
+    ): Promise<StoreItem>;
 
     // ========== ShoppingList Operations (Abstract) ==========
     abstract getOrCreateShoppingListForStore(storeId: string): Promise<{
@@ -210,64 +216,88 @@ export abstract class BaseDatabase implements Database {
         );
 
         // Add items to the shopping list
+        const bananas = await this.getOrCreateStoreItemByName(
+            storeId,
+            "Bananas",
+            produceAisle.id,
+            null
+        );
         await this.upsertShoppingListItem({
             list_id: shoppingList.id,
             store_id: storeId,
-            name: "Bananas",
+            store_item_id: bananas.id,
             qty: 1,
             notes: "Ripe, not green",
-            aisle_id: produceAisle.id,
-            section_id: null,
         });
 
+        const sourdough = await this.getOrCreateStoreItemByName(
+            storeId,
+            "Sourdough Bread",
+            null,
+            breadSection.id
+        );
         await this.upsertShoppingListItem({
             list_id: shoppingList.id,
             store_id: storeId,
-            name: "Sourdough Bread",
+            store_item_id: sourdough.id,
             qty: 1,
             notes: null,
-            aisle_id: null,
-            section_id: breadSection.id,
         });
 
+        const tomatoes = await this.getOrCreateStoreItemByName(
+            storeId,
+            "Diced Tomatoes",
+            null,
+            cannedSection.id
+        );
         await this.upsertShoppingListItem({
             list_id: shoppingList.id,
             store_id: storeId,
-            name: "Diced Tomatoes",
+            store_item_id: tomatoes.id,
             qty: 2,
             notes: "14.5 oz cans",
-            aisle_id: null,
-            section_id: cannedSection.id,
         });
 
+        const spaghetti = await this.getOrCreateStoreItemByName(
+            storeId,
+            "Spaghetti",
+            null,
+            pastaSection.id
+        );
         await this.upsertShoppingListItem({
             list_id: shoppingList.id,
             store_id: storeId,
-            name: "Spaghetti",
+            store_item_id: spaghetti.id,
             qty: 1,
             notes: null,
-            aisle_id: null,
-            section_id: pastaSection.id,
         });
 
+        const cheese = await this.getOrCreateStoreItemByName(
+            storeId,
+            "Cheddar Cheese",
+            dairyAisle.id,
+            null
+        );
         await this.upsertShoppingListItem({
             list_id: shoppingList.id,
             store_id: storeId,
-            name: "Cheddar Cheese",
+            store_item_id: cheese.id,
             qty: 1,
             notes: "Sharp, block style",
-            aisle_id: dairyAisle.id,
-            section_id: null,
         });
 
+        const chips = await this.getOrCreateStoreItemByName(
+            storeId,
+            "Potato Chips",
+            snacksAisle.id,
+            null
+        );
         await this.upsertShoppingListItem({
             list_id: shoppingList.id,
             store_id: storeId,
-            name: "Potato Chips",
+            store_item_id: chips.id,
             qty: 1,
             notes: null,
-            aisle_id: snacksAisle.id,
-            section_id: null,
         });
     }
 }
