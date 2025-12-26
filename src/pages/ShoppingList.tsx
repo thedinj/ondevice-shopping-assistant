@@ -114,7 +114,6 @@ const ShoppingListContent: React.FC = () => {
                     <>
                         <UncheckedItems
                             items={uncheckedItems}
-                            listId={shoppingList.id}
                         />
                         <CheckedItems
                             items={checkedItems}

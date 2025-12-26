@@ -582,7 +582,7 @@ export function useStoreItemAutocomplete(storeId: string, searchTerm: string) {
     return useTanstackQuery({
         queryKey: ["store-items", "search", storeId, searchTerm],
         queryFn: () => database.searchStoreItems(storeId, searchTerm, 10),
-        enabled: !!storeId && searchTerm.length >= 3,
+        enabled: !!storeId && searchTerm.length >= 2,
         staleTime: 30000, // Cache for 30 seconds
     });
 }
@@ -625,38 +625,6 @@ export function useUpsertShoppingListItem() {
 }
 
 /**
- * Hook to batch update shopping list items (for reordering)
- */
-export function useBatchUpdateShoppingListItems() {
-    const database = useDatabase();
-    const queryClient = useQueryClient();
-    const { showError } = useToast();
-
-    return useTanstackMutation({
-        mutationFn: ({
-            updates,
-            listId,
-        }: {
-            updates: Array<{
-                id: string;
-                sort_order: number;
-                aisle_id?: string | null;
-                section_id?: string | null;
-            }>;
-            listId: string;
-        }) => database.batchUpdateShoppingListItems(updates),
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({
-                queryKey: ["shopping-list-items", variables.listId],
-            });
-        },
-        onError: (error: Error) => {
-            showError(`Failed to reorder items: ${error.message}`);
-        },
-    });
-}
-
-/**
  * Hook to toggle shopping list item checked status
  */
 export function useToggleItemChecked() {
@@ -665,15 +633,12 @@ export function useToggleItemChecked() {
     const { showError } = useToast();
 
     return useTanstackMutation({
-        mutationFn: ({
-            id,
-            isChecked,
-            listId,
-        }: {
+        mutationFn: (params: {
             id: string;
             isChecked: boolean;
             listId: string;
-        }) => database.toggleShoppingListItemChecked(id, isChecked),
+        }) =>
+            database.toggleShoppingListItemChecked(params.id, params.isChecked),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
                 queryKey: ["shopping-list-items", variables.listId],
@@ -694,8 +659,8 @@ export function useDeleteShoppingListItem() {
     const { showError } = useToast();
 
     return useTanstackMutation({
-        mutationFn: ({ id, listId }: { id: string; listId: string }) =>
-            database.deleteShoppingListItem(id),
+        mutationFn: (params: { id: string; listId: string }) =>
+            database.deleteShoppingListItem(params.id),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
                 queryKey: ["shopping-list-items", variables.listId],

@@ -685,7 +685,6 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             aisle_name_snap: string | null;
             aisle_name: string | null;
             aisle_sort_order: number | null;
-            sort_order: number;
             is_checked: number;
             checked_at: string | null;
             created_at: string;
@@ -698,7 +697,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
                 sli.id, sli.list_id, sli.store_id, sli.store_item_id,
                 sli.name, sli.name_norm, sli.qty, sli.notes,
                 sli.section_id, sli.section_name_snap, sli.aisle_id, sli.aisle_name_snap,
-                sli.sort_order, sli.is_checked, sli.checked_at,
+                sli.is_checked, sli.checked_at,
                 sli.created_at, sli.updated_at,
                 ss.name as section_name, ss.sort_order as section_sort_order,
                 sa.name as aisle_name, sa.sort_order as aisle_sort_order
@@ -710,7 +709,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
                 sli.is_checked ASC,
                 COALESCE(sa.sort_order, 999999) ASC,
                 COALESCE(ss.sort_order, 999999) ASC,
-                sli.sort_order ASC`,
+                sli.name ASC`,
             [listId]
         );
         return res.values || [];
@@ -738,7 +737,6 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         section_name_snap: string | null;
         aisle_id: string | null;
         aisle_name_snap: string | null;
-        sort_order: number;
         is_checked: number;
         checked_at: string | null;
         created_at: string;
@@ -837,7 +835,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
 
             const itemRes = await conn.query(
                 `SELECT id, list_id, store_id, store_item_id, name, name_norm, qty, notes,
-                        section_id, section_name_snap, aisle_id, aisle_name_snap, sort_order,
+                        section_id, section_name_snap, aisle_id, aisle_name_snap,
                         is_checked, checked_at, created_at, updated_at
                  FROM shopping_list_item WHERE id = ?`,
                 [params.id]
@@ -849,27 +847,12 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             // Insert new shopping list item
             const id = crypto.randomUUID();
 
-            // Get max sort_order for items in the same section/aisle group (unchecked only)
-            const maxRes = await conn.query(
-                `SELECT COALESCE(MAX(sort_order), -1) as max_order 
-                 FROM shopping_list_item 
-                 WHERE list_id = ? AND is_checked = 0 
-                 AND COALESCE(aisle_id, '') = COALESCE(?, '') 
-                 AND COALESCE(section_id, '') = COALESCE(?, '')`,
-                [
-                    params.listId,
-                    params.aisleId ?? null,
-                    params.sectionId ?? null,
-                ]
-            );
-            const sort_order = (maxRes.values?.[0]?.max_order ?? -1) + 1;
-
             await conn.run(
                 `INSERT INTO shopping_list_item 
                  (id, list_id, store_id, store_item_id, name, name_norm, qty, notes,
-                  section_id, section_name_snap, aisle_id, aisle_name_snap, sort_order,
+                  section_id, section_name_snap, aisle_id, aisle_name_snap,
                   created_at, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     id,
                     params.listId,
@@ -883,7 +866,6 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
                     sectionNameSnap,
                     params.aisleId ?? null,
                     aisleNameSnap,
-                    sort_order,
                     now,
                     now,
                 ]
@@ -903,75 +885,12 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
                 section_name_snap: sectionNameSnap,
                 aisle_id: params.aisleId ?? null,
                 aisle_name_snap: aisleNameSnap,
-                sort_order,
                 is_checked: 0,
                 checked_at: null,
                 created_at: now,
                 updated_at: now,
             };
         }
-    }
-
-    async batchUpdateShoppingListItems(
-        updates: Array<{
-            id: string;
-            sort_order: number;
-            aisle_id?: string | null;
-            section_id?: string | null;
-        }>
-    ): Promise<void> {
-        const conn = await this.getConnection();
-        const updated_at = new Date().toISOString();
-
-        for (const update of updates) {
-            // Get snapshots if aisle/section changed
-            let sectionNameSnap: string | null = null;
-            let aisleNameSnap: string | null = null;
-
-            if (update.section_id !== undefined) {
-                if (update.section_id) {
-                    const sectionRes = await conn.query(
-                        `SELECT name FROM store_section WHERE id = ?`,
-                        [update.section_id]
-                    );
-                    sectionNameSnap = sectionRes.values?.[0]?.name || null;
-                }
-
-                if (update.aisle_id) {
-                    const aisleRes = await conn.query(
-                        `SELECT name FROM store_aisle WHERE id = ?`,
-                        [update.aisle_id]
-                    );
-                    aisleNameSnap = aisleRes.values?.[0]?.name || null;
-                }
-
-                await conn.run(
-                    `UPDATE shopping_list_item 
-                     SET sort_order = ?, aisle_id = ?, aisle_name_snap = ?, 
-                         section_id = ?, section_name_snap = ?, updated_at = ? 
-                     WHERE id = ?`,
-                    [
-                        update.sort_order,
-                        update.aisle_id ?? null,
-                        aisleNameSnap,
-                        update.section_id ?? null,
-                        sectionNameSnap,
-                        updated_at,
-                        update.id,
-                    ]
-                );
-            } else {
-                // Only update sort_order
-                await conn.run(
-                    `UPDATE shopping_list_item 
-                     SET sort_order = ?, updated_at = ? 
-                     WHERE id = ?`,
-                    [update.sort_order, updated_at, update.id]
-                );
-            }
-        }
-
-        this.notifyChange();
     }
 
     async toggleShoppingListItemChecked(

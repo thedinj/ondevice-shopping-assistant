@@ -213,7 +213,7 @@ export interface EntityDatabase {
 
     /**
      * Get all shopping list items for a list, joined with aisle/section info
-     * Ordered by: is_checked, aisle sort_order, section sort_order, item sort_order
+     * Ordered by: is_checked, aisle sort_order, section sort_order, item name
      */
     getShoppingListItemsGrouped(listId: string): Promise<
         Array<{
@@ -233,7 +233,6 @@ export interface EntityDatabase {
             aisle_name_snap: string | null;
             aisle_name: string | null;
             aisle_sort_order: number | null;
-            sort_order: number;
             is_checked: number;
             checked_at: string | null;
             created_at: string;
@@ -268,24 +267,11 @@ export interface EntityDatabase {
         section_name_snap: string | null;
         aisle_id: string | null;
         aisle_name_snap: string | null;
-        sort_order: number;
         is_checked: number;
         checked_at: string | null;
         created_at: string;
         updated_at: string;
     }>;
-
-    /**
-     * Batch update shopping list items (for reordering and cross-group moves)
-     */
-    batchUpdateShoppingListItems(
-        updates: Array<{
-            id: string;
-            sort_order: number;
-            aisle_id?: string | null;
-            section_id?: string | null;
-        }>
-    ): Promise<void>;
 
     /**
      * Toggle the checked status of a shopping list item

@@ -67,10 +67,11 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
         handleSubmit,
         reset,
         setValue,
+        watch,
         formState: { errors, isValid },
     } = useForm<ItemFormData>({
         resolver: zodResolver(itemFormSchema),
-        mode: "onSubmit",
+        mode: "onChange",
         defaultValues: {
             name: "",
             qty: 1,
@@ -119,8 +120,8 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
-        setValue("name", value);
-        setShowAutocomplete(value.length >= 3);
+        setValue("name", value, { shouldValidate: true });
+        setShowAutocomplete(value.length >= 2);
     };
 
     const handleAutocompleteSelect = (item: {
@@ -128,14 +129,14 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
         name: string;
         section_id: string | null;
     }) => {
-        setValue("name", item.name);
-        setValue("sectionId", item.section_id);
+        setValue("name", item.name, { shouldValidate: true });
+        setValue("sectionId", item.section_id, { shouldValidate: true });
 
         // Find aisle for the selected section
         if (item.section_id && sections) {
             const section = sections.find((s) => s.id === item.section_id);
             if (section) {
-                setValue("aisleId", section.aisle_id);
+                setValue("aisleId", section.aisle_id, { shouldValidate: true });
             }
         }
 
@@ -143,12 +144,21 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
         setShowAutocomplete(false);
     };
 
-    // Filter sections by selected aisle
-    const filteredSections = sections?.filter(
-        (section) =>
-            !control._formValues.aisleId ||
-            section.aisle_id === control._formValues.aisleId
-    );
+    // Watch the current aisle and section values
+    const currentAisleId = watch("aisleId");
+    const currentSectionId = watch("sectionId");
+
+    // Filter and sort sections by selected aisle, then alphabetically
+    const filteredSections = sections
+        ?.filter(
+            (section) => !currentAisleId || section.aisle_id === currentAisleId
+        )
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+    // Sort aisles alphabetically
+    const sortedAisles = aisles
+        ?.slice()
+        .sort((a, b) => a.name.localeCompare(b.name));
 
     return (
         <IonModal isOpen={isItemModalOpen} onDidDismiss={closeItemModal}>
@@ -310,32 +320,31 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
                                     Aisle (Optional)
                                 </IonLabel>
                                 <IonSelect
-                                    value={field.value ?? undefined}
-                                    placeholder="Select an aisle"
+                                    value={field.value ?? ""}
                                     onIonChange={(e) => {
-                                        field.onChange(e.detail.value ?? null);
-                                        // Clear section if aisle changed
-                                        if (control._formValues.sectionId) {
+                                        const value =
+                                            e.detail.value === ""
+                                                ? null
+                                                : e.detail.value;
+                                        field.onChange(value);
+                                        // Clear section if aisle changed and section doesn't belong to new aisle
+                                        if (currentSectionId) {
                                             const section = sections?.find(
-                                                (s) =>
-                                                    s.id ===
-                                                    control._formValues
-                                                        .sectionId
+                                                (s) => s.id === currentSectionId
                                             );
                                             if (
                                                 section &&
-                                                section.aisle_id !==
-                                                    e.detail.value
+                                                section.aisle_id !== value
                                             ) {
                                                 setValue("sectionId", null);
                                             }
                                         }
                                     }}
                                 >
-                                    <IonSelectOption value={undefined}>
+                                    <IonSelectOption value="">
                                         None
                                     </IonSelectOption>
-                                    {aisles?.map((aisle) => (
+                                    {sortedAisles?.map((aisle) => (
                                         <IonSelectOption
                                             key={aisle.id}
                                             value={aisle.id}
@@ -358,14 +367,30 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
                                     Section (Optional)
                                 </IonLabel>
                                 <IonSelect
-                                    value={field.value ?? undefined}
-                                    placeholder="Select a section"
-                                    onIonChange={(e) =>
-                                        field.onChange(e.detail.value ?? null)
-                                    }
+                                    value={field.value ?? ""}
+                                    onIonChange={(e) => {
+                                        const value =
+                                            e.detail.value === ""
+                                                ? null
+                                                : e.detail.value;
+                                        field.onChange(value);
+
+                                        // If a section is selected, automatically set its aisle
+                                        if (value && sections) {
+                                            const section = sections.find(
+                                                (s) => s.id === value
+                                            );
+                                            if (section) {
+                                                setValue(
+                                                    "aisleId",
+                                                    section.aisle_id
+                                                );
+                                            }
+                                        }
+                                    }}
                                     disabled={!filteredSections?.length}
                                 >
-                                    <IonSelectOption value={undefined}>
+                                    <IonSelectOption value="">
                                         None
                                     </IonSelectOption>
                                     {filteredSections?.map((section) => (

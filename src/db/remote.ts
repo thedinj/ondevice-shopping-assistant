@@ -170,10 +170,6 @@ export class RemoteDatabase extends BaseDatabase implements Database {
         throw new Error("RemoteDatabase not yet implemented");
     }
 
-    async batchUpdateShoppingListItems(_updates: any[]): Promise<void> {
-        throw new Error("RemoteDatabase not yet implemented");
-    }
-
     async toggleShoppingListItemChecked(
         _id: string,
         _isChecked: boolean

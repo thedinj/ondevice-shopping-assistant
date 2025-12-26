@@ -434,7 +434,6 @@ export class FakeDatabase extends BaseDatabase implements Database {
             aisle_name_snap: string | null;
             aisle_name: string | null;
             aisle_sort_order: number | null;
-            sort_order: number;
             is_checked: number;
             checked_at: string | null;
             created_at: string;
@@ -461,7 +460,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
                 };
             })
             .sort((a, b) => {
-                // Sort by: is_checked, aisle, section, item sort_order
+                // Sort by: is_checked, aisle, section, item name
                 if (a.is_checked !== b.is_checked) {
                     return a.is_checked - b.is_checked;
                 }
@@ -475,7 +474,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
                 if (aSectionOrder !== bSectionOrder) {
                     return aSectionOrder - bSectionOrder;
                 }
-                return a.sort_order - b.sort_order;
+                return a.name.localeCompare(b.name);
             });
 
         return items;
@@ -562,18 +561,6 @@ export class FakeDatabase extends BaseDatabase implements Database {
             // Create new shopping list item
             const id = crypto.randomUUID();
 
-            // Calculate sort_order
-            const sameGroupItems = Array.from(
-                this.shoppingListItems.values()
-            ).filter(
-                (item) =>
-                    item.list_id === params.listId &&
-                    item.is_checked === 0 &&
-                    (item.aisle_id ?? "") === (params.aisleId ?? "") &&
-                    (item.section_id ?? "") === (params.sectionId ?? "")
-            );
-            const sort_order = sameGroupItems.length;
-
             const newItem: ShoppingListItem = {
                 id,
                 list_id: params.listId,
@@ -587,7 +574,6 @@ export class FakeDatabase extends BaseDatabase implements Database {
                 section_name_snap: section?.name ?? null,
                 aisle_id: params.aisleId ?? null,
                 aisle_name_snap: aisle?.name ?? null,
-                sort_order,
                 is_checked: 0,
                 checked_at: null,
                 created_at: now,
@@ -597,57 +583,6 @@ export class FakeDatabase extends BaseDatabase implements Database {
             this.notifyChange();
             return newItem;
         }
-    }
-
-    async batchUpdateShoppingListItems(
-        updates: Array<{
-            id: string;
-            sort_order: number;
-            aisle_id?: string | null;
-            section_id?: string | null;
-        }>
-    ): Promise<void> {
-        const now = new Date().toISOString();
-
-        for (const update of updates) {
-            const item = this.shoppingListItems.get(update.id);
-            if (!item) {
-                continue;
-            }
-
-            let sectionNameSnap = item.section_name_snap;
-            let aisleNameSnap = item.aisle_name_snap;
-
-            if (update.section_id !== undefined) {
-                const section = update.section_id
-                    ? this.sections.get(update.section_id)
-                    : null;
-                sectionNameSnap = section?.name ?? null;
-
-                const aisle = update.aisle_id
-                    ? this.aisles.get(update.aisle_id)
-                    : null;
-                aisleNameSnap = aisle?.name ?? null;
-
-                this.shoppingListItems.set(update.id, {
-                    ...item,
-                    sort_order: update.sort_order,
-                    aisle_id: update.aisle_id ?? null,
-                    aisle_name_snap: aisleNameSnap,
-                    section_id: update.section_id ?? null,
-                    section_name_snap: sectionNameSnap,
-                    updated_at: now,
-                });
-            } else {
-                this.shoppingListItems.set(update.id, {
-                    ...item,
-                    sort_order: update.sort_order,
-                    updated_at: now,
-                });
-            }
-        }
-
-        this.notifyChange();
     }
 
     async toggleShoppingListItemChecked(

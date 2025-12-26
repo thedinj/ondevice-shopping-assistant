@@ -61,7 +61,6 @@ export type ShoppingListItem = {
     section_name_snap: string | null;
     aisle_id: string | null;
     aisle_name_snap: string | null;
-    sort_order: number;
     is_checked: number;
     checked_at: string | null;
     created_at: string;

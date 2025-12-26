@@ -1,13 +1,5 @@
-import {
-    IonList,
-    IonReorderGroup,
-    IonListHeader,
-    IonLabel,
-    IonText,
-    ItemReorderEventDetail,
-} from "@ionic/react";
+import { IonList, IonListHeader, IonLabel, IonText } from "@ionic/react";
 import { ShoppingListItem } from "./ShoppingListItem";
-import { useBatchUpdateShoppingListItems } from "../../db/hooks";
 
 interface GroupedItem {
     id: string;
@@ -19,58 +11,18 @@ interface GroupedItem {
     section_name: string | null;
     aisle_id: string | null;
     aisle_name: string | null;
-    sort_order: number;
     is_checked: number;
 }
 
 interface UncheckedItemsProps {
     items: GroupedItem[];
-    listId: string;
 }
 
-interface GroupInfo {
-    aisleId: string | null;
-    aisleName: string | null;
-    sectionId: string | null;
-    sectionName: string | null;
-}
-
-export const UncheckedItems = ({ items, listId }: UncheckedItemsProps) => {
-    const batchUpdate = useBatchUpdateShoppingListItems();
-
+export const UncheckedItems = ({ items }: UncheckedItemsProps) => {
     // Group items hierarchically
     const groupedItems = groupItemsByAisleAndSection(items);
 
-    // Flatten for reorder group while maintaining group boundaries
-    const flatItems = groupedItems.flatMap((aisleGroup) =>
-        aisleGroup.sections.flatMap((sectionGroup) => sectionGroup.items)
-    );
-
-    const handleReorder = (event: CustomEvent<ItemReorderEventDetail>) => {
-        const from = event.detail.from;
-        const to = event.detail.to;
-
-        // Clone and reorder
-        const reordered = [...flatItems];
-        const [movedItem] = reordered.splice(from, 1);
-        reordered.splice(to, 0, movedItem);
-
-        // Build updates with new sort orders and possibly new aisle/section
-        const updates = reordered.map((item, index) => {
-            const itemTargetGroup = findGroupForIndex(index, groupedItems);
-            return {
-                id: item.id,
-                sort_order: index,
-                aisle_id: itemTargetGroup.aisleId,
-                section_id: itemTargetGroup.sectionId,
-            };
-        });
-
-        batchUpdate.mutate({ updates, listId });
-        event.detail.complete();
-    };
-
-    if (flatItems.length === 0) {
+    if (items.length === 0) {
         return (
             <div style={{ textAlign: "center", padding: "20px" }}>
                 <IonText color="medium">
@@ -82,50 +34,42 @@ export const UncheckedItems = ({ items, listId }: UncheckedItemsProps) => {
 
     return (
         <IonList>
-            <IonReorderGroup disabled={false} onIonItemReorder={handleReorder}>
-                {groupedItems.map((aisleGroup, aisleIdx) => (
-                    <div
-                        key={`aisle-${
-                            aisleGroup.aisleId || "none"
-                        }-${aisleIdx}`}
-                    >
-                        {/* Aisle Header */}
-                        <IonListHeader>
-                            <IonLabel>
-                                {aisleGroup.aisleName || "Uncategorized"}
-                            </IonLabel>
-                        </IonListHeader>
+            {groupedItems.map((aisleGroup, aisleIdx) => (
+                <div key={`aisle-${aisleGroup.aisleId || "none"}-${aisleIdx}`}>
+                    {/* Aisle Header */}
+                    <IonListHeader>
+                        <IonLabel>
+                            {aisleGroup.aisleName || "Uncategorized"}
+                        </IonLabel>
+                    </IonListHeader>
 
-                        {aisleGroup.sections.map((sectionGroup, sectionIdx) => (
-                            <div
-                                key={`section-${
-                                    sectionGroup.sectionId || "none"
-                                }-${sectionIdx}`}
-                            >
-                                {/* Section subheader (if exists) */}
-                                {sectionGroup.sectionName && (
-                                    <IonListHeader
-                                        style={{ paddingLeft: "32px" }}
-                                    >
-                                        <IonLabel style={{ fontSize: "0.9em" }}>
-                                            {sectionGroup.sectionName}
-                                        </IonLabel>
-                                    </IonListHeader>
-                                )}
+                    {aisleGroup.sections.map((sectionGroup, sectionIdx) => (
+                        <div
+                            key={`section-${
+                                sectionGroup.sectionId || "none"
+                            }-${sectionIdx}`}
+                        >
+                            {/* Section subheader (if exists) */}
+                            {sectionGroup.sectionName && (
+                                <IonListHeader style={{ paddingLeft: "32px" }}>
+                                    <IonLabel style={{ fontSize: "0.9em" }}>
+                                        {sectionGroup.sectionName}
+                                    </IonLabel>
+                                </IonListHeader>
+                            )}
 
-                                {/* Items */}
-                                {sectionGroup.items.map((item) => (
-                                    <ShoppingListItem
-                                        key={item.id}
-                                        item={item}
-                                        isChecked={false}
-                                    />
-                                ))}
-                            </div>
-                        ))}
-                    </div>
-                ))}
-            </IonReorderGroup>
+                            {/* Items */}
+                            {sectionGroup.items.map((item) => (
+                                <ShoppingListItem
+                                    key={item.id}
+                                    item={item}
+                                    isChecked={false}
+                                />
+                            ))}
+                        </div>
+                    ))}
+                </div>
+            ))}
         </IonList>
     );
 };
@@ -216,36 +160,4 @@ function groupItemsByAisleAndSection(items: GroupedItem[]): AisleGroup[] {
     }
 
     return result;
-}
-
-function findGroupForIndex(
-    index: number,
-    groupedItems: AisleGroup[]
-): GroupInfo {
-    let currentIndex = 0;
-
-    for (const aisleGroup of groupedItems) {
-        for (const sectionGroup of aisleGroup.sections) {
-            const groupEnd = currentIndex + sectionGroup.items.length;
-            if (index < groupEnd) {
-                return {
-                    aisleId: aisleGroup.aisleId,
-                    aisleName: aisleGroup.aisleName,
-                    sectionId: sectionGroup.sectionId,
-                    sectionName: sectionGroup.sectionName,
-                };
-            }
-            currentIndex = groupEnd;
-        }
-    }
-
-    // Fallback: last group
-    const lastAisle = groupedItems[groupedItems.length - 1];
-    const lastSection = lastAisle?.sections[lastAisle.sections.length - 1];
-    return {
-        aisleId: lastAisle?.aisleId || null,
-        aisleName: lastAisle?.aisleName || null,
-        sectionId: lastSection?.sectionId || null,
-        sectionName: lastSection?.sectionName || null,
-    };
 }

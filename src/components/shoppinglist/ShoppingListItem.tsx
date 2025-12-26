@@ -6,7 +6,6 @@ import {
     IonItemOptions,
     IonItemOption,
     IonIcon,
-    IonReorder,
 } from "@ionic/react";
 import { create, trash } from "ionicons/icons";
 import { useShoppingListContext } from "./useShoppingListContext";
@@ -42,6 +41,12 @@ export const ShoppingListItem = ({
         });
     };
 
+    const handleCheckboxClick = (e: React.MouseEvent | React.TouchEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleCheckboxChange(!isChecked);
+    };
+
     const itemStyle = isChecked
         ? {
               textDecoration: "line-through",
@@ -51,13 +56,30 @@ export const ShoppingListItem = ({
 
     return (
         <IonItemSliding>
-            <IonItem style={itemStyle}>
-                <IonCheckbox
+            <IonItem style={itemStyle} button={false}>
+                <div
                     slot="start"
-                    checked={isChecked}
-                    onIonChange={(e) => handleCheckboxChange(e.detail.checked)}
-                />
-                <IonLabel>
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        paddingRight: "8px",
+                        cursor: "pointer",
+                    }}
+                    onClick={handleCheckboxClick}
+                    onTouchStart={(e) => {
+                        e.stopPropagation();
+                    }}
+                    onTouchEnd={(e) => {
+                        e.stopPropagation();
+                        handleCheckboxClick(e);
+                    }}
+                >
+                    <IonCheckbox
+                        checked={isChecked}
+                        style={{ pointerEvents: "none" }}
+                    />
+                </div>
+                <IonLabel style={{ cursor: "default" }}>
                     <h2>
                         {item.name} {item.qty > 1 && `(${item.qty})`}
                     </h2>
@@ -72,7 +94,6 @@ export const ShoppingListItem = ({
                         <p style={{ fontStyle: "italic" }}>{item.notes}</p>
                     )}
                 </IonLabel>
-                {!isChecked && <IonReorder slot="end" />}
             </IonItem>
             <IonItemOptions side="end">
                 <IonItemOption
