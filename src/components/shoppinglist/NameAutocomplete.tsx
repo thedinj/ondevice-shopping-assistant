@@ -1,15 +1,30 @@
 import { IonInput, IonItem, IonLabel, IonList, IonText } from "@ionic/react";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { Controller } from "react-hook-form";
 import type { AutocompleteItem } from "./itemEditorSchema";
 import { useItemEditorContext } from "./useItemEditorContext";
 
 export const NameAutocomplete: React.FC = () => {
-    const { control, errors, setValue, aisles, sections, autocompleteResults } =
-        useItemEditorContext();
+    const {
+        control,
+        errors,
+        setValue,
+        aisles,
+        sections,
+        autocompleteResults,
+        watch,
+    } = useItemEditorContext();
 
     const [searchTerm, setSearchTerm] = useState("");
     const [showAutocomplete, setShowAutocomplete] = useState(false);
+
+    // Sync searchTerm with form value (important for editing existing items)
+    const nameValue = watch("name");
+    useEffect(() => {
+        if (nameValue !== searchTerm) {
+            setSearchTerm(nameValue || "");
+        }
+    }, [nameValue, searchTerm]);
 
     const handleSearchChange = useCallback(
         (value: string) => {

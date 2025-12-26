@@ -4,7 +4,6 @@ import {
     IonLabel,
     IonList,
     IonListHeader,
-    IonText,
 } from "@ionic/react";
 import { checkmarkDone } from "ionicons/icons";
 import { ShoppingListItemWithDetails } from "../../models/Store";
@@ -70,18 +69,11 @@ export const GroupedShoppingList = ({
                             aisleGroup.aisleId || "none"
                         }-${aisleIdx}`}
                     >
-                        {/* Aisle Header */}
-                        {(aisleGroup.aisleName || !isChecked) && (
+                        {/* Aisle Header - skip for checked items */}
+                        {!isChecked && aisleGroup.aisleName && (
                             <IonListHeader>
                                 <IonLabel>
-                                    {isChecked ? (
-                                        <IonText color="medium">
-                                            {aisleGroup.aisleName ||
-                                                "Uncategorized"}
-                                        </IonText>
-                                    ) : (
-                                        aisleGroup.aisleName || "Uncategorized"
-                                    )}
+                                    {aisleGroup.aisleName || "Uncategorized"}
                                 </IonLabel>
                             </IonListHeader>
                         )}
@@ -94,19 +86,13 @@ export const GroupedShoppingList = ({
                                     sectionGroup.sectionId || "none"
                                 }-${sectionIdx}`}
                             >
-                                {/* Section subheader (if exists) */}
-                                {sectionGroup.sectionName && (
+                                {/* Section subheader - skip for checked items */}
+                                {!isChecked && sectionGroup.sectionName && (
                                     <IonListHeader
                                         style={{ paddingLeft: "32px" }}
                                     >
                                         <IonLabel style={{ fontSize: "0.9em" }}>
-                                            {isChecked ? (
-                                                <IonText color="medium">
-                                                    {sectionGroup.sectionName}
-                                                </IonText>
-                                            ) : (
-                                                sectionGroup.sectionName
-                                            )}
+                                            {sectionGroup.sectionName}
                                         </IonLabel>
                                     </IonListHeader>
                                 )}
@@ -153,10 +139,7 @@ function groupItemsByAisleAndSection(
         sectionMap.get(sectionKey)!.push(item);
     }
 
-    // Convert to array structure
-    const result: AisleGroup[] = [];
-
-    // Sort by aisle_sort_order (null/uncategorized last using 999999 fallback)
+    // Convert to array structure and sort by aisle_sort_order
     const sortedAisles = Array.from(aisleMap.entries()).sort((a, b) => {
         const aisleA = items.find((item) => item.aisle_id === a[0]);
         const aisleB = items.find((item) => item.aisle_id === b[0]);
@@ -165,14 +148,14 @@ function groupItemsByAisleAndSection(
         return sortOrderA - sortOrderB;
     });
 
+    const result: AisleGroup[] = [];
+
     for (const [aisleId, sectionMap] of sortedAisles) {
         const aisleItem = items.find((item) => item.aisle_id === aisleId);
-        const aisleName = aisleItem?.aisle_name || null;
-        const aisleSortOrder = aisleItem?.aisle_sort_order || null;
 
         const sections: SectionGroup[] = [];
 
-        // Sort by section_sort_order (null/uncategorized last using 999999 fallback)
+        // Sort sections by section_sort_order
         const sortedSections = Array.from(sectionMap.entries()).sort((a, b) => {
             const sectionA = items.find((item) => item.section_id === a[0]);
             const sectionB = items.find((item) => item.section_id === b[0]);
@@ -185,21 +168,19 @@ function groupItemsByAisleAndSection(
             const sectionItem = items.find(
                 (item) => item.section_id === sectionId
             );
-            const sectionName = sectionItem?.section_name || null;
-            const sectionSortOrder = sectionItem?.section_sort_order || null;
 
             sections.push({
                 sectionId,
-                sectionName,
-                sectionSortOrder,
+                sectionName: sectionItem?.section_name || null,
+                sectionSortOrder: sectionItem?.section_sort_order || null,
                 items: sectionItems,
             });
         }
 
         result.push({
-            aisleId,
-            aisleName,
-            aisleSortOrder,
+            aisleId: aisleId,
+            aisleName: aisleItem?.aisle_name || null,
+            aisleSortOrder: aisleItem?.aisle_sort_order || null,
             sections,
         });
     }

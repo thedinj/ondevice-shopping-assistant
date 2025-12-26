@@ -12,7 +12,7 @@
             }
         },
         {
-            "label": "Reset Android Emulator Database",
+            "label": "Reset Android Emulator App Data",
             "type": "shell",
             "command": "adb",
             "args": ["shell", "pm", "clear", "io.ionic.starter"],

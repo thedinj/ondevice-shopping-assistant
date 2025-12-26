@@ -696,14 +696,14 @@ export class SQLiteDatabase extends BaseDatabase {
             `SELECT 
                 sli.id, sli.list_id, sli.store_id, sli.store_item_id,
                 sli.name, sli.name_norm, sli.qty, sli.notes,
-                sli.section_id, sli.aisle_id,
+                sli.section_id, COALESCE(ss.aisle_id, sli.aisle_id) as aisle_id,
                 sli.is_checked, sli.checked_at,
                 sli.created_at, sli.updated_at,
                 ss.name as section_name, ss.sort_order as section_sort_order,
                 sa.name as aisle_name, sa.sort_order as aisle_sort_order
              FROM shopping_list_item sli
              LEFT JOIN store_section ss ON sli.section_id = ss.id
-             LEFT JOIN store_aisle sa ON COALESCE(sli.aisle_id, ss.aisle_id) = sa.id
+             LEFT JOIN store_aisle sa ON COALESCE(ss.aisle_id, sli.aisle_id) = sa.id
              WHERE sli.list_id = ?
              ORDER BY 
                 sli.is_checked ASC,

@@ -83,7 +83,7 @@ export const ShoppingListItem = ({
                     <h2>
                         {item.name} {item.qty > 1 && `(${item.qty})`}
                     </h2>
-                    {(item.aisle_name || item.section_name) && (
+                    {!isChecked && (item.aisle_name || item.section_name) && (
                         <p>
                             {item.aisle_name}
                             {item.aisle_name && item.section_name && " • "}

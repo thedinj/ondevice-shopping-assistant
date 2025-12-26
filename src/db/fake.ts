@@ -437,12 +437,16 @@ export class FakeDatabase extends BaseDatabase {
                 const section = item.section_id
                     ? this.sections.get(item.section_id)
                     : null;
-                // Derive aisle from item.aisle_id or section's aisle_id
-                const aisleId = item.aisle_id ?? section?.aisle_id ?? null;
-                const aisle = aisleId ? this.aisles.get(aisleId) : null;
+                // Prefer section's aisle_id over item's direct aisle_id
+                const calculatedAisleId =
+                    section?.aisle_id ?? item.aisle_id ?? null;
+                const aisle = calculatedAisleId
+                    ? this.aisles.get(calculatedAisleId)
+                    : null;
 
                 return {
                     ...item,
+                    aisle_id: calculatedAisleId,
                     section_name: section?.name ?? null,
                     section_sort_order: section?.sort_order ?? null,
                     aisle_name: aisle?.name ?? null,

@@ -1,5 +1,7 @@
--   [ ] Sort on the Store Editor isn't used/updated on the shopping list
+-   [ ] Why isn't the item name appearing in the shopping list item editor? Better way to get to editor?
 -   [ ] We aren't storing the store item id in the shopping list id table. We should, right?
+-   [ ] Favorite items/store item tab/editor on shopping list
+-   [ ] Avoid slide-to-edit UX for editing shopping list items (and store items, and maybe even stores/aisles/sections?)
 -   [ ] Come up with cool name/icon/package name
 -   [ ] Generating aisles from OpenAI response
 -   [ ] Confirm Suspense works if database response time is slow
