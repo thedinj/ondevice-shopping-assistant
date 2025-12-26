@@ -6,14 +6,19 @@ import {
     Store,
 } from "../models/Store";
 import { BaseDatabase } from "./base";
-import { Database, StoreAisle, StoreItem, StoreSection } from "./types";
+import {
+    DEFAULT_TABLES_TO_PERSIST,
+    StoreAisle,
+    StoreItem,
+    StoreSection,
+} from "./types";
 
 /**
  * Remote database implementation stub for future API integration
  * All methods throw "not implemented" errors
  */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-export class RemoteDatabase extends BaseDatabase implements Database {
+export class RemoteDatabase extends BaseDatabase {
     async initialize(): Promise<void> {
         throw new Error("RemoteDatabase not yet implemented");
     }
@@ -22,7 +27,13 @@ export class RemoteDatabase extends BaseDatabase implements Database {
         throw new Error("RemoteDatabase not yet implemented");
     }
 
-    async reset(_tablesToPersist?: string[]): Promise<void> {
+    async reset(
+        _tablesToPersist: string[] = DEFAULT_TABLES_TO_PERSIST
+    ): Promise<void> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    protected async hasStores(): Promise<boolean> {
         throw new Error("RemoteDatabase not yet implemented");
     }
 

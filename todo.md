@@ -1,8 +1,9 @@
+-   [ ] Sort on the Store Editor isn't used/updated on the shopping list
 -   [ ] Come up with cool name/icon/package name
 -   [ ] Should we have a better "base" database class that has not-implemented abstract members? And no interfaces?
 -   [ ] Generating aisles from OpenAI response
 -   [ ] Confirm Suspense works if database response time is slow
--             [ ] Consider making a cooler suspender--maybe the robot head swirling around
+-               [ ] Consider making a cooler suspender--maybe the robot head swirling around
 -   [ ] Confirm API key is stored more securely
 -   [ ] What is this IonHeader stuff?
 -   [ ] More readable zero states, walk the user through the workflow with a pretty UI

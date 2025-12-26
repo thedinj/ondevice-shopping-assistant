@@ -5,7 +5,6 @@ import {
 } from "@capacitor-community/sqlite";
 import { AppSetting } from "../models/AppSetting";
 import {
-    DEFAULT_STORE_NAME,
     getInitializedStore,
     ShoppingListItem,
     ShoppingListItemOptionalId,
@@ -16,7 +15,7 @@ import {
     StoreSection,
 } from "../models/Store";
 import { BaseDatabase } from "./base";
-import { Database, DEFAULT_TABLES_TO_PERSIST } from "./types";
+import { DEFAULT_TABLES_TO_PERSIST } from "./types";
 
 const DB_NAME = "shopping_assistant";
 const DB_VERSION = 1;
@@ -123,7 +122,7 @@ const migrations: Array<{ version: number; up: string[] }> = [
 /**
  * SQLite implementation of the Database interface
  */
-export class SQLiteDatabase extends BaseDatabase implements Database {
+export class SQLiteDatabase extends BaseDatabase {
     private sqlite: SQLiteConnection;
     private connection: SQLiteDBConnection | null = null;
     private initPromise: Promise<void> | null = null;
@@ -194,9 +193,8 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
                 await conn.open();
                 await this.runMigrations(conn);
 
-                await this.ensureOneStore(conn);
-
                 this.connection = conn;
+                await this.ensureInitialStore();
             } catch (err) {
                 if (conn) {
                     try {
@@ -255,24 +253,17 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             await conn.execute(`DELETE FROM ${t};`);
         }
 
-        await this.ensureOneStore(conn);
+        await this.ensureInitialStore();
         this.notifyChange();
     }
 
-    private async ensureOneStore(
-        conn?: SQLiteDBConnection,
-        name?: string
-    ): Promise<void> {
-        const connToUse = conn ?? (await this.getConnection());
-
-        const storeCountRes = await connToUse.query(
+    protected async hasStores(): Promise<boolean> {
+        const conn = await this.getConnection();
+        const storeCountRes = await conn.query(
             "SELECT COUNT(*) as count FROM store"
         );
         const count = storeCountRes.values?.[0]?.count ?? 0;
-        if (!count) {
-            const nameToUse = name ?? DEFAULT_STORE_NAME;
-            await this.insertStore(nameToUse, connToUse);
-        }
+        return count > 0;
     }
 
     // ========== Store Operations ==========
@@ -551,7 +542,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         const name_norm = name.toLowerCase().trim();
 
         // Normalize: store only section when present (null aisle), else store aisle
-        const normalizedAisleId = sectionId ? null : (aisleId ?? null);
+        const normalizedAisleId = sectionId ? null : aisleId ?? null;
         const normalizedSectionId = sectionId ?? null;
 
         await conn.run(
@@ -619,7 +610,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         const name_norm = name.toLowerCase().trim();
 
         // Normalize: store only section when present (null aisle), else store aisle
-        const normalizedAisleId = sectionId ? null : (aisleId ?? null);
+        const normalizedAisleId = sectionId ? null : aisleId ?? null;
         const normalizedSectionId = sectionId ?? null;
 
         await conn.run(
@@ -744,7 +735,9 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             storeItemId = existingItem.id;
 
             // Normalize: store only section when present (null aisle), else store aisle
-            const normalizedAisleId = params.section_id ? null : (params.aisle_id ?? null);
+            const normalizedAisleId = params.section_id
+                ? null
+                : params.aisle_id ?? null;
             const normalizedSectionId = params.section_id ?? null;
 
             // Update usage tracking
@@ -764,11 +757,13 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         } else {
             // Create new StoreItem
             storeItemId = crypto.randomUUID();
-            
+
             // Normalize: store only section when present (null aisle), else store aisle
-            const normalizedAisleId = params.section_id ? null : (params.aisle_id ?? null);
+            const normalizedAisleId = params.section_id
+                ? null
+                : params.aisle_id ?? null;
             const normalizedSectionId = params.section_id ?? null;
-            
+
             await conn.run(
                 `INSERT INTO store_item (id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, created_at, updated_at) 
                  VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
@@ -787,7 +782,9 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         }
 
         // Normalize: store only section when present (null aisle), else store aisle
-        const normalizedAisleId = params.section_id ? null : (params.aisle_id ?? null);
+        const normalizedAisleId = params.section_id
+            ? null
+            : params.aisle_id ?? null;
         const normalizedSectionId = params.section_id ?? null;
 
         if (params.id) {

@@ -11,12 +11,12 @@ import {
     StoreSection,
 } from "../models/Store";
 import { BaseDatabase } from "./base";
-import { Database, DEFAULT_TABLES_TO_PERSIST } from "./types";
+import { DEFAULT_TABLES_TO_PERSIST } from "./types";
 
 /**
  * In-memory fake database implementation for browser/development
  */
-export class FakeDatabase extends BaseDatabase implements Database {
+export class FakeDatabase extends BaseDatabase {
     private stores: Map<string, Store> = new Map();
     private aisles: Map<string, StoreAisle> = new Map();
     private sections: Map<string, StoreSection> = new Map();
@@ -31,10 +31,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
             return;
         }
 
-        // Initialize with one store
-        const initialStore = getInitializedStore();
-        this.stores.set(initialStore.id, initialStore);
-
+        await this.ensureInitialStore();
         this.initialized = true;
         this.notifyChange();
     }
@@ -43,6 +40,10 @@ export class FakeDatabase extends BaseDatabase implements Database {
         // Nothing to close for in-memory database
         this.initialized = false;
         this.notifyChange();
+    }
+
+    protected async hasStores(): Promise<boolean> {
+        return this.stores.size > 0;
     }
 
     async reset(
@@ -59,12 +60,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
             this.appSettings.clear();
         }
 
-        // Ensure at least one store exists
-        if (this.stores.size === 0) {
-            const newStore = getInitializedStore();
-            this.stores.set(newStore.id, newStore);
-        }
-
+        await this.ensureInitialStore();
         this.notifyChange();
     }
 
@@ -303,7 +299,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
         const name_norm = name.toLowerCase().trim();
 
         // Normalize: store only section when present (null aisle), else store aisle
-        const normalizedAisleId = sectionId ? null : (aisleId ?? null);
+        const normalizedAisleId = sectionId ? null : aisleId ?? null;
         const normalizedSectionId = sectionId ?? null;
 
         const item: StoreItem = {
@@ -347,11 +343,11 @@ export class FakeDatabase extends BaseDatabase implements Database {
         }
 
         const name_norm = name.toLowerCase().trim();
-        
+
         // Normalize: store only section when present (null aisle), else store aisle
-        const normalizedAisleId = sectionId ? null : (aisleId ?? null);
+        const normalizedAisleId = sectionId ? null : aisleId ?? null;
         const normalizedSectionId = sectionId ?? null;
-        
+
         const updated: StoreItem = {
             ...item,
             name,
@@ -490,11 +486,14 @@ export class FakeDatabase extends BaseDatabase implements Database {
 
         if (existingItem) {
             storeItemId = existingItem.id;
-            
+
             // Normalize: store only section when present (null aisle), else store aisle
-            const normalizedAisleId = params.section_id ? null : (params.aisle_id ?? existingItem.aisle_id);
-            const normalizedSectionId = params.section_id ?? existingItem.section_id;
-            
+            const normalizedAisleId = params.section_id
+                ? null
+                : params.aisle_id ?? existingItem.aisle_id;
+            const normalizedSectionId =
+                params.section_id ?? existingItem.section_id;
+
             // Update usage tracking
             this.items.set(existingItem.id, {
                 ...existingItem,
@@ -507,11 +506,13 @@ export class FakeDatabase extends BaseDatabase implements Database {
         } else {
             // Create new StoreItem
             storeItemId = crypto.randomUUID();
-            
+
             // Normalize: store only section when present (null aisle), else store aisle
-            const normalizedAisleId = params.section_id ? null : (params.aisle_id ?? null);
+            const normalizedAisleId = params.section_id
+                ? null
+                : params.aisle_id ?? null;
             const normalizedSectionId = params.section_id ?? null;
-            
+
             const newItem: StoreItem = {
                 id: storeItemId,
                 store_id: params.store_id,
@@ -529,7 +530,9 @@ export class FakeDatabase extends BaseDatabase implements Database {
         }
 
         // Normalize: store only section when present (null aisle), else store aisle
-        const normalizedAisleId = params.section_id ? null : (params.aisle_id ?? null);
+        const normalizedAisleId = params.section_id
+            ? null
+            : params.aisle_id ?? null;
         const normalizedSectionId = params.section_id ?? null;
 
         if (params.id) {
