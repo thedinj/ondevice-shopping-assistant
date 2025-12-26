@@ -38,15 +38,6 @@ export const GroupedShoppingList = ({
     isClearing,
 }: GroupedShoppingListProps) => {
     if (items.length === 0) {
-        if (!isChecked) {
-            return (
-                <div style={{ textAlign: "center", padding: "20px" }}>
-                    <IonText color="medium">
-                        <p>No items in shopping list</p>
-                    </IonText>
-                </div>
-            );
-        }
         return null;
     }
 

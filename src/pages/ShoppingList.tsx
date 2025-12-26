@@ -104,7 +104,7 @@ const ShoppingListContent: React.FC = () => {
                         >
                             <IonText color="medium">
                                 <p>
-                                    No items yet. Tap the + button to add one.
+                                    No items yet. Tap the + button to add one!
                                 </p>
                             </IonText>
                         </div>
@@ -112,9 +112,7 @@ const ShoppingListContent: React.FC = () => {
 
                 {selectedStoreId && !isLoading && shoppingList && (
                     <>
-                        <UncheckedItems
-                            items={uncheckedItems}
-                        />
+                        <UncheckedItems items={uncheckedItems} />
                         <CheckedItems
                             items={checkedItems}
                             onClearChecked={handleClearChecked}

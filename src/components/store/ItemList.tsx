@@ -159,19 +159,7 @@ const ItemList = forwardRef<ListHandle, ItemListProps>(({ storeId }, ref) => {
     }
 
     if (!items || items.length === 0) {
-        return (
-            <div
-                style={{
-                    textAlign: "center",
-                    marginTop: "40px",
-                    padding: "20px",
-                }}
-            >
-                <IonText color="medium">
-                    <p>No items yet. Tap the + button to add one.</p>
-                </IonText>
-            </div>
-        );
+        return null;
     }
 
     return (
