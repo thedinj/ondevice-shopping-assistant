@@ -127,12 +127,147 @@ export abstract class BaseDatabase implements Database {
     // ========== Shared Initial Store Logic ==========
     /**
      * Ensures at least one store exists, creating a default one if needed.
+     * If VITE_SEED_TEST_DATA environment variable is set to 'true', populates
+     * the store with realistic test data including aisles, sections, items, and a shopping list.
      * Should be called during initialization and after reset.
      */
-    protected async ensureInitialStore(name?: string): Promise<void> {
+    protected async ensureInitialData(): Promise<void> {
         const hasAnyStores = await this.hasStores();
         if (!hasAnyStores) {
-            await this.insertStore(name ?? "Unnamed Store");
+            // Check if test data seeding is enabled
+            const shouldSeedTestData =
+                import.meta.env.VITE_SEED_TEST_DATA === "true";
+
+            if (shouldSeedTestData) {
+                // Create a sample store with test data
+                const store = await this.insertStore("Sample Store");
+                await this.insertTestData(store.id);
+            } else {
+                // Create a basic empty store
+                await this.insertStore("Unnamed Store");
+            }
         }
+    }
+
+    /**
+     * Inserts realistic test data into a store for development/testing purposes.
+     * Creates a grocery store structure with aisles, sections, store items, and a shopping list.
+     */
+    protected async insertTestData(storeId: string): Promise<void> {
+        // Create aisles
+        const produceAisle = await this.insertAisle(storeId, "Produce");
+        const bakeryAisle = await this.insertAisle(storeId, "Aisle 1 - Bakery");
+        const pantryAisle = await this.insertAisle(storeId, "Aisle 2 - Pantry");
+        const snacksAisle = await this.insertAisle(storeId, "Aisle 3 - Snacks");
+        const dairyAisle = await this.insertAisle(
+            storeId,
+            "Dairy & Refrigerated"
+        );
+
+        // Create sections (only for bakery and pantry aisles)
+        const breadSection = await this.insertSection(
+            storeId,
+            "Bread & Rolls",
+            bakeryAisle.id
+        );
+        const pastriesSection = await this.insertSection(
+            storeId,
+            "Pastries",
+            bakeryAisle.id
+        );
+        const cannedSection = await this.insertSection(
+            storeId,
+            "Canned Goods",
+            pantryAisle.id
+        );
+        const pastaSection = await this.insertSection(
+            storeId,
+            "Pasta & Grains",
+            pantryAisle.id
+        );
+
+        // Create store items across different locations
+        await this.insertItem(storeId, "Apples", produceAisle.id, null);
+        await this.insertItem(
+            storeId,
+            "Whole Wheat Bread",
+            null,
+            breadSection.id
+        );
+        await this.insertItem(storeId, "Croissants", null, pastriesSection.id);
+        await this.insertItem(
+            storeId,
+            "Canned Tomatoes",
+            null,
+            cannedSection.id
+        );
+        await this.insertItem(storeId, "Penne Pasta", null, pastaSection.id);
+        await this.insertItem(storeId, "Milk", dairyAisle.id, null);
+
+        // Create a shopping list with items (none pre-checked)
+        const shoppingList = await this.getOrCreateShoppingListForStore(
+            storeId
+        );
+
+        // Add items to the shopping list
+        await this.upsertShoppingListItem({
+            list_id: shoppingList.id,
+            store_id: storeId,
+            name: "Bananas",
+            qty: 1,
+            notes: "Ripe, not green",
+            aisle_id: produceAisle.id,
+            section_id: null,
+        });
+
+        await this.upsertShoppingListItem({
+            list_id: shoppingList.id,
+            store_id: storeId,
+            name: "Sourdough Bread",
+            qty: 1,
+            notes: null,
+            aisle_id: null,
+            section_id: breadSection.id,
+        });
+
+        await this.upsertShoppingListItem({
+            list_id: shoppingList.id,
+            store_id: storeId,
+            name: "Diced Tomatoes",
+            qty: 2,
+            notes: "14.5 oz cans",
+            aisle_id: null,
+            section_id: cannedSection.id,
+        });
+
+        await this.upsertShoppingListItem({
+            list_id: shoppingList.id,
+            store_id: storeId,
+            name: "Spaghetti",
+            qty: 1,
+            notes: null,
+            aisle_id: null,
+            section_id: pastaSection.id,
+        });
+
+        await this.upsertShoppingListItem({
+            list_id: shoppingList.id,
+            store_id: storeId,
+            name: "Cheddar Cheese",
+            qty: 1,
+            notes: "Sharp, block style",
+            aisle_id: dairyAisle.id,
+            section_id: null,
+        });
+
+        await this.upsertShoppingListItem({
+            list_id: shoppingList.id,
+            store_id: storeId,
+            name: "Potato Chips",
+            qty: 1,
+            notes: null,
+            aisle_id: snacksAisle.id,
+            section_id: null,
+        });
     }
 }

@@ -1,15 +1,15 @@
 -   [ ] Sort on the Store Editor isn't used/updated on the shopping list
+-   [ ] We aren't storing the store item id in the shopping list id table. We should, right?
 -   [ ] Come up with cool name/icon/package name
--   [ ] Should we have a better "base" database class that has not-implemented abstract members? And no interfaces?
 -   [ ] Generating aisles from OpenAI response
 -   [ ] Confirm Suspense works if database response time is slow
--               [ ] Consider making a cooler suspender--maybe the robot head swirling around
+-   [ ] Consider making a cooler suspender--maybe the robot head swirling around
 -   [ ] Confirm API key is stored more securely
 -   [ ] What is this IonHeader stuff?
 -   [ ] More readable zero states, walk the user through the workflow with a pretty UI
 -   [ ] Move settings to hamburger menu?
 -   [ ] Cool name and animations
--   [ ] Autofocus on entry forms
--   [ ] Does deleting a shopping list item also delete the store item? It should.
--   [ ] Clean up the code for the shopping list--lots of redundant / complex code.
+-   [ ] Switch to quickbuttons for some inputs, like aisle vs section. And some simpler dropdowns?
+-   [ ] Does deleting a shopping list item also delete the store item? It should. REVIEW THIS CODE.
 -   [ ] Define some mock test data that is applied when an env setting is set and the database is empty
+-   [ ] Cool animations

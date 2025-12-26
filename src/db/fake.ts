@@ -31,7 +31,7 @@ export class FakeDatabase extends BaseDatabase {
             return;
         }
 
-        await this.ensureInitialStore();
+        await this.ensureInitialData();
         this.initialized = true;
         this.notifyChange();
     }
@@ -60,7 +60,7 @@ export class FakeDatabase extends BaseDatabase {
             this.appSettings.clear();
         }
 
-        await this.ensureInitialStore();
+        await this.ensureInitialData();
         this.notifyChange();
     }
 

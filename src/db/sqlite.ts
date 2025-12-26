@@ -194,7 +194,7 @@ export class SQLiteDatabase extends BaseDatabase {
                 await this.runMigrations(conn);
 
                 this.connection = conn;
-                await this.ensureInitialStore();
+                await this.ensureInitialData();
             } catch (err) {
                 if (conn) {
                     try {
@@ -253,7 +253,7 @@ export class SQLiteDatabase extends BaseDatabase {
             await conn.execute(`DELETE FROM ${t};`);
         }
 
-        await this.ensureInitialStore();
+        await this.ensureInitialData();
         this.notifyChange();
     }
 
