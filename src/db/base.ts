@@ -1,5 +1,6 @@
 import { AppSetting } from "../models/AppSetting";
 import {
+    QuantityUnit,
     ShoppingListItem,
     ShoppingListItemOptionalId,
     ShoppingListItemWithDetails,
@@ -32,6 +33,9 @@ export abstract class BaseDatabase implements Database {
     // ========== App Settings Operations (Abstract) ==========
     abstract getAppSetting(key: string): Promise<AppSetting | null>;
     abstract setAppSetting(key: string, value: string): Promise<void>;
+
+    // ========== Quantity Unit Operations (Abstract) ==========
+    abstract loadAllQuantityUnits(): Promise<QuantityUnit[]>;
 
     // ========== StoreAisle Operations (Abstract) ==========
     abstract insertAisle(storeId: string, name: string): Promise<StoreAisle>;
@@ -227,6 +231,7 @@ export abstract class BaseDatabase implements Database {
             store_id: storeId,
             store_item_id: bananas.id,
             qty: 1,
+            unit_id: "bunch",
             notes: "Ripe, not green",
         });
 
@@ -241,6 +246,7 @@ export abstract class BaseDatabase implements Database {
             store_id: storeId,
             store_item_id: sourdough.id,
             qty: 1,
+            unit_id: null,
             notes: null,
         });
 
@@ -255,6 +261,7 @@ export abstract class BaseDatabase implements Database {
             store_id: storeId,
             store_item_id: tomatoes.id,
             qty: 2,
+            unit_id: "can",
             notes: "14.5 oz cans",
         });
 
@@ -269,6 +276,7 @@ export abstract class BaseDatabase implements Database {
             store_id: storeId,
             store_item_id: spaghetti.id,
             qty: 1,
+            unit_id: "box",
             notes: null,
         });
 
@@ -283,6 +291,7 @@ export abstract class BaseDatabase implements Database {
             store_id: storeId,
             store_item_id: cheese.id,
             qty: 1,
+            unit_id: "pound",
             notes: "Sharp, block style",
         });
 
@@ -297,6 +306,7 @@ export abstract class BaseDatabase implements Database {
             store_id: storeId,
             store_item_id: chips.id,
             qty: 1,
+            unit_id: "bag",
             notes: null,
         });
     }

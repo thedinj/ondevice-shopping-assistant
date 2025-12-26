@@ -309,7 +309,7 @@ const SectionList = forwardRef<ListHandle, SectionListProps>(
                                 render={({ field }) => (
                                     <IonItem>
                                         <IonLabel position="stacked">
-                                            Aisle (Optional)
+                                            Aisle
                                         </IonLabel>
                                         <IonSelect
                                             value={field.value}

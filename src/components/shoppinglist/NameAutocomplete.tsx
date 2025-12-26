@@ -64,7 +64,7 @@ export const NameAutocomplete: React.FC = () => {
             render={() => (
                 <div style={{ position: "relative" }}>
                     <IonItem>
-                        <IonLabel position="stacked">Item Name</IonLabel>
+                        <IonLabel position="stacked">Item</IonLabel>
                         <IonInput
                             value={searchTerm}
                             placeholder="Enter item name"

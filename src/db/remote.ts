@@ -42,6 +42,12 @@ export class RemoteDatabase extends BaseDatabase {
         throw new Error("RemoteDatabase not yet implemented");
     }
 
+    async loadAllQuantityUnits(): Promise<
+        import("../models/Store").QuantityUnit[]
+    > {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
     async loadAllStores(): Promise<Store[]> {
         throw new Error("RemoteDatabase not yet implemented");
     }

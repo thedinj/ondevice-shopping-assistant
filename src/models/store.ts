@@ -28,6 +28,14 @@ export type StoreSection = {
     updated_at: string;
 };
 
+export type QuantityUnit = {
+    id: string;
+    name: string;
+    abbreviation: string;
+    sort_order: number;
+    category: string;
+};
+
 export type StoreItem = {
     id: string;
     store_id: string;
@@ -59,6 +67,7 @@ export type ShoppingListItem = {
     store_id: string;
     store_item_id: string; // Non-nullable - shopping list items must reference a store item
     qty: number;
+    unit_id: string | null;
     notes: string | null;
     is_checked: number;
     checked_at: string | null;
@@ -73,7 +82,7 @@ export type ShoppingListItem = {
 export type ShoppingListItemOptionalId = PartialPick<ShoppingListItem, "id"> &
     Pick<
         ShoppingListItem,
-        "list_id" | "store_id" | "store_item_id" | "qty" | "notes"
+        "list_id" | "store_id" | "store_item_id" | "qty" | "unit_id" | "notes"
     >;
 
 /**
@@ -81,6 +90,7 @@ export type ShoppingListItemOptionalId = PartialPick<ShoppingListItem, "id"> &
  */
 export type ShoppingListItemWithDetails = ShoppingListItem & {
     item_name: string; // From store_item.name via JOIN
+    unit_abbreviation: string | null; // From quantity_unit.abbreviation via JOIN
     section_id: string | null; // From store_item or section JOIN
     aisle_id: string | null; // From store_item or section's aisle
     section_name: string | null;

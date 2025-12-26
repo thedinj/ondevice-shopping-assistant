@@ -1,5 +1,6 @@
 import { AppSetting } from "../models/AppSetting";
 import {
+    QuantityUnit,
     ShoppingListItem,
     ShoppingListItemOptionalId,
     ShoppingListItemWithDetails,
@@ -92,6 +93,12 @@ export interface EntityDatabase {
      * Set an app setting
      */
     setAppSetting(key: string, value: string): Promise<void>;
+
+    // ========== Quantity Unit Operations ==========
+    /**
+     * Load all quantity units for dropdown display
+     */
+    loadAllQuantityUnits(): Promise<QuantityUnit[]>;
 
     // ========== StoreAisle Operations ==========
     /**

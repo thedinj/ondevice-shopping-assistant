@@ -16,7 +16,8 @@ export const QuantityInput = () => {
                         <IonInput
                             value={field.value}
                             type="number"
-                            min="1"
+                            min="0"
+                            step="1"
                             placeholder="1"
                             onIonInput={(e) => {
                                 const val = e.detail.value;

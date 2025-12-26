@@ -39,6 +39,17 @@ export function useStores() {
 }
 
 /**
+ * Hook to fetch all quantity units
+ */
+export function useQuantityUnits() {
+    const database = useDatabase();
+    return useTanstackQuery({
+        queryKey: ["quantityUnits"],
+        queryFn: () => database.loadAllQuantityUnits(),
+    });
+}
+
+/**
  * Hook to fetch a single store by ID
  */
 export function useStore(id: string) {

@@ -6,6 +6,7 @@ import {
 import { AppSetting } from "../models/AppSetting";
 import {
     getInitializedStore,
+    QuantityUnit,
     ShoppingListItem,
     ShoppingListItemOptionalId,
     ShoppingListItemWithDetails,
@@ -31,6 +32,37 @@ const migrations: Array<{ version: number; up: string[] }> = [
          value TEXT NOT NULL,
          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
        );`,
+
+            `CREATE TABLE IF NOT EXISTS quantity_unit (
+         id TEXT PRIMARY KEY,
+         name TEXT NOT NULL,
+         abbreviation TEXT NOT NULL,
+         sort_order INTEGER NOT NULL,
+         category TEXT NOT NULL
+       );`,
+
+            // Insert initial quantity units
+            `INSERT INTO quantity_unit (id, name, abbreviation, sort_order, category) VALUES
+         ('gram', 'Gram', 'g', 10, 'weight'),
+         ('kilogram', 'Kilogram', 'kg', 11, 'weight'),
+         ('milligram', 'Milligram', 'mg', 9, 'weight'),
+         ('ounce', 'Ounce', 'oz', 12, 'weight'),
+         ('pound', 'Pound', 'lb', 13, 'weight'),
+         ('milliliter', 'Milliliter', 'ml', 20, 'volume'),
+         ('liter', 'Liter', 'l', 21, 'volume'),
+         ('fluid-ounce', 'Fluid Ounce', 'fl oz', 22, 'volume'),
+         ('cup', 'Cup', 'cup', 23, 'volume'),
+         ('tablespoon', 'Tablespoon', 'tbsp', 24, 'volume'),
+         ('teaspoon', 'Teaspoon', 'tsp', 25, 'volume'),
+         ('count', 'Count', 'ct', 30, 'count'),
+         ('dozen', 'Dozen', 'doz', 31, 'count'),
+         ('package', 'Package', 'pkg', 40, 'package'),
+         ('can', 'Can', 'can', 41, 'package'),
+         ('box', 'Box', 'box', 42, 'package'),
+         ('bag', 'Bag', 'bag', 43, 'package'),
+         ('bottle', 'Bottle', 'btl', 44, 'package'),
+         ('jar', 'Jar', 'jar', 45, 'package'),
+         ('bunch', 'Bunch', 'bunch', 50, 'other');`,
 
             `CREATE TABLE IF NOT EXISTS store (
          id TEXT PRIMARY KEY,
@@ -96,6 +128,7 @@ const migrations: Array<{ version: number; up: string[] }> = [
          store_id TEXT NOT NULL,
          store_item_id TEXT NOT NULL,
          qty REAL NOT NULL DEFAULT 1,
+         unit_id TEXT,
          notes TEXT,
          is_checked INTEGER NOT NULL DEFAULT 0,
          checked_at TEXT,
@@ -103,7 +136,8 @@ const migrations: Array<{ version: number; up: string[] }> = [
          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
          FOREIGN KEY (list_id) REFERENCES shopping_list(id) ON DELETE CASCADE,
          FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
-         FOREIGN KEY (store_item_id) REFERENCES store_item(id) ON DELETE CASCADE
+         FOREIGN KEY (store_item_id) REFERENCES store_item(id) ON DELETE CASCADE,
+         FOREIGN KEY (unit_id) REFERENCES quantity_unit(id) ON DELETE SET NULL
        );`,
 
             `CREATE INDEX IF NOT EXISTS ix_list_item_list_checked
@@ -275,6 +309,14 @@ export class SQLiteDatabase extends BaseDatabase {
         );
         this.notifyChange();
         return newStore;
+    }
+
+    async loadAllQuantityUnits(): Promise<QuantityUnit[]> {
+        const conn = await this.getConnection();
+        const res = await conn.query(
+            "SELECT id, name, abbreviation, sort_order, category FROM quantity_unit ORDER BY sort_order"
+        );
+        return (res.values || []) as QuantityUnit[];
     }
 
     async loadAllStores(): Promise<Store[]> {
@@ -688,16 +730,18 @@ export class SQLiteDatabase extends BaseDatabase {
         const res = await conn.query(
             `SELECT 
                 sli.id, sli.list_id, sli.store_id, sli.store_item_id,
-                sli.qty, sli.notes,
+                sli.qty, sli.unit_id, sli.notes,
                 sli.is_checked, sli.checked_at,
                 sli.created_at, sli.updated_at,
                 si.name as item_name,
+                qu.abbreviation as unit_abbreviation,
                 COALESCE(ss.id, si.section_id) as section_id,
                 COALESCE(ss.aisle_id, si.aisle_id) as aisle_id,
                 ss.name as section_name, ss.sort_order as section_sort_order,
                 sa.name as aisle_name, sa.sort_order as aisle_sort_order
              FROM shopping_list_item sli
              INNER JOIN store_item si ON sli.store_item_id = si.id
+             LEFT JOIN quantity_unit qu ON sli.unit_id = qu.id
              LEFT JOIN store_section ss ON si.section_id = ss.id
              LEFT JOIN store_aisle sa ON COALESCE(ss.aisle_id, si.aisle_id) = sa.id
              WHERE sli.list_id = ?
@@ -776,13 +820,20 @@ export class SQLiteDatabase extends BaseDatabase {
             // Update existing shopping list item
             await conn.run(
                 `UPDATE shopping_list_item 
-                 SET store_item_id = ?, qty = ?, notes = ?, updated_at = ? 
+                 SET store_item_id = ?, qty = ?, unit_id = ?, notes = ?, updated_at = ? 
                  WHERE id = ?`,
-                [params.store_item_id, params.qty, params.notes, now, params.id]
+                [
+                    params.store_item_id,
+                    params.qty,
+                    params.unit_id || null,
+                    params.notes,
+                    now,
+                    params.id,
+                ]
             );
 
             const itemRes = await conn.query(
-                `SELECT id, list_id, store_id, store_item_id, qty, notes,
+                `SELECT id, list_id, store_id, store_item_id, qty, unit_id, notes,
                         is_checked, checked_at, created_at, updated_at
                  FROM shopping_list_item WHERE id = ?`,
                 [params.id]
@@ -796,14 +847,15 @@ export class SQLiteDatabase extends BaseDatabase {
 
             await conn.run(
                 `INSERT INTO shopping_list_item 
-                 (id, list_id, store_id, store_item_id, qty, notes, created_at, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                 (id, list_id, store_id, store_item_id, qty, unit_id, notes, created_at, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     id,
                     params.list_id,
                     params.store_id,
                     params.store_item_id,
                     params.qty,
+                    params.unit_id || null,
                     params.notes,
                     now,
                     now,
@@ -817,6 +869,7 @@ export class SQLiteDatabase extends BaseDatabase {
                 store_id: params.store_id,
                 store_item_id: params.store_item_id,
                 qty: params.qty,
+                unit_id: params.unit_id || null,
                 notes: params.notes,
                 is_checked: 0,
                 checked_at: null,

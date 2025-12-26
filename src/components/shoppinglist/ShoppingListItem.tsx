@@ -18,6 +18,7 @@ interface ShoppingListItemProps {
         list_id: string;
         item_name: string; // From store_item via JOIN
         qty: number;
+        unit_abbreviation: string | null; // From quantity_unit via JOIN
         notes: string | null;
         section_name: string | null;
         aisle_name: string | null;
@@ -81,7 +82,15 @@ export const ShoppingListItem = ({
                 </div>
                 <IonLabel style={{ cursor: "default" }}>
                     <h2>
-                        {item.item_name} {item.qty > 1 && `(${item.qty})`}
+                        {item.item_name}{" "}
+                        {(item.qty > 1 || item.unit_abbreviation) && (
+                            <span>
+                                ({item.qty || 1}
+                                {item.unit_abbreviation &&
+                                    ` ${item.unit_abbreviation}`}
+                                )
+                            </span>
+                        )}
                     </h2>
                     {item.notes && (
                         <p style={{ fontStyle: "italic" }}>{item.notes}</p>

@@ -1,6 +1,7 @@
 import { AppSetting } from "../models/AppSetting";
 import {
     getInitializedStore,
+    QuantityUnit,
     ShoppingList,
     ShoppingListItem,
     ShoppingListItemOptionalId,
@@ -24,6 +25,7 @@ export class FakeDatabase extends BaseDatabase {
     private shoppingLists: Map<string, ShoppingList> = new Map();
     private shoppingListItems: Map<string, ShoppingListItem> = new Map();
     private appSettings: Map<string, AppSetting> = new Map();
+    private quantityUnits: Map<string, QuantityUnit> = new Map();
     private initialized = false;
 
     async initialize(): Promise<void> {
@@ -31,9 +33,159 @@ export class FakeDatabase extends BaseDatabase {
             return;
         }
 
+        // Initialize quantity units
+        this.initializeQuantityUnits();
+
         await this.ensureInitialData();
         this.initialized = true;
         this.notifyChange();
+    }
+
+    private initializeQuantityUnits(): void {
+        const units = [
+            {
+                id: "gram",
+                name: "Gram",
+                abbreviation: "g",
+                sort_order: 10,
+                category: "weight",
+            },
+            {
+                id: "kilogram",
+                name: "Kilogram",
+                abbreviation: "kg",
+                sort_order: 11,
+                category: "weight",
+            },
+            {
+                id: "milligram",
+                name: "Milligram",
+                abbreviation: "mg",
+                sort_order: 9,
+                category: "weight",
+            },
+            {
+                id: "ounce",
+                name: "Ounce",
+                abbreviation: "oz",
+                sort_order: 12,
+                category: "weight",
+            },
+            {
+                id: "pound",
+                name: "Pound",
+                abbreviation: "lb",
+                sort_order: 13,
+                category: "weight",
+            },
+            {
+                id: "milliliter",
+                name: "Milliliter",
+                abbreviation: "ml",
+                sort_order: 20,
+                category: "volume",
+            },
+            {
+                id: "liter",
+                name: "Liter",
+                abbreviation: "l",
+                sort_order: 21,
+                category: "volume",
+            },
+            {
+                id: "fluid-ounce",
+                name: "Fluid Ounce",
+                abbreviation: "fl oz",
+                sort_order: 22,
+                category: "volume",
+            },
+            {
+                id: "cup",
+                name: "Cup",
+                abbreviation: "cup",
+                sort_order: 23,
+                category: "volume",
+            },
+            {
+                id: "tablespoon",
+                name: "Tablespoon",
+                abbreviation: "tbsp",
+                sort_order: 24,
+                category: "volume",
+            },
+            {
+                id: "teaspoon",
+                name: "Teaspoon",
+                abbreviation: "tsp",
+                sort_order: 25,
+                category: "volume",
+            },
+            {
+                id: "count",
+                name: "Count",
+                abbreviation: "ct",
+                sort_order: 30,
+                category: "count",
+            },
+            {
+                id: "dozen",
+                name: "Dozen",
+                abbreviation: "doz",
+                sort_order: 31,
+                category: "count",
+            },
+            {
+                id: "package",
+                name: "Package",
+                abbreviation: "pkg",
+                sort_order: 40,
+                category: "package",
+            },
+            {
+                id: "can",
+                name: "Can",
+                abbreviation: "can",
+                sort_order: 41,
+                category: "package",
+            },
+            {
+                id: "box",
+                name: "Box",
+                abbreviation: "box",
+                sort_order: 42,
+                category: "package",
+            },
+            {
+                id: "bag",
+                name: "Bag",
+                abbreviation: "bag",
+                sort_order: 43,
+                category: "package",
+            },
+            {
+                id: "bottle",
+                name: "Bottle",
+                abbreviation: "btl",
+                sort_order: 44,
+                category: "package",
+            },
+            {
+                id: "jar",
+                name: "Jar",
+                abbreviation: "jar",
+                sort_order: 45,
+                category: "package",
+            },
+            {
+                id: "bunch",
+                name: "Bunch",
+                abbreviation: "bunch",
+                sort_order: 50,
+                category: "other",
+            },
+        ];
+
+        units.forEach((unit) => this.quantityUnits.set(unit.id, unit));
     }
 
     async close(): Promise<void> {
@@ -70,6 +222,12 @@ export class FakeDatabase extends BaseDatabase {
         this.stores.set(newStore.id, newStore);
         this.notifyChange();
         return newStore;
+    }
+
+    async loadAllQuantityUnits(): Promise<QuantityUnit[]> {
+        return Array.from(this.quantityUnits.values()).sort(
+            (a, b) => a.sort_order - b.sort_order
+        );
     }
 
     async loadAllStores(): Promise<Store[]> {
@@ -441,6 +599,11 @@ export class FakeDatabase extends BaseDatabase {
                     );
                 }
 
+                // Join with quantity_unit
+                const unit = item.unit_id
+                    ? this.quantityUnits.get(item.unit_id)
+                    : null;
+
                 // Join with section and aisle from store_item
                 const section = storeItem.section_id
                     ? this.sections.get(storeItem.section_id)
@@ -455,6 +618,7 @@ export class FakeDatabase extends BaseDatabase {
                 return {
                     ...item,
                     item_name: storeItem.name,
+                    unit_abbreviation: unit?.abbreviation ?? null,
                     section_id: section?.id ?? null,
                     aisle_id: calculatedAisleId,
                     section_name: section?.name ?? null,
@@ -538,6 +702,7 @@ export class FakeDatabase extends BaseDatabase {
                 ...existing,
                 store_item_id: params.store_item_id,
                 qty: params.qty,
+                unit_id: params.unit_id || null,
                 notes: params.notes,
                 updated_at: now,
             };
@@ -554,6 +719,7 @@ export class FakeDatabase extends BaseDatabase {
                 store_id: params.store_id,
                 store_item_id: params.store_item_id,
                 qty: params.qty,
+                unit_id: params.unit_id || null,
                 notes: params.notes,
                 is_checked: 0,
                 checked_at: null,

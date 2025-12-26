@@ -6,7 +6,8 @@ export const itemFormSchema = z.object({
         .string()
         .min(1, "Name is required")
         .transform((val) => val.trim()),
-    qty: z.number().min(1, "Quantity must be at least 1"),
+    qty: z.number().min(0.01, "Quantity must be greater than 0"),
+    unitId: z.string().nullable().optional(),
     notes: z.string().nullable().optional(),
     aisleId: z.string().nullable().optional(),
     sectionId: z.string().nullable().optional(),

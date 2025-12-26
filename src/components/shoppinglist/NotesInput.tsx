@@ -11,7 +11,7 @@ export const NotesInput = () => {
             control={control}
             render={({ field }) => (
                 <IonItem>
-                    <IonLabel position="stacked">Notes (Optional)</IonLabel>
+                    <IonLabel position="stacked">Notes</IonLabel>
                     <IonTextarea
                         value={field.value || ""}
                         placeholder="Enter any notes"

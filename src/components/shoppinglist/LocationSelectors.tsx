@@ -33,7 +33,7 @@ export const LocationSelectors = () => {
                 control={control}
                 render={({ field }) => (
                     <IonItem>
-                        <IonLabel position="stacked">Aisle (Optional)</IonLabel>
+                        <IonLabel position="stacked">Aisle</IonLabel>
                         <IonSelect
                             value={field.value ?? ""}
                             onIonChange={(e) => {
@@ -73,9 +73,7 @@ export const LocationSelectors = () => {
                 control={control}
                 render={({ field }) => (
                     <IonItem>
-                        <IonLabel position="stacked">
-                            Section (Optional)
-                        </IonLabel>
+                        <IonLabel position="stacked">Section</IonLabel>
                         <IonSelect
                             value={field.value ?? ""}
                             onIonChange={(e) => {

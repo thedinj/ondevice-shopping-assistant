@@ -26,6 +26,7 @@ import { LocationSelectors } from "./LocationSelectors";
 import { NameAutocomplete } from "./NameAutocomplete";
 import { NotesInput } from "./NotesInput";
 import { QuantityInput } from "./QuantityInput";
+import { UnitSelector } from "./UnitSelector";
 import { useShoppingListContext } from "./useShoppingListContext";
 
 interface ItemEditorModalProps {
@@ -65,6 +66,7 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
             reset({
                 name: editingItem.item_name,
                 qty: editingItem.qty,
+                unitId: editingItem.unit_id,
                 notes: editingItem.notes,
                 aisleId: editingItem.aisle_id,
                 sectionId: editingItem.section_id,
@@ -73,6 +75,7 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
             reset({
                 name: "",
                 qty: 1,
+                unitId: null,
                 notes: null,
                 aisleId: null,
                 sectionId: null,
@@ -111,6 +114,7 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
             store_id: storeId,
             store_item_id: storeItemId,
             qty: data.qty,
+            unit_id: data.unitId || null,
             notes: data.notes || null,
         });
         closeItemModal();
@@ -139,6 +143,7 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <NameAutocomplete />
                         <QuantityInput />
+                        <UnitSelector />
                         <LocationSelectors />
                         <NotesInput />
 

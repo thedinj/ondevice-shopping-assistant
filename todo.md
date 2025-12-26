@@ -1,5 +1,4 @@
 -   Review shopping list item changes one more time
--   Allow units? And decimal quantities?
 -   Favorite items/store item tab/editor on shopping list
 -   Avoid slide-to-edit UX for editing shopping list items (and store items, and maybe even stores/aisles/sections?)
 -   Come up with cool name/icon/package name
