@@ -1,21 +1,9 @@
-import { IonList, IonListHeader, IonLabel, IonText } from "@ionic/react";
+import { IonLabel, IonList, IonListHeader, IonText } from "@ionic/react";
+import { ShoppingListItemWithDetails } from "../../models/Store";
 import { ShoppingListItem } from "./ShoppingListItem";
 
-interface GroupedItem {
-    id: string;
-    list_id: string;
-    name: string;
-    qty: number;
-    notes: string | null;
-    section_id: string | null;
-    section_name: string | null;
-    aisle_id: string | null;
-    aisle_name: string | null;
-    is_checked: number;
-}
-
 interface UncheckedItemsProps {
-    items: GroupedItem[];
+    items: ShoppingListItemWithDetails[];
 }
 
 export const UncheckedItems = ({ items }: UncheckedItemsProps) => {
@@ -85,13 +73,15 @@ interface AisleGroup {
 interface SectionGroup {
     sectionId: string | null;
     sectionName: string | null;
-    items: GroupedItem[];
+    items: ShoppingListItemWithDetails[];
 }
 
-function groupItemsByAisleAndSection(items: GroupedItem[]): AisleGroup[] {
+function groupItemsByAisleAndSection(
+    items: ShoppingListItemWithDetails[]
+): AisleGroup[] {
     const aisleMap = new Map<
         string | null,
-        Map<string | null, GroupedItem[]>
+        Map<string | null, ShoppingListItemWithDetails[]>
     >();
 
     for (const item of items) {

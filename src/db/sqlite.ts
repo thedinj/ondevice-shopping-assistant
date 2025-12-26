@@ -3,17 +3,20 @@ import {
     SQLiteConnection,
     SQLiteDBConnection,
 } from "@capacitor-community/sqlite";
-import { Database, DEFAULT_TABLES_TO_PERSIST } from "./types";
-import { BaseDatabase } from "./base";
+import { AppSetting } from "../models/AppSetting";
 import {
+    DEFAULT_STORE_NAME,
+    getInitializedStore,
+    ShoppingListItem,
+    ShoppingListItemOptionalId,
+    ShoppingListItemWithDetails,
     Store,
     StoreAisle,
-    StoreSection,
     StoreItem,
-    getInitializedStore,
-    DEFAULT_STORE_NAME,
+    StoreSection,
 } from "../models/Store";
-import { AppSetting } from "../models/AppSetting";
+import { BaseDatabase } from "./base";
+import { Database, DEFAULT_TABLES_TO_PERSIST } from "./types";
 
 const DB_NAME = "shopping_assistant";
 const DB_VERSION = 1;
@@ -64,6 +67,7 @@ const migrations: Array<{ version: number; up: string[] }> = [
          store_id TEXT NOT NULL,
          name TEXT NOT NULL,
          name_norm TEXT NOT NULL,
+         aisle_id TEXT,
          section_id TEXT,
          usage_count INTEGER NOT NULL DEFAULT 0,
          last_used_at TEXT,
@@ -71,6 +75,7 @@ const migrations: Array<{ version: number; up: string[] }> = [
          created_at TEXT NOT NULL DEFAULT (datetime('now')),
          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
          FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
+         FOREIGN KEY (aisle_id) REFERENCES store_aisle(id) ON DELETE SET NULL,
          FOREIGN KEY (section_id) REFERENCES store_section(id) ON DELETE SET NULL
        );`,
 
@@ -539,6 +544,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
     async insertItem(
         storeId: string,
         name: string,
+        aisleId?: string | null,
         sectionId?: string | null
     ): Promise<StoreItem> {
         const conn = await this.getConnection();
@@ -547,9 +553,18 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         const name_norm = name.toLowerCase().trim();
 
         await conn.run(
-            `INSERT INTO store_item (id, store_id, name, name_norm, section_id, usage_count, created_at, updated_at) 
-             VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
-            [id, storeId, name, name_norm, sectionId ?? null, now, now]
+            `INSERT INTO store_item (id, store_id, name, name_norm, aisle_id, section_id, usage_count, created_at, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+            [
+                id,
+                storeId,
+                name,
+                name_norm,
+                aisleId ?? null,
+                sectionId ?? null,
+                now,
+                now,
+            ]
         );
 
         this.notifyChange();
@@ -558,6 +573,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             store_id: storeId,
             name,
             name_norm,
+            aisle_id: aisleId ?? null,
             section_id: sectionId ?? null,
             usage_count: 0,
             last_used_at: null,
@@ -570,7 +586,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
     async getItemsByStore(storeId: string): Promise<StoreItem[]> {
         const conn = await this.getConnection();
         const res = await conn.query(
-            `SELECT id, store_id, name, name_norm, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at 
+            `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at 
              FROM store_item 
              WHERE store_id = ? AND is_hidden = 0 
              ORDER BY name_norm`,
@@ -582,7 +598,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
     async getItemById(id: string): Promise<StoreItem | null> {
         const conn = await this.getConnection();
         const res = await conn.query(
-            `SELECT id, store_id, name, name_norm, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at 
+            `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at 
              FROM store_item 
              WHERE id = ?`,
             [id]
@@ -593,6 +609,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
     async updateItem(
         id: string,
         name: string,
+        aisleId?: string | null,
         sectionId?: string | null
     ): Promise<StoreItem> {
         const conn = await this.getConnection();
@@ -601,9 +618,16 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
 
         await conn.run(
             `UPDATE store_item 
-             SET name = ?, name_norm = ?, section_id = ?, updated_at = ? 
+             SET name = ?, name_norm = ?, aisle_id = ?, section_id = ?, updated_at = ? 
              WHERE id = ?`,
-            [name, name_norm, sectionId ?? null, updated_at, id]
+            [
+                name,
+                name_norm,
+                aisleId ?? null,
+                sectionId ?? null,
+                updated_at,
+                id,
+            ]
         );
 
         const item = await this.getItemById(id);
@@ -667,30 +691,9 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         };
     }
 
-    async getShoppingListItemsGrouped(listId: string): Promise<
-        Array<{
-            id: string;
-            list_id: string;
-            store_id: string;
-            store_item_id: string | null;
-            name: string;
-            name_norm: string;
-            qty: number;
-            notes: string | null;
-            section_id: string | null;
-            section_name_snap: string | null;
-            section_name: string | null;
-            section_sort_order: number | null;
-            aisle_id: string | null;
-            aisle_name_snap: string | null;
-            aisle_name: string | null;
-            aisle_sort_order: number | null;
-            is_checked: number;
-            checked_at: string | null;
-            created_at: string;
-            updated_at: string;
-        }>
-    > {
+    async getShoppingListItemsGrouped(
+        listId: string
+    ): Promise<ShoppingListItemWithDetails[]> {
         const conn = await this.getConnection();
         const res = await conn.query(
             `SELECT 
@@ -715,33 +718,9 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         return res.values || [];
     }
 
-    async upsertShoppingListItem(params: {
-        id?: string;
-        listId: string;
-        storeId: string;
-        name: string;
-        qty: number;
-        notes: string | null;
-        sectionId: string | null;
-        aisleId: string | null;
-    }): Promise<{
-        id: string;
-        list_id: string;
-        store_id: string;
-        store_item_id: string | null;
-        name: string;
-        name_norm: string;
-        qty: number;
-        notes: string | null;
-        section_id: string | null;
-        section_name_snap: string | null;
-        aisle_id: string | null;
-        aisle_name_snap: string | null;
-        is_checked: number;
-        checked_at: string | null;
-        created_at: string;
-        updated_at: string;
-    }> {
+    async upsertShoppingListItem(
+        params: ShoppingListItemOptionalId
+    ): Promise<ShoppingListItem> {
         const conn = await this.getConnection();
         const now = new Date().toISOString();
         const name_norm = params.name.toLowerCase().trim();
@@ -751,7 +730,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         const existingItemRes = await conn.query(
             `SELECT id, usage_count, last_used_at FROM store_item 
              WHERE store_id = ? AND name_norm = ?`,
-            [params.storeId, name_norm]
+            [params.store_id, name_norm]
         );
 
         if (existingItemRes.values && existingItemRes.values.length > 0) {
@@ -761,12 +740,13 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             // Update usage tracking
             await conn.run(
                 `UPDATE store_item 
-                 SET usage_count = ?, last_used_at = ?, section_id = ?, updated_at = ? 
+                 SET usage_count = ?, last_used_at = ?, aisle_id = ?, section_id = ?, updated_at = ? 
                  WHERE id = ?`,
                 [
                     (existingItem.usage_count || 0) + 1,
                     now,
-                    params.sectionId ?? null,
+                    params.aisle_id ?? null,
+                    params.section_id ?? null,
                     now,
                     storeItemId,
                 ]
@@ -775,14 +755,15 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             // Create new StoreItem
             storeItemId = crypto.randomUUID();
             await conn.run(
-                `INSERT INTO store_item (id, store_id, name, name_norm, section_id, usage_count, last_used_at, created_at, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+                `INSERT INTO store_item (id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, created_at, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
                 [
                     storeItemId,
-                    params.storeId,
+                    params.store_id,
                     params.name,
                     name_norm,
-                    params.sectionId ?? null,
+                    params.aisle_id ?? null,
+                    params.section_id ?? null,
                     now,
                     now,
                     now,
@@ -794,18 +775,18 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         let sectionNameSnap: string | null = null;
         let aisleNameSnap: string | null = null;
 
-        if (params.sectionId) {
+        if (params.section_id) {
             const sectionRes = await conn.query(
                 `SELECT name FROM store_section WHERE id = ?`,
-                [params.sectionId]
+                [params.section_id]
             );
             sectionNameSnap = sectionRes.values?.[0]?.name || null;
         }
 
-        if (params.aisleId) {
+        if (params.aisle_id) {
             const aisleRes = await conn.query(
                 `SELECT name FROM store_aisle WHERE id = ?`,
-                [params.aisleId]
+                [params.aisle_id]
             );
             aisleNameSnap = aisleRes.values?.[0]?.name || null;
         }
@@ -823,9 +804,9 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
                     name_norm,
                     params.qty,
                     params.notes,
-                    params.sectionId ?? null,
+                    params.section_id ?? null,
                     sectionNameSnap,
-                    params.aisleId ?? null,
+                    params.aisle_id ?? null,
                     aisleNameSnap,
                     storeItemId,
                     now,
@@ -855,16 +836,16 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     id,
-                    params.listId,
-                    params.storeId,
+                    params.list_id,
+                    params.store_id,
                     storeItemId,
                     params.name,
                     name_norm,
                     params.qty,
                     params.notes,
-                    params.sectionId ?? null,
+                    params.section_id ?? null,
                     sectionNameSnap,
-                    params.aisleId ?? null,
+                    params.aisle_id ?? null,
                     aisleNameSnap,
                     now,
                     now,
@@ -874,16 +855,16 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             this.notifyChange();
             return {
                 id,
-                list_id: params.listId,
-                store_id: params.storeId,
+                list_id: params.list_id,
+                store_id: params.store_id,
                 store_item_id: storeItemId,
                 name: params.name,
                 name_norm,
                 qty: params.qty,
                 notes: params.notes,
-                section_id: params.sectionId ?? null,
+                section_id: params.section_id ?? null,
                 section_name_snap: sectionNameSnap,
-                aisle_id: params.aisleId ?? null,
+                aisle_id: params.aisle_id ?? null,
                 aisle_name_snap: aisleNameSnap,
                 is_checked: 0,
                 checked_at: null,
@@ -936,7 +917,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         const searchNorm = searchTerm.toLowerCase().trim() + "%";
 
         const res = await conn.query(
-            `SELECT id, store_id, name, name_norm, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at 
+            `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at 
              FROM store_item 
              WHERE store_id = ? AND name_norm LIKE ? AND is_hidden = 0 
              ORDER BY usage_count DESC, last_used_at DESC, name_norm ASC 

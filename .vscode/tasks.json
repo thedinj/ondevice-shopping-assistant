@@ -17,6 +17,16 @@
             "command": "adb",
             "args": ["shell", "pm", "clear", "io.ionic.starter"],
             "problemMatcher": []
+        },
+        {
+            "label": "Build",
+            "type": "shell",
+            "command": "npm run build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$tsc", "$eslint-stylish"]
         }
     ]
 }

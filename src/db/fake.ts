@@ -1,15 +1,17 @@
-import { Database, DEFAULT_TABLES_TO_PERSIST } from "./types";
-import { BaseDatabase } from "./base";
+import { AppSetting } from "../models/AppSetting";
 import {
-    Store,
-    StoreAisle,
-    StoreSection,
-    StoreItem,
+    getInitializedStore,
     ShoppingList,
     ShoppingListItem,
-    getInitializedStore,
+    ShoppingListItemOptionalId,
+    ShoppingListItemWithDetails,
+    Store,
+    StoreAisle,
+    StoreItem,
+    StoreSection,
 } from "../models/Store";
-import { AppSetting } from "../models/AppSetting";
+import { BaseDatabase } from "./base";
+import { Database, DEFAULT_TABLES_TO_PERSIST } from "./types";
 
 /**
  * In-memory fake database implementation for browser/development
@@ -293,6 +295,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
     async insertItem(
         storeId: string,
         name: string,
+        aisleId?: string | null,
         sectionId?: string | null
     ): Promise<StoreItem> {
         const id = crypto.randomUUID();
@@ -304,6 +307,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
             store_id: storeId,
             name,
             name_norm,
+            aisle_id: aisleId ?? null,
             section_id: sectionId ?? null,
             usage_count: 0,
             last_used_at: null,
@@ -330,6 +334,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
     async updateItem(
         id: string,
         name: string,
+        aisleId?: string | null,
         sectionId?: string | null
     ): Promise<StoreItem> {
         const item = this.items.get(id);
@@ -342,6 +347,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
             ...item,
             name,
             name_norm,
+            aisle_id: aisleId ?? null,
             section_id: sectionId ?? null,
             updated_at: new Date().toISOString(),
         };
@@ -416,30 +422,9 @@ export class FakeDatabase extends BaseDatabase implements Database {
         return newList;
     }
 
-    async getShoppingListItemsGrouped(listId: string): Promise<
-        Array<{
-            id: string;
-            list_id: string;
-            store_id: string;
-            store_item_id: string | null;
-            name: string;
-            name_norm: string;
-            qty: number;
-            notes: string | null;
-            section_id: string | null;
-            section_name_snap: string | null;
-            section_name: string | null;
-            section_sort_order: number | null;
-            aisle_id: string | null;
-            aisle_name_snap: string | null;
-            aisle_name: string | null;
-            aisle_sort_order: number | null;
-            is_checked: number;
-            checked_at: string | null;
-            created_at: string;
-            updated_at: string;
-        }>
-    > {
+    async getShoppingListItemsGrouped(
+        listId: string
+    ): Promise<ShoppingListItemWithDetails[]> {
         const items = Array.from(this.shoppingListItems.values())
             .filter((item) => item.list_id === listId)
             .map((item) => {
@@ -457,7 +442,7 @@ export class FakeDatabase extends BaseDatabase implements Database {
                     section_sort_order: section?.sort_order ?? null,
                     aisle_name: aisle?.name ?? null,
                     aisle_sort_order: aisle?.sort_order ?? null,
-                };
+                } as ShoppingListItemWithDetails;
             })
             .sort((a, b) => {
                 // Sort by: is_checked, aisle, section, item name
@@ -480,16 +465,9 @@ export class FakeDatabase extends BaseDatabase implements Database {
         return items;
     }
 
-    async upsertShoppingListItem(params: {
-        id?: string;
-        listId: string;
-        storeId: string;
-        name: string;
-        qty: number;
-        notes: string | null;
-        sectionId: string | null;
-        aisleId: string | null;
-    }): Promise<ShoppingListItem> {
+    async upsertShoppingListItem(
+        params: ShoppingListItemOptionalId
+    ): Promise<ShoppingListItem> {
         const now = new Date().toISOString();
         const name_norm = params.name.toLowerCase().trim();
 
@@ -497,7 +475,8 @@ export class FakeDatabase extends BaseDatabase implements Database {
         let storeItemId: string | null = null;
         const existingItem = Array.from(this.items.values()).find(
             (item) =>
-                item.store_id === params.storeId && item.name_norm === name_norm
+                item.store_id === params.store_id &&
+                item.name_norm === name_norm
         );
 
         if (existingItem) {
@@ -507,7 +486,8 @@ export class FakeDatabase extends BaseDatabase implements Database {
                 ...existingItem,
                 usage_count: existingItem.usage_count + 1,
                 last_used_at: now,
-                section_id: params.sectionId ?? existingItem.section_id,
+                aisle_id: params.aisle_id ?? existingItem.aisle_id,
+                section_id: params.section_id ?? existingItem.section_id,
                 updated_at: now,
             });
         } else {
@@ -515,10 +495,11 @@ export class FakeDatabase extends BaseDatabase implements Database {
             storeItemId = crypto.randomUUID();
             const newItem: StoreItem = {
                 id: storeItemId,
-                store_id: params.storeId,
+                store_id: params.store_id,
                 name: params.name,
                 name_norm,
-                section_id: params.sectionId ?? null,
+                aisle_id: params.aisle_id ?? null,
+                section_id: params.section_id ?? null,
                 usage_count: 1,
                 last_used_at: now,
                 is_hidden: 0,
@@ -529,10 +510,10 @@ export class FakeDatabase extends BaseDatabase implements Database {
         }
 
         // Get snapshots
-        const section = params.sectionId
-            ? this.sections.get(params.sectionId)
+        const section = params.section_id
+            ? this.sections.get(params.section_id)
             : null;
-        const aisle = params.aisleId ? this.aisles.get(params.aisleId) : null;
+        const aisle = params.aisle_id ? this.aisles.get(params.aisle_id) : null;
 
         if (params.id) {
             // Update existing shopping list item
@@ -547,9 +528,9 @@ export class FakeDatabase extends BaseDatabase implements Database {
                 name_norm,
                 qty: params.qty,
                 notes: params.notes,
-                section_id: params.sectionId ?? null,
+                section_id: params.section_id ?? null,
                 section_name_snap: section?.name ?? null,
-                aisle_id: params.aisleId ?? null,
+                aisle_id: params.aisle_id ?? null,
                 aisle_name_snap: aisle?.name ?? null,
                 store_item_id: storeItemId,
                 updated_at: now,
@@ -563,16 +544,16 @@ export class FakeDatabase extends BaseDatabase implements Database {
 
             const newItem: ShoppingListItem = {
                 id,
-                list_id: params.listId,
-                store_id: params.storeId,
+                list_id: params.list_id,
+                store_id: params.store_id,
                 store_item_id: storeItemId,
                 name: params.name,
                 name_norm,
                 qty: params.qty,
                 notes: params.notes,
-                section_id: params.sectionId ?? null,
+                section_id: params.section_id ?? null,
                 section_name_snap: section?.name ?? null,
-                aisle_id: params.aisleId ?? null,
+                aisle_id: params.aisle_id ?? null,
                 aisle_name_snap: aisle?.name ?? null,
                 is_checked: 0,
                 checked_at: null,

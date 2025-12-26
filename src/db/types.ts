@@ -1,8 +1,16 @@
-import { Store, StoreAisle, StoreSection, StoreItem } from "../models/Store";
 import { AppSetting } from "../models/AppSetting";
+import {
+    ShoppingListItem,
+    ShoppingListItemOptionalId,
+    ShoppingListItemWithDetails,
+    Store,
+    StoreAisle,
+    StoreItem,
+    StoreSection,
+} from "../models/Store";
 
 // Re-export types for convenience
-export type { StoreAisle, StoreSection, StoreItem };
+export type { ShoppingListItem, StoreAisle, StoreItem, StoreSection };
 
 /**
  * Default tables to preserve during database reset
@@ -38,6 +46,11 @@ export interface DatabaseEvents {
      */
     onChange(listener: DatabaseChangeListener): () => void;
 }
+
+/**
+ * Picks specified keys from T and makes them all optional
+ */
+export type PartialPick<T, K extends keyof T> = Partial<Pick<T, K>>;
 
 /**
  * Entity-specific database operations
@@ -161,6 +174,7 @@ export interface EntityDatabase {
     insertItem(
         storeId: string,
         name: string,
+        aisleId?: string | null,
         sectionId?: string | null
     ): Promise<StoreItem>;
 
@@ -180,6 +194,7 @@ export interface EntityDatabase {
     updateItem(
         id: string,
         name: string,
+        aisleId?: string | null,
         sectionId?: string | null
     ): Promise<StoreItem>;
 
@@ -215,63 +230,18 @@ export interface EntityDatabase {
      * Get all shopping list items for a list, joined with aisle/section info
      * Ordered by: is_checked, aisle sort_order, section sort_order, item name
      */
-    getShoppingListItemsGrouped(listId: string): Promise<
-        Array<{
-            id: string;
-            list_id: string;
-            store_id: string;
-            store_item_id: string | null;
-            name: string;
-            name_norm: string;
-            qty: number;
-            notes: string | null;
-            section_id: string | null;
-            section_name_snap: string | null;
-            section_name: string | null;
-            section_sort_order: number | null;
-            aisle_id: string | null;
-            aisle_name_snap: string | null;
-            aisle_name: string | null;
-            aisle_sort_order: number | null;
-            is_checked: number;
-            checked_at: string | null;
-            created_at: string;
-            updated_at: string;
-        }>
-    >;
+    getShoppingListItemsGrouped(
+        listId: string
+    ): Promise<Array<ShoppingListItemWithDetails>>;
 
     /**
      * Insert or update a shopping list item
      * Auto-creates StoreItem if it doesn't exist (by name_norm)
      * Updates StoreItem usage tracking
      */
-    upsertShoppingListItem(params: {
-        id?: string;
-        listId: string;
-        storeId: string;
-        name: string;
-        qty: number;
-        notes: string | null;
-        sectionId: string | null;
-        aisleId: string | null;
-    }): Promise<{
-        id: string;
-        list_id: string;
-        store_id: string;
-        store_item_id: string | null;
-        name: string;
-        name_norm: string;
-        qty: number;
-        notes: string | null;
-        section_id: string | null;
-        section_name_snap: string | null;
-        aisle_id: string | null;
-        aisle_name_snap: string | null;
-        is_checked: number;
-        checked_at: string | null;
-        created_at: string;
-        updated_at: string;
-    }>;
+    upsertShoppingListItem(
+        params: ShoppingListItemOptionalId
+    ): Promise<ShoppingListItem>;
 
     /**
      * Toggle the checked status of a shopping list item

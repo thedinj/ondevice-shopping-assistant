@@ -3,10 +3,14 @@ import {
     useMutation as useTanstackMutation,
     useQuery as useTanstackQuery,
 } from "@tanstack/react-query";
-import { useToast } from "../hooks/useToast";
 import { use } from "react";
+import { useToast } from "../hooks/useToast";
+import type {
+    ShoppingListItem,
+    ShoppingListItemOptionalId,
+} from "../models/Store";
 import { DatabaseContext } from "./context";
-import type { Database } from "./types";
+import { type Database } from "./types";
 
 /**
  * Hook to get database instance directly
@@ -473,12 +477,14 @@ export function useCreateItem() {
         mutationFn: ({
             storeId,
             name,
+            aisleId,
             sectionId,
         }: {
             storeId: string;
             name: string;
+            aisleId?: string | null;
             sectionId?: string | null;
-        }) => database.insertItem(storeId, name, sectionId),
+        }) => database.insertItem(storeId, name, aisleId, sectionId),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
                 queryKey: ["items", variables.storeId],
@@ -502,13 +508,15 @@ export function useUpdateItem() {
         mutationFn: ({
             id,
             name,
+            aisleId,
             sectionId,
         }: {
             id: string;
             name: string;
+            aisleId?: string | null;
             sectionId?: string | null;
             storeId: string;
-        }) => database.updateItem(id, name, sectionId),
+        }) => database.updateItem(id, name, aisleId, sectionId),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
                 queryKey: ["items", variables.storeId],
@@ -595,27 +603,25 @@ export function useUpsertShoppingListItem() {
     const queryClient = useQueryClient();
     const { showError } = useToast();
 
-    return useTanstackMutation({
-        mutationFn: (params: {
-            id?: string;
-            listId: string;
-            storeId: string;
-            name: string;
-            qty: number;
-            notes: string | null;
-            sectionId: string | null;
-            aisleId: string | null;
-        }) => database.upsertShoppingListItem(params),
+    return useTanstackMutation<
+        ShoppingListItem,
+        Error,
+        ShoppingListItemOptionalId
+    >({
+        mutationFn: (params) =>
+            database.upsertShoppingListItem(
+                params
+            ) as Promise<ShoppingListItem>,
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
-                queryKey: ["shopping-list-items", variables.listId],
+                queryKey: ["shopping-list-items", variables.list_id],
             });
             // Also invalidate store items for autocomplete
             queryClient.invalidateQueries({
-                queryKey: ["items", variables.storeId],
+                queryKey: ["items", variables.store_id],
             });
             queryClient.invalidateQueries({
-                queryKey: ["store-items", "search", variables.storeId],
+                queryKey: ["store-items", "search", variables.store_id],
             });
         },
         onError: (error: Error) => {

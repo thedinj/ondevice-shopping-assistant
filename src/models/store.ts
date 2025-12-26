@@ -1,3 +1,5 @@
+import { PartialPick } from "../db/types";
+
 export const DEFAULT_STORE_NAME = "Unnamed store";
 
 export type Store = {
@@ -31,6 +33,7 @@ export type StoreItem = {
     store_id: string;
     name: string;
     name_norm: string;
+    aisle_id: string | null;
     section_id: string | null;
     usage_count: number;
     last_used_at: string | null;
@@ -65,6 +68,29 @@ export type ShoppingListItem = {
     checked_at: string | null;
     created_at: string;
     updated_at: string;
+};
+
+/**
+ * Shopping list item input for upsert operations.
+ * Only requires user-provided fields; auto-generated fields are handled by the database.
+ */
+export type ShoppingListItemOptionalId = PartialPick<
+    ShoppingListItem,
+    "id"
+> &
+    Pick<
+        ShoppingListItem,
+        "list_id" | "store_id" | "name" | "qty" | "notes" | "aisle_id" | "section_id"
+    >;
+
+/**
+ * Shopping list item with joined aisle and section details from the database
+ */
+export type ShoppingListItemWithDetails = ShoppingListItem & {
+    section_name: string | null;
+    section_sort_order: number | null;
+    aisle_name: string | null;
+    aisle_sort_order: number | null;
 };
 
 export const getInitializedStore = (

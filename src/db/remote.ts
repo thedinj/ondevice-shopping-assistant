@@ -1,7 +1,12 @@
-import { Database, StoreAisle, StoreSection, StoreItem } from "./types";
-import { BaseDatabase } from "./base";
-import { Store } from "../models/Store";
 import { AppSetting } from "../models/AppSetting";
+import {
+    ShoppingListItem,
+    ShoppingListItemOptionalId,
+    ShoppingListItemWithDetails,
+    Store,
+} from "../models/Store";
+import { BaseDatabase } from "./base";
+import { Database, StoreAisle, StoreItem, StoreSection } from "./types";
 
 /**
  * Remote database implementation stub for future API integration
@@ -117,6 +122,7 @@ export class RemoteDatabase extends BaseDatabase implements Database {
     async insertItem(
         _storeId: string,
         _name: string,
+        _aisleId?: string | null,
         _sectionId?: string | null
     ): Promise<StoreItem> {
         throw new Error("RemoteDatabase not yet implemented");
@@ -133,6 +139,7 @@ export class RemoteDatabase extends BaseDatabase implements Database {
     async updateItem(
         _id: string,
         _name: string,
+        _aisleId?: string | null,
         _sectionId?: string | null
     ): Promise<StoreItem> {
         throw new Error("RemoteDatabase not yet implemented");
@@ -162,11 +169,15 @@ export class RemoteDatabase extends BaseDatabase implements Database {
         throw new Error("RemoteDatabase not yet implemented");
     }
 
-    async getShoppingListItemsGrouped(_listId: string): Promise<any[]> {
+    async getShoppingListItemsGrouped(
+        listId: string
+    ): Promise<ShoppingListItemWithDetails[]> {
         throw new Error("RemoteDatabase not yet implemented");
     }
 
-    async upsertShoppingListItem(_params: any): Promise<any> {
+    async upsertShoppingListItem(
+        params: ShoppingListItemOptionalId
+    ): Promise<ShoppingListItem> {
         throw new Error("RemoteDatabase not yet implemented");
     }
 
