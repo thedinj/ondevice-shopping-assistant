@@ -33,6 +33,8 @@ export type StoreItem = {
     store_id: string;
     name: string;
     name_norm: string;
+    // Only section_id is stored when present; aisle_id is null (aisle derived from section)
+    // Only aisle_id is stored when no section specified
     aisle_id: string | null;
     section_id: string | null;
     usage_count: number;
@@ -60,10 +62,10 @@ export type ShoppingListItem = {
     name_norm: string;
     qty: number;
     notes: string | null;
+    // Only section_id is stored when present; aisle_id is null (aisle derived from section)
+    // Only aisle_id is stored when no section specified
     section_id: string | null;
-    section_name_snap: string | null;
     aisle_id: string | null;
-    aisle_name_snap: string | null;
     is_checked: number;
     checked_at: string | null;
     created_at: string;

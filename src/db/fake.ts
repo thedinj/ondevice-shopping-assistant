@@ -302,13 +302,17 @@ export class FakeDatabase extends BaseDatabase implements Database {
         const now = new Date().toISOString();
         const name_norm = name.toLowerCase().trim();
 
+        // Normalize: store only section when present (null aisle), else store aisle
+        const normalizedAisleId = sectionId ? null : (aisleId ?? null);
+        const normalizedSectionId = sectionId ?? null;
+
         const item: StoreItem = {
             id,
             store_id: storeId,
             name,
             name_norm,
-            aisle_id: aisleId ?? null,
-            section_id: sectionId ?? null,
+            aisle_id: normalizedAisleId,
+            section_id: normalizedSectionId,
             usage_count: 0,
             last_used_at: null,
             is_hidden: 0,
@@ -343,12 +347,17 @@ export class FakeDatabase extends BaseDatabase implements Database {
         }
 
         const name_norm = name.toLowerCase().trim();
+        
+        // Normalize: store only section when present (null aisle), else store aisle
+        const normalizedAisleId = sectionId ? null : (aisleId ?? null);
+        const normalizedSectionId = sectionId ?? null;
+        
         const updated: StoreItem = {
             ...item,
             name,
             name_norm,
-            aisle_id: aisleId ?? null,
-            section_id: sectionId ?? null,
+            aisle_id: normalizedAisleId,
+            section_id: normalizedSectionId,
             updated_at: new Date().toISOString(),
         };
         this.items.set(id, updated);
@@ -432,9 +441,9 @@ export class FakeDatabase extends BaseDatabase implements Database {
                 const section = item.section_id
                     ? this.sections.get(item.section_id)
                     : null;
-                const aisle = item.aisle_id
-                    ? this.aisles.get(item.aisle_id)
-                    : null;
+                // Derive aisle from item.aisle_id or section's aisle_id
+                const aisleId = item.aisle_id ?? section?.aisle_id ?? null;
+                const aisle = aisleId ? this.aisles.get(aisleId) : null;
 
                 return {
                     ...item,
@@ -481,25 +490,35 @@ export class FakeDatabase extends BaseDatabase implements Database {
 
         if (existingItem) {
             storeItemId = existingItem.id;
+            
+            // Normalize: store only section when present (null aisle), else store aisle
+            const normalizedAisleId = params.section_id ? null : (params.aisle_id ?? existingItem.aisle_id);
+            const normalizedSectionId = params.section_id ?? existingItem.section_id;
+            
             // Update usage tracking
             this.items.set(existingItem.id, {
                 ...existingItem,
                 usage_count: existingItem.usage_count + 1,
                 last_used_at: now,
-                aisle_id: params.aisle_id ?? existingItem.aisle_id,
-                section_id: params.section_id ?? existingItem.section_id,
+                aisle_id: normalizedAisleId,
+                section_id: normalizedSectionId,
                 updated_at: now,
             });
         } else {
             // Create new StoreItem
             storeItemId = crypto.randomUUID();
+            
+            // Normalize: store only section when present (null aisle), else store aisle
+            const normalizedAisleId = params.section_id ? null : (params.aisle_id ?? null);
+            const normalizedSectionId = params.section_id ?? null;
+            
             const newItem: StoreItem = {
                 id: storeItemId,
                 store_id: params.store_id,
                 name: params.name,
                 name_norm,
-                aisle_id: params.aisle_id ?? null,
-                section_id: params.section_id ?? null,
+                aisle_id: normalizedAisleId,
+                section_id: normalizedSectionId,
                 usage_count: 1,
                 last_used_at: now,
                 is_hidden: 0,
@@ -509,11 +528,9 @@ export class FakeDatabase extends BaseDatabase implements Database {
             this.items.set(storeItemId, newItem);
         }
 
-        // Get snapshots
-        const section = params.section_id
-            ? this.sections.get(params.section_id)
-            : null;
-        const aisle = params.aisle_id ? this.aisles.get(params.aisle_id) : null;
+        // Normalize: store only section when present (null aisle), else store aisle
+        const normalizedAisleId = params.section_id ? null : (params.aisle_id ?? null);
+        const normalizedSectionId = params.section_id ?? null;
 
         if (params.id) {
             // Update existing shopping list item
@@ -528,10 +545,8 @@ export class FakeDatabase extends BaseDatabase implements Database {
                 name_norm,
                 qty: params.qty,
                 notes: params.notes,
-                section_id: params.section_id ?? null,
-                section_name_snap: section?.name ?? null,
-                aisle_id: params.aisle_id ?? null,
-                aisle_name_snap: aisle?.name ?? null,
+                section_id: normalizedSectionId,
+                aisle_id: normalizedAisleId,
                 store_item_id: storeItemId,
                 updated_at: now,
             };
@@ -551,10 +566,8 @@ export class FakeDatabase extends BaseDatabase implements Database {
                 name_norm,
                 qty: params.qty,
                 notes: params.notes,
-                section_id: params.section_id ?? null,
-                section_name_snap: section?.name ?? null,
-                aisle_id: params.aisle_id ?? null,
-                aisle_name_snap: aisle?.name ?? null,
+                section_id: normalizedSectionId,
+                aisle_id: normalizedAisleId,
                 is_checked: 0,
                 checked_at: null,
                 created_at: now,

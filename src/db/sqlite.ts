@@ -101,9 +101,7 @@ const migrations: Array<{ version: number; up: string[] }> = [
          qty REAL NOT NULL DEFAULT 1,
          notes TEXT,
          section_id TEXT,
-         section_name_snap TEXT,
          aisle_id TEXT,
-         aisle_name_snap TEXT,
          sort_order INTEGER NOT NULL DEFAULT 0,
          is_checked INTEGER NOT NULL DEFAULT 0,
          checked_at TEXT,
@@ -552,6 +550,10 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         const now = new Date().toISOString();
         const name_norm = name.toLowerCase().trim();
 
+        // Normalize: store only section when present (null aisle), else store aisle
+        const normalizedAisleId = sectionId ? null : (aisleId ?? null);
+        const normalizedSectionId = sectionId ?? null;
+
         await conn.run(
             `INSERT INTO store_item (id, store_id, name, name_norm, aisle_id, section_id, usage_count, created_at, updated_at) 
              VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`,
@@ -560,8 +562,8 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
                 storeId,
                 name,
                 name_norm,
-                aisleId ?? null,
-                sectionId ?? null,
+                normalizedAisleId,
+                normalizedSectionId,
                 now,
                 now,
             ]
@@ -573,8 +575,8 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             store_id: storeId,
             name,
             name_norm,
-            aisle_id: aisleId ?? null,
-            section_id: sectionId ?? null,
+            aisle_id: normalizedAisleId,
+            section_id: normalizedSectionId,
             usage_count: 0,
             last_used_at: null,
             is_hidden: 0,
@@ -616,6 +618,10 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         const updated_at = new Date().toISOString();
         const name_norm = name.toLowerCase().trim();
 
+        // Normalize: store only section when present (null aisle), else store aisle
+        const normalizedAisleId = sectionId ? null : (aisleId ?? null);
+        const normalizedSectionId = sectionId ?? null;
+
         await conn.run(
             `UPDATE store_item 
              SET name = ?, name_norm = ?, aisle_id = ?, section_id = ?, updated_at = ? 
@@ -623,8 +629,8 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             [
                 name,
                 name_norm,
-                aisleId ?? null,
-                sectionId ?? null,
+                normalizedAisleId,
+                normalizedSectionId,
                 updated_at,
                 id,
             ]
@@ -699,14 +705,14 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             `SELECT 
                 sli.id, sli.list_id, sli.store_id, sli.store_item_id,
                 sli.name, sli.name_norm, sli.qty, sli.notes,
-                sli.section_id, sli.section_name_snap, sli.aisle_id, sli.aisle_name_snap,
+                sli.section_id, sli.aisle_id,
                 sli.is_checked, sli.checked_at,
                 sli.created_at, sli.updated_at,
                 ss.name as section_name, ss.sort_order as section_sort_order,
                 sa.name as aisle_name, sa.sort_order as aisle_sort_order
              FROM shopping_list_item sli
              LEFT JOIN store_section ss ON sli.section_id = ss.id
-             LEFT JOIN store_aisle sa ON sli.aisle_id = sa.id
+             LEFT JOIN store_aisle sa ON COALESCE(sli.aisle_id, ss.aisle_id) = sa.id
              WHERE sli.list_id = ?
              ORDER BY 
                 sli.is_checked ASC,
@@ -737,6 +743,10 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             const existingItem = existingItemRes.values[0];
             storeItemId = existingItem.id;
 
+            // Normalize: store only section when present (null aisle), else store aisle
+            const normalizedAisleId = params.section_id ? null : (params.aisle_id ?? null);
+            const normalizedSectionId = params.section_id ?? null;
+
             // Update usage tracking
             await conn.run(
                 `UPDATE store_item 
@@ -745,8 +755,8 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
                 [
                     (existingItem.usage_count || 0) + 1,
                     now,
-                    params.aisle_id ?? null,
-                    params.section_id ?? null,
+                    normalizedAisleId,
+                    normalizedSectionId,
                     now,
                     storeItemId,
                 ]
@@ -754,6 +764,11 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
         } else {
             // Create new StoreItem
             storeItemId = crypto.randomUUID();
+            
+            // Normalize: store only section when present (null aisle), else store aisle
+            const normalizedAisleId = params.section_id ? null : (params.aisle_id ?? null);
+            const normalizedSectionId = params.section_id ?? null;
+            
             await conn.run(
                 `INSERT INTO store_item (id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, created_at, updated_at) 
                  VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
@@ -762,8 +777,8 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
                     params.store_id,
                     params.name,
                     name_norm,
-                    params.aisle_id ?? null,
-                    params.section_id ?? null,
+                    normalizedAisleId,
+                    normalizedSectionId,
                     now,
                     now,
                     now,
@@ -771,32 +786,16 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             );
         }
 
-        // Get section and aisle name snapshots
-        let sectionNameSnap: string | null = null;
-        let aisleNameSnap: string | null = null;
-
-        if (params.section_id) {
-            const sectionRes = await conn.query(
-                `SELECT name FROM store_section WHERE id = ?`,
-                [params.section_id]
-            );
-            sectionNameSnap = sectionRes.values?.[0]?.name || null;
-        }
-
-        if (params.aisle_id) {
-            const aisleRes = await conn.query(
-                `SELECT name FROM store_aisle WHERE id = ?`,
-                [params.aisle_id]
-            );
-            aisleNameSnap = aisleRes.values?.[0]?.name || null;
-        }
+        // Normalize: store only section when present (null aisle), else store aisle
+        const normalizedAisleId = params.section_id ? null : (params.aisle_id ?? null);
+        const normalizedSectionId = params.section_id ?? null;
 
         if (params.id) {
             // Update existing shopping list item
             await conn.run(
                 `UPDATE shopping_list_item 
                  SET name = ?, name_norm = ?, qty = ?, notes = ?, 
-                     section_id = ?, section_name_snap = ?, aisle_id = ?, aisle_name_snap = ?,
+                     section_id = ?, aisle_id = ?,
                      store_item_id = ?, updated_at = ? 
                  WHERE id = ?`,
                 [
@@ -804,10 +803,8 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
                     name_norm,
                     params.qty,
                     params.notes,
-                    params.section_id ?? null,
-                    sectionNameSnap,
-                    params.aisle_id ?? null,
-                    aisleNameSnap,
+                    normalizedSectionId,
+                    normalizedAisleId,
                     storeItemId,
                     now,
                     params.id,
@@ -816,7 +813,7 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
 
             const itemRes = await conn.query(
                 `SELECT id, list_id, store_id, store_item_id, name, name_norm, qty, notes,
-                        section_id, section_name_snap, aisle_id, aisle_name_snap,
+                        section_id, aisle_id,
                         is_checked, checked_at, created_at, updated_at
                  FROM shopping_list_item WHERE id = ?`,
                 [params.id]
@@ -831,9 +828,9 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
             await conn.run(
                 `INSERT INTO shopping_list_item 
                  (id, list_id, store_id, store_item_id, name, name_norm, qty, notes,
-                  section_id, section_name_snap, aisle_id, aisle_name_snap,
+                  section_id, aisle_id,
                   created_at, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     id,
                     params.list_id,
@@ -843,10 +840,8 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
                     name_norm,
                     params.qty,
                     params.notes,
-                    params.section_id ?? null,
-                    sectionNameSnap,
-                    params.aisle_id ?? null,
-                    aisleNameSnap,
+                    normalizedSectionId,
+                    normalizedAisleId,
                     now,
                     now,
                 ]
@@ -862,10 +857,8 @@ export class SQLiteDatabase extends BaseDatabase implements Database {
                 name_norm,
                 qty: params.qty,
                 notes: params.notes,
-                section_id: params.section_id ?? null,
-                section_name_snap: sectionNameSnap,
-                aisle_id: params.aisle_id ?? null,
-                aisle_name_snap: aisleNameSnap,
+                section_id: normalizedSectionId,
+                aisle_id: normalizedAisleId,
                 is_checked: 0,
                 checked_at: null,
                 created_at: now,
