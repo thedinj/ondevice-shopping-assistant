@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+    IonAlert,
     IonBackButton,
     IonButton,
     IonButtons,
@@ -17,12 +18,12 @@ import {
     IonTitle,
     IonToolbar,
 } from "@ionic/react";
-import { create, gridOutline, listOutline } from "ionicons/icons";
+import { create, gridOutline, listOutline, trash } from "ionicons/icons";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useHistory, useParams } from "react-router-dom";
 import { z } from "zod";
-import { useStore, useUpdateStore } from "../db/hooks";
+import { useDeleteStore, useStore, useUpdateStore } from "../db/hooks";
 
 const storeFormSchema = z.object({
     name: z
@@ -38,7 +39,9 @@ const StoreDetail: React.FC = () => {
     const history = useHistory();
     const { data: store, isLoading } = useStore(id);
     const updateStore = useUpdateStore();
+    const deleteStore = useDeleteStore();
     const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+    const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
     const {
         control,
@@ -65,6 +68,12 @@ const StoreDetail: React.FC = () => {
     const onSubmitRename = async (data: StoreFormData) => {
         await updateStore.mutateAsync({ id, name: data.name });
         closeRenameModal();
+    };
+
+    const handleDelete = async () => {
+        await deleteStore.mutateAsync(id);
+        setShowDeleteAlert(false);
+        history.replace("/stores");
     };
 
     return (
@@ -119,6 +128,19 @@ const StoreDetail: React.FC = () => {
                         </IonLabel>
                     </IonItem>
                 </IonList>
+
+                <div className="ion-padding">
+                    <IonButton
+                        expand="block"
+                        color="danger"
+                        fill="outline"
+                        onClick={() => setShowDeleteAlert(true)}
+                        disabled={isLoading || deleteStore.isPending}
+                    >
+                        <IonIcon slot="start" icon={trash} />
+                        Delete Store
+                    </IonButton>
+                </div>
 
                 {/* Rename Store Modal */}
                 <IonModal
@@ -179,6 +201,25 @@ const StoreDetail: React.FC = () => {
                         </form>
                     </IonContent>
                 </IonModal>
+
+                {/* Delete Confirmation Alert */}
+                <IonAlert
+                    isOpen={showDeleteAlert}
+                    onDidDismiss={() => setShowDeleteAlert(false)}
+                    header="Delete Store"
+                    message={`Are you sure you want to delete "${store?.name}"? This will also delete all aisles, sections, and items for this store.`}
+                    buttons={[
+                        {
+                            text: "Cancel",
+                            role: "cancel",
+                        },
+                        {
+                            text: "Delete",
+                            role: "destructive",
+                            handler: handleDelete,
+                        },
+                    ]}
+                />
             </IonContent>
         </IonPage>
     );

@@ -1,6 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-    IonAlert,
     IonButton,
     IonButtons,
     IonContent,
@@ -23,12 +22,7 @@ import { add, cartOutline } from "ionicons/icons";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
-import {
-    useCreateStore,
-    useDeleteStore,
-    useStores,
-    useUpdateStore,
-} from "../db/hooks";
+import { useCreateStore, useStores, useUpdateStore } from "../db/hooks";
 
 const storeFormSchema = z.object({
     name: z
@@ -43,14 +37,9 @@ const StoresList: React.FC = () => {
     const { data: stores, isLoading } = useStores();
     const createStore = useCreateStore();
     const updateStore = useUpdateStore();
-    const deleteStore = useDeleteStore();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStore, setEditingStore] = useState<{
-        id: string;
-        name: string;
-    } | null>(null);
-    const [deleteAlert, setDeleteAlert] = useState<{
         id: string;
         name: string;
     } | null>(null);
@@ -89,17 +78,6 @@ const StoresList: React.FC = () => {
         closeModal();
     };
 
-    const confirmDelete = (store: { id: string; name: string }) => {
-        setDeleteAlert(store);
-    };
-
-    const handleDelete = async () => {
-        if (deleteAlert) {
-            await deleteStore.mutateAsync(deleteAlert.id);
-            setDeleteAlert(null);
-        }
-    };
-
     return (
         <IonPage>
             <IonHeader>
@@ -136,7 +114,10 @@ const StoresList: React.FC = () => {
                         }}
                     >
                         <IonText color="medium">
-                            <p>No stores configured. Add one to begin optimizing your shopping.</p>
+                            <p>
+                                No stores configured. Add one to begin
+                                optimizing your shopping.
+                            </p>
                         </IonText>
                     </div>
                 ) : (
@@ -222,44 +203,9 @@ const StoresList: React.FC = () => {
                             >
                                 {editingStore ? "Update" : "Create"}
                             </IonButton>
-
-                            {editingStore && (
-                                <IonButton
-                                    expand="block"
-                                    color="danger"
-                                    fill="outline"
-                                    onClick={() => {
-                                        confirmDelete(editingStore);
-                                        closeModal();
-                                    }}
-                                    disabled={deleteStore.isPending}
-                                    style={{ marginTop: "10px" }}
-                                >
-                                    Delete Store
-                                </IonButton>
-                            )}
                         </form>
                     </IonContent>
                 </IonModal>
-
-                {/* Delete Confirmation Alert */}
-                <IonAlert
-                    isOpen={!!deleteAlert}
-                    onDidDismiss={() => setDeleteAlert(null)}
-                    header="Delete Store"
-                    message={`Are you sure you want to delete "${deleteAlert?.name}"? This will also delete all aisles, sections, and items for this store.`}
-                    buttons={[
-                        {
-                            text: "Cancel",
-                            role: "cancel",
-                        },
-                        {
-                            text: "Delete",
-                            role: "destructive",
-                            handler: handleDelete,
-                        },
-                    ]}
-                />
             </IonContent>
         </IonPage>
     );
