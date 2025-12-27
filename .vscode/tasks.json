@@ -27,6 +27,16 @@
                 "isDefault": true
             },
             "problemMatcher": ["$tsc", "$eslint-stylish"]
+        },
+        {
+            "label": "Gradle - Create Debug APK",
+            "type": "shell",
+            "command": ".\\gradlew.bat",
+            "args": ["assembleDebug"],
+            "options": {
+                "cwd": "${workspaceFolder}/android"
+            },
+            "problemMatcher": []
         }
     ]
 }

@@ -24,7 +24,7 @@ export abstract class BaseDatabase implements Database {
      * Initialize the database. This method orchestrates the initialization process:
      * 1. Calls initializeStorage() for storage-specific setup
      * 2. Ensures initial data exists
-     * 
+     *
      * Derived classes should implement initializeStorage() instead of overriding this method.
      */
     async initialize(): Promise<void> {
@@ -335,6 +335,6 @@ export abstract class BaseDatabase implements Database {
             notes: null,
         });
 
-        await this.insertStore("Empty Store");
+        //await this.insertStore("Empty Store");
     }
 }
