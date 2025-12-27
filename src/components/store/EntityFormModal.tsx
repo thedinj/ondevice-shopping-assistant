@@ -14,18 +14,21 @@ import {
     IonText,
     IonSegment,
     IonSegmentButton,
+    IonAlert,
 } from "@ionic/react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useState, useEffect } from "react";
 import { useStoreManagement } from "./StoreManagementContext";
 import {
     useCreateAisle,
     useUpdateAisle,
     useCreateSection,
     useUpdateSection,
+    useDeleteAisle,
+    useDeleteSection,
 } from "../../db/hooks";
-import { useEffect } from "react";
 
 const entityFormSchema = z
     .object({
@@ -62,6 +65,9 @@ export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
     const updateAisle = useUpdateAisle();
     const createSection = useCreateSection();
     const updateSection = useUpdateSection();
+    const deleteAisle = useDeleteAisle();
+    const deleteSection = useDeleteSection();
+    const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
     const {
         control,
@@ -128,6 +134,28 @@ export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
             }
         }
         closeModal();
+    };
+
+    const handleDelete = async () => {
+        if (!editingEntity) return;
+
+        try {
+            if (editingEntity.type === "aisle") {
+                await deleteAisle.mutateAsync({
+                    id: editingEntity.id,
+                    storeId,
+                });
+            } else {
+                await deleteSection.mutateAsync({
+                    id: editingEntity.id,
+                    storeId,
+                });
+            }
+            setShowDeleteAlert(false);
+            closeModal();
+        } catch (error) {
+            console.error("Error deleting entity:", error);
+        }
     };
 
     const getModalTitle = () => {
@@ -266,7 +294,51 @@ export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
                     >
                         {editingEntity ? "Update" : "Create"}
                     </IonButton>
+
+                    {editingEntity && (
+                        <IonButton
+                            expand="block"
+                            color="danger"
+                            fill="outline"
+                            onClick={() => setShowDeleteAlert(true)}
+                            disabled={
+                                deleteAisle.isPending || deleteSection.isPending
+                            }
+                            style={{ marginTop: "10px" }}
+                        >
+                            Delete{" "}
+                            {editingEntity.type === "aisle"
+                                ? "Aisle"
+                                : "Section"}
+                        </IonButton>
+                    )}
                 </form>
+
+                <IonAlert
+                    isOpen={showDeleteAlert}
+                    onDidDismiss={() => setShowDeleteAlert(false)}
+                    header={`Delete ${
+                        editingEntity?.type === "aisle" ? "Aisle" : "Section"
+                    }`}
+                    message={`Are you sure you want to delete "${
+                        editingEntity?.name
+                    }"? This will also affect ${
+                        editingEntity?.type === "aisle"
+                            ? "all sections in this aisle and items"
+                            : "items"
+                    } in this ${editingEntity?.type}.`}
+                    buttons={[
+                        {
+                            text: "Cancel",
+                            role: "cancel",
+                        },
+                        {
+                            text: "Delete",
+                            role: "destructive",
+                            handler: handleDelete,
+                        },
+                    ]}
+                />
             </IonContent>
         </IonModal>
     );

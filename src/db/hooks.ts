@@ -630,6 +630,34 @@ export function useDeleteItem() {
     });
 }
 
+/**
+ * Hook to toggle the favorite status of a store item
+ */
+export function useToggleFavorite() {
+    const database = useDatabase();
+    const queryClient = useQueryClient();
+    const { showError } = useToast();
+
+    return useTanstackMutation({
+        mutationFn: ({ id }: { id: string; storeId: string }) =>
+            database.toggleItemFavorite(id),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: ["items", variables.storeId],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["items", "with-details", variables.storeId],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["items", "detail", variables.id],
+            });
+        },
+        onError: (error: Error) => {
+            showError(`Failed to update favorite: ${error.message}`);
+        },
+    });
+}
+
 // ========== ShoppingList Hooks ==========
 
 /**

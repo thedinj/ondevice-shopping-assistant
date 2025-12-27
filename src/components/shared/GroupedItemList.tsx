@@ -36,10 +36,11 @@ function groupItemsByAisleAndSection(
         const aisleName = item.aisle_name || "Uncategorized";
         const sectionName = item.section_name || "Uncategorized";
         // Use -1 for null aisle to ensure uncategorized items sort first
+        // Also treat null sort_order as 0 (sort early)
         const aisleSortOrder =
-            aisleId === null ? -1 : item.aisle_sort_order ?? 999999;
+            aisleId === null ? -1 : item.aisle_sort_order ?? 0;
         const sectionSortOrder =
-            sectionId === null ? -1 : item.section_sort_order ?? 999999;
+            sectionId === null ? -1 : item.section_sort_order ?? 0;
 
         let aisleGroup = aisleMap.get(aisleId);
         if (!aisleGroup) {

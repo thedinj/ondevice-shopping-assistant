@@ -1,14 +1,12 @@
 import {
-    IonItemSliding,
+    IonButton,
+    IonIcon,
     IonItem,
     IonLabel,
     IonReorder,
-    IonItemOptions,
-    IonItemOption,
-    IonIcon,
     IonReorderGroup,
 } from "@ionic/react";
-import { create, trash } from "ionicons/icons";
+import { create } from "ionicons/icons";
 import { useStoreManagement } from "./StoreManagementContext";
 import { SectionItem } from "./SectionItem";
 import { ItemReorderEventDetail } from "@ionic/core";
@@ -27,34 +25,25 @@ export const AisleItem = ({
     sections,
     onSectionReorder,
 }: AisleItemProps) => {
-    const { openEditAisleModal, confirmDeleteAisle } = useStoreManagement();
+    const { openEditAisleModal } = useStoreManagement();
 
     const aisleSections = sections.filter((s) => s.aisle_id === aisle.id);
 
     return (
         <div>
-            <IonItemSliding>
-                <IonItem>
-                    <IonLabel>
-                        <h2 style={{ fontWeight: "bold" }}>{aisle.name}</h2>
-                    </IonLabel>
-                    <IonReorder slot="end" />
-                </IonItem>
-                <IonItemOptions side="end">
-                    <IonItemOption
-                        color="primary"
-                        onClick={() => openEditAisleModal(aisle)}
-                    >
-                        <IonIcon slot="icon-only" icon={create} />
-                    </IonItemOption>
-                    <IonItemOption
-                        color="danger"
-                        onClick={() => confirmDeleteAisle(aisle)}
-                    >
-                        <IonIcon slot="icon-only" icon={trash} />
-                    </IonItemOption>
-                </IonItemOptions>
-            </IonItemSliding>
+            <IonItem>
+                <IonLabel>
+                    <h2 style={{ fontWeight: "bold" }}>{aisle.name}</h2>
+                </IonLabel>
+                <IonButton
+                    slot="end"
+                    fill="clear"
+                    onClick={() => openEditAisleModal(aisle)}
+                >
+                    <IonIcon icon={create} color="medium" />
+                </IonButton>
+                <IonReorder slot="end" />
+            </IonItem>
 
             {aisleSections.length > 0 && (
                 <IonReorderGroup

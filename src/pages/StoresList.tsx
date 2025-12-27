@@ -10,9 +10,6 @@ import {
     IonIcon,
     IonInput,
     IonItem,
-    IonItemOption,
-    IonItemOptions,
-    IonItemSliding,
     IonLabel,
     IonList,
     IonModal,
@@ -22,7 +19,7 @@ import {
     IonTitle,
     IonToolbar,
 } from "@ionic/react";
-import { add, create, trash } from "ionicons/icons";
+import { add, create } from "ionicons/icons";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -151,34 +148,24 @@ const StoresList: React.FC = () => {
                 ) : (
                     <IonList>
                         {stores.map((store) => (
-                            <IonItemSliding key={store.id}>
-                                <IonItem
-                                    routerLink={`/stores/${store.id}`}
-                                    button
+                            <IonItem
+                                key={store.id}
+                                routerLink={`/stores/${store.id}`}
+                                button
+                            >
+                                <IonLabel>{store.name}</IonLabel>
+                                <IonButton
+                                    slot="end"
+                                    fill="clear"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        openEditModal(store);
+                                    }}
                                 >
-                                    <IonLabel>{store.name}</IonLabel>
-                                </IonItem>
-                                <IonItemOptions side="end">
-                                    <IonItemOption
-                                        color="primary"
-                                        onClick={() => openEditModal(store)}
-                                    >
-                                        <IonIcon
-                                            slot="icon-only"
-                                            icon={create}
-                                        />
-                                    </IonItemOption>
-                                    <IonItemOption
-                                        color="danger"
-                                        onClick={() => confirmDelete(store)}
-                                    >
-                                        <IonIcon
-                                            slot="icon-only"
-                                            icon={trash}
-                                        />
-                                    </IonItemOption>
-                                </IonItemOptions>
-                            </IonItemSliding>
+                                    <IonIcon icon={create} color="medium" />
+                                </IonButton>
+                            </IonItem>
                         ))}
                     </IonList>
                 )}
@@ -248,6 +235,22 @@ const StoresList: React.FC = () => {
                             >
                                 {editingStore ? "Update" : "Create"}
                             </IonButton>
+
+                            {editingStore && (
+                                <IonButton
+                                    expand="block"
+                                    color="danger"
+                                    fill="outline"
+                                    onClick={() => {
+                                        confirmDelete(editingStore);
+                                        closeModal();
+                                    }}
+                                    disabled={deleteStore.isPending}
+                                    style={{ marginTop: "10px" }}
+                                >
+                                    Delete Store
+                                </IonButton>
+                            )}
                         </form>
                     </IonContent>
                 </IonModal>

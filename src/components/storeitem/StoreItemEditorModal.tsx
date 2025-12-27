@@ -1,4 +1,5 @@
 import {
+    IonAlert,
     IonButton,
     IonButtons,
     IonContent,
@@ -20,9 +21,9 @@ import {
     storeItemEditorSchema,
     StoreItemFormData,
 } from "./storeItemEditorSchema";
-import { useCreateItem, useUpdateItem } from "../../db/hooks";
+import { useCreateItem, useDeleteItem, useUpdateItem } from "../../db/hooks";
 import { StoreItem } from "../../db/types";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface StoreItemEditorModalProps {
     isOpen: boolean;
@@ -39,6 +40,8 @@ export const StoreItemEditorModal: React.FC<StoreItemEditorModalProps> = ({
 }) => {
     const createItem = useCreateItem();
     const updateItem = useUpdateItem();
+    const deleteItem = useDeleteItem();
+    const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
     const form = useForm<StoreItemFormData>({
         resolver: zodResolver(storeItemEditorSchema),
@@ -102,10 +105,27 @@ export const StoreItemEditorModal: React.FC<StoreItemEditorModalProps> = ({
 
     const handleClose = () => {
         reset();
+        setShowDeleteAlert(false);
         onClose();
     };
 
-    const isPending = createItem.isPending || updateItem.isPending;
+    const handleDelete = async () => {
+        if (!editingItem) return;
+
+        try {
+            await deleteItem.mutateAsync({
+                id: editingItem.id,
+                storeId: storeId,
+            });
+            setShowDeleteAlert(false);
+            onClose();
+        } catch (error) {
+            console.error("Error deleting store item:", error);
+        }
+    };
+
+    const isPending =
+        createItem.isPending || updateItem.isPending || deleteItem.isPending;
 
     return (
         <IonModal isOpen={isOpen} onDidDismiss={handleClose}>
@@ -178,8 +198,39 @@ export const StoreItemEditorModal: React.FC<StoreItemEditorModalProps> = ({
                         >
                             {editingItem ? "Update" : "Add"} Item
                         </IonButton>
+
+                        {editingItem && (
+                            <IonButton
+                                expand="block"
+                                color="danger"
+                                fill="outline"
+                                onClick={() => setShowDeleteAlert(true)}
+                                disabled={isPending}
+                                style={{ marginTop: "10px" }}
+                            >
+                                Delete Item
+                            </IonButton>
+                        )}
                     </form>
                 </StoreItemEditorProvider>
+
+                <IonAlert
+                    isOpen={showDeleteAlert}
+                    onDidDismiss={() => setShowDeleteAlert(false)}
+                    header="Delete Item"
+                    message={`Are you sure you want to delete "${editingItem?.name}"? This will remove it from all shopping lists.`}
+                    buttons={[
+                        {
+                            text: "Cancel",
+                            role: "cancel",
+                        },
+                        {
+                            text: "Delete",
+                            role: "destructive",
+                            handler: handleDelete,
+                        },
+                    ]}
+                />
             </IonContent>
         </IonModal>
     );

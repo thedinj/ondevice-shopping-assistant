@@ -104,6 +104,7 @@ const migrations: Array<{ version: number; up: string[] }> = [
          usage_count INTEGER NOT NULL DEFAULT 0,
          last_used_at TEXT,
          is_hidden INTEGER NOT NULL DEFAULT 0,
+         is_favorite INTEGER NOT NULL DEFAULT 0,
          created_at TEXT NOT NULL DEFAULT (datetime('now')),
          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
          FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
@@ -133,6 +134,7 @@ const migrations: Array<{ version: number; up: string[] }> = [
          notes TEXT,
          is_checked INTEGER NOT NULL DEFAULT 0,
          checked_at TEXT,
+         is_sample INTEGER,
          created_at TEXT NOT NULL DEFAULT (datetime('now')),
          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
          FOREIGN KEY (list_id) REFERENCES shopping_list(id) ON DELETE CASCADE,
@@ -607,6 +609,7 @@ export class SQLiteDatabase extends BaseDatabase {
             usage_count: 0,
             last_used_at: null,
             is_hidden: 0,
+            is_favorite: 0,
             created_at: now,
             updated_at: now,
         };
@@ -615,7 +618,7 @@ export class SQLiteDatabase extends BaseDatabase {
     async getItemsByStore(storeId: string): Promise<StoreItem[]> {
         const conn = await this.getConnection();
         const res = await conn.query(
-            `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at 
+            `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, is_favorite, created_at, updated_at 
              FROM store_item 
              WHERE store_id = ? AND is_hidden = 0 
              ORDER BY name_norm`,
@@ -632,10 +635,10 @@ export class SQLiteDatabase extends BaseDatabase {
             `SELECT 
                 si.id, si.store_id, si.name, si.name_norm, 
                 si.aisle_id, si.section_id, 
-                si.usage_count, si.last_used_at, si.is_hidden,
+                si.usage_count, si.last_used_at, si.is_hidden, si.is_favorite,
                 si.created_at, si.updated_at,
                 ss.name as section_name, ss.sort_order as section_sort_order,
-                sa.id as aisle_id, sa.name as aisle_name, sa.sort_order as aisle_sort_order
+                sa.name as aisle_name, sa.sort_order as aisle_sort_order
              FROM store_item si
              LEFT JOIN store_section ss ON si.section_id = ss.id
              LEFT JOIN store_aisle sa ON COALESCE(ss.aisle_id, si.aisle_id) = sa.id
@@ -652,7 +655,7 @@ export class SQLiteDatabase extends BaseDatabase {
     async getItemById(id: string): Promise<StoreItem | null> {
         const conn = await this.getConnection();
         const res = await conn.query(
-            `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at 
+            `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, is_favorite, created_at, updated_at 
              FROM store_item 
              WHERE id = ?`,
             [id]
@@ -686,6 +689,27 @@ export class SQLiteDatabase extends BaseDatabase {
                 updated_at,
                 id,
             ]
+        );
+
+        const item = await this.getItemById(id);
+        if (!item) {
+            throw new Error(`Item with id ${id} not found`);
+        }
+        this.notifyChange();
+        return item;
+    }
+
+    async toggleItemFavorite(id: string): Promise<StoreItem> {
+        const conn = await this.getConnection();
+        const updated_at = new Date().toISOString();
+
+        // Toggle the is_favorite field (0 -> 1, 1 -> 0)
+        await conn.run(
+            `UPDATE store_item 
+             SET is_favorite = CASE WHEN is_favorite = 0 THEN 1 ELSE 0 END, 
+                 updated_at = ? 
+             WHERE id = ?`,
+            [updated_at, id]
         );
 
         const item = await this.getItemById(id);
@@ -757,7 +781,7 @@ export class SQLiteDatabase extends BaseDatabase {
             `SELECT 
                 sli.id, sli.list_id, sli.store_id, sli.store_item_id,
                 sli.qty, sli.unit_id, sli.notes,
-                sli.is_checked, sli.checked_at,
+                sli.is_checked, sli.checked_at, sli.is_sample,
                 sli.created_at, sli.updated_at,
                 si.name as item_name,
                 qu.abbreviation as unit_abbreviation,
@@ -793,7 +817,7 @@ export class SQLiteDatabase extends BaseDatabase {
 
         // Try to find existing item
         const existingItemRes = await conn.query(
-            `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at
+            `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, is_favorite, created_at, updated_at
              FROM store_item 
              WHERE store_id = ? AND name_norm = ?`,
             [storeId, name_norm]
@@ -825,7 +849,7 @@ export class SQLiteDatabase extends BaseDatabase {
 
             // Return updated item
             const updatedRes = await conn.query(
-                `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at
+                `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, is_favorite, created_at, updated_at
                  FROM store_item WHERE id = ?`,
                 [existingItem.id]
             );
@@ -846,13 +870,14 @@ export class SQLiteDatabase extends BaseDatabase {
             // Update existing shopping list item
             await conn.run(
                 `UPDATE shopping_list_item 
-                 SET store_item_id = ?, qty = ?, unit_id = ?, notes = ?, updated_at = ? 
+                 SET store_item_id = ?, qty = ?, unit_id = ?, notes = ?, is_sample = ?, updated_at = ? 
                  WHERE id = ?`,
                 [
                     params.store_item_id,
                     params.qty,
                     params.unit_id || null,
                     params.notes,
+                    params.is_sample ?? null,
                     now,
                     params.id,
                 ]
@@ -860,7 +885,7 @@ export class SQLiteDatabase extends BaseDatabase {
 
             const itemRes = await conn.query(
                 `SELECT id, list_id, store_id, store_item_id, qty, unit_id, notes,
-                        is_checked, checked_at, created_at, updated_at
+                        is_checked, checked_at, is_sample, created_at, updated_at
                  FROM shopping_list_item WHERE id = ?`,
                 [params.id]
             );
@@ -873,8 +898,8 @@ export class SQLiteDatabase extends BaseDatabase {
 
             await conn.run(
                 `INSERT INTO shopping_list_item 
-                 (id, list_id, store_id, store_item_id, qty, unit_id, notes, created_at, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                 (id, list_id, store_id, store_item_id, qty, unit_id, notes, is_sample, created_at, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     id,
                     params.list_id,
@@ -883,6 +908,7 @@ export class SQLiteDatabase extends BaseDatabase {
                     params.qty,
                     params.unit_id || null,
                     params.notes,
+                    params.is_sample ?? null,
                     now,
                     now,
                 ]
@@ -899,6 +925,7 @@ export class SQLiteDatabase extends BaseDatabase {
                 notes: params.notes,
                 is_checked: 0,
                 checked_at: null,
+                is_sample: params.is_sample ?? null,
                 created_at: now,
                 updated_at: now,
             };
@@ -948,7 +975,7 @@ export class SQLiteDatabase extends BaseDatabase {
         const searchNorm = searchTerm.toLowerCase().trim() + "%";
 
         const res = await conn.query(
-            `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, created_at, updated_at 
+            `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, is_favorite, created_at, updated_at 
              FROM store_item 
              WHERE store_id = ? AND name_norm LIKE ? AND is_hidden = 0 
              ORDER BY usage_count DESC, last_used_at DESC, name_norm ASC 

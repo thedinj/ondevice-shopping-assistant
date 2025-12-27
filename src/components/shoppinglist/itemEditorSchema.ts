@@ -11,6 +11,7 @@ export const itemFormSchema = z.object({
     notes: z.string().nullable().optional(),
     aisleId: z.string().nullable().optional(),
     sectionId: z.string().nullable().optional(),
+    isSample: z.boolean().nullable().optional(),
 });
 
 export type ItemFormData = z.infer<typeof itemFormSchema>;

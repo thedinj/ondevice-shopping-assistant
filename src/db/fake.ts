@@ -469,6 +469,7 @@ export class FakeDatabase extends BaseDatabase {
             usage_count: 0,
             last_used_at: null,
             is_hidden: 0,
+            is_favorite: 0,
             created_at: now,
             updated_at: now,
         };
@@ -549,6 +550,22 @@ export class FakeDatabase extends BaseDatabase {
             name_norm,
             aisle_id: normalizedAisleId,
             section_id: normalizedSectionId,
+            updated_at: new Date().toISOString(),
+        };
+        this.items.set(id, updated);
+        this.notifyChange();
+        return updated;
+    }
+
+    async toggleItemFavorite(id: string): Promise<StoreItem> {
+        const item = this.items.get(id);
+        if (!item) {
+            throw new Error(`Item with id ${id} not found`);
+        }
+
+        const updated: StoreItem = {
+            ...item,
+            is_favorite: item.is_favorite === 0 ? 1 : 0,
             updated_at: new Date().toISOString(),
         };
         this.items.set(id, updated);
@@ -741,6 +758,7 @@ export class FakeDatabase extends BaseDatabase {
                 qty: params.qty,
                 unit_id: params.unit_id || null,
                 notes: params.notes,
+                is_sample: params.is_sample ?? null,
                 updated_at: now,
             };
             this.shoppingListItems.set(params.id, updated);
@@ -760,6 +778,7 @@ export class FakeDatabase extends BaseDatabase {
                 notes: params.notes,
                 is_checked: 0,
                 checked_at: null,
+                is_sample: params.is_sample ?? null,
                 created_at: now,
                 updated_at: now,
             };

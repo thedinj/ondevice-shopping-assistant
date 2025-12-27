@@ -1,13 +1,11 @@
 import {
+    IonButton,
     IonCheckbox,
     IonIcon,
     IonItem,
-    IonItemOption,
-    IonItemOptions,
-    IonItemSliding,
     IonLabel,
 } from "@ionic/react";
-import { create, trash } from "ionicons/icons";
+import { create } from "ionicons/icons";
 import { useToggleItemChecked } from "../../db/hooks";
 import { ShoppingListItemWithDetails } from "../../models/Store";
 import { useShoppingListContext } from "./useShoppingListContext";
@@ -31,7 +29,7 @@ export const ShoppingListItem = ({
     item,
     isChecked,
 }: ShoppingListItemProps) => {
-    const { openEditModal, confirmDelete } = useShoppingListContext();
+    const { openEditModal } = useShoppingListContext();
     const toggleChecked = useToggleItemChecked();
 
     const handleCheckboxChange = (checked: boolean) => {
@@ -56,63 +54,54 @@ export const ShoppingListItem = ({
         : {};
 
     return (
-        <IonItemSliding>
-            <IonItem style={itemStyle} button={false}>
-                <div
-                    slot="start"
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        paddingRight: "8px",
-                        cursor: "pointer",
-                    }}
-                    onClick={handleCheckboxClick}
-                    onTouchStart={(e) => {
-                        e.stopPropagation();
-                    }}
-                    onTouchEnd={(e) => {
-                        e.stopPropagation();
-                        handleCheckboxClick(e);
-                    }}
-                >
-                    <IonCheckbox
-                        checked={isChecked}
-                        style={{ pointerEvents: "none" }}
-                    />
-                </div>
-                <IonLabel style={{ cursor: "default" }}>
-                    <h2>
-                        {item.item_name}{" "}
-                        {(item.qty > 1 || item.unit_abbreviation) && (
-                            <span>
-                                ({item.qty || 1}
-                                {item.unit_abbreviation &&
-                                    ` ${item.unit_abbreviation}`}
-                                )
-                            </span>
-                        )}
-                    </h2>
-                    {item.notes && (
-                        <p style={{ fontStyle: "italic" }}>{item.notes}</p>
+        <IonItem style={itemStyle} button={false}>
+            <div
+                slot="start"
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    paddingRight: "8px",
+                    cursor: "pointer",
+                }}
+                onClick={handleCheckboxClick}
+                onTouchStart={(e) => {
+                    e.stopPropagation();
+                }}
+                onTouchEnd={(e) => {
+                    e.stopPropagation();
+                    handleCheckboxClick(e);
+                }}
+            >
+                <IonCheckbox
+                    checked={isChecked}
+                    style={{ pointerEvents: "none" }}
+                />
+            </div>
+            <IonLabel style={{ cursor: "default" }}>
+                <h2>
+                    {item.item_name}{" "}
+                    {(item.qty > 1 || item.unit_abbreviation) && (
+                        <span>
+                            ({item.qty || 1}
+                            {item.unit_abbreviation &&
+                                ` ${item.unit_abbreviation}`}
+                            )
+                        </span>
                     )}
-                </IonLabel>
-            </IonItem>
-            <IonItemOptions side="end">
-                <IonItemOption
-                    color="primary"
-                    onClick={() =>
-                        openEditModal(item as ShoppingListItemWithDetails)
-                    }
-                >
-                    <IonIcon slot="icon-only" icon={create} />
-                </IonItemOption>
-                <IonItemOption
-                    color="danger"
-                    onClick={() => confirmDelete(item.id, item.item_name)}
-                >
-                    <IonIcon slot="icon-only" icon={trash} />
-                </IonItemOption>
-            </IonItemOptions>
-        </IonItemSliding>
+                </h2>
+                {item.notes && (
+                    <p style={{ fontStyle: "italic" }}>{item.notes}</p>
+                )}
+            </IonLabel>
+            <IonButton
+                slot="end"
+                fill="clear"
+                onClick={() =>
+                    openEditModal(item as ShoppingListItemWithDetails)
+                }
+            >
+                <IonIcon icon={create} color="medium" />
+            </IonButton>
+        </IonItem>
     );
 };

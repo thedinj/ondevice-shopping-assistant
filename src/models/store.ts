@@ -48,6 +48,7 @@ export type StoreItem = {
     usage_count: number;
     last_used_at: string | null;
     is_hidden: number;
+    is_favorite: number;
     created_at: string;
     updated_at: string;
 };
@@ -71,6 +72,7 @@ export type ShoppingListItem = {
     notes: string | null;
     is_checked: number;
     checked_at: string | null;
+    is_sample: number | null;
     created_at: string;
     updated_at: string;
 };
@@ -83,7 +85,8 @@ export type ShoppingListItemOptionalId = PartialPick<ShoppingListItem, "id"> &
     Pick<
         ShoppingListItem,
         "list_id" | "store_id" | "store_item_id" | "qty" | "unit_id" | "notes"
-    >;
+    > &
+    Partial<Pick<ShoppingListItem, "is_sample">>;
 
 /**
  * Shopping list item with joined store item and location details from the database

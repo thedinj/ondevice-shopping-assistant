@@ -12,7 +12,13 @@ import {
 } from "../models/Store";
 
 // Re-export types for convenience
-export type { ShoppingListItem, StoreAisle, StoreItem, StoreSection };
+export type {
+    ShoppingListItem,
+    StoreAisle,
+    StoreItem,
+    StoreItemWithDetails,
+    StoreSection,
+};
 
 /**
  * Default tables to preserve during database reset
@@ -212,6 +218,11 @@ export interface EntityDatabase {
         aisleId?: string | null,
         sectionId?: string | null
     ): Promise<StoreItem>;
+
+    /**
+     * Toggle the favorite status of an item
+     */
+    toggleItemFavorite(id: string): Promise<StoreItem>;
 
     /**
      * Soft delete an item

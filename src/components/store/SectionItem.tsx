@@ -1,13 +1,11 @@
 import {
-    IonItemSliding,
+    IonButton,
+    IonIcon,
     IonItem,
     IonLabel,
     IonReorder,
-    IonItemOptions,
-    IonItemOption,
-    IonIcon,
 } from "@ionic/react";
-import { create, trash } from "ionicons/icons";
+import { create } from "ionicons/icons";
 import { useStoreManagement } from "./StoreManagementContext";
 
 interface SectionItemProps {
@@ -15,30 +13,21 @@ interface SectionItemProps {
 }
 
 export const SectionItem = ({ section }: SectionItemProps) => {
-    const { openEditSectionModal, confirmDeleteSection } = useStoreManagement();
+    const { openEditSectionModal } = useStoreManagement();
 
     return (
-        <IonItemSliding>
-            <IonItem style={{ paddingLeft: "32px" }}>
-                <IonLabel>
-                    <p>{section.name}</p>
-                </IonLabel>
-                <IonReorder slot="end" />
-            </IonItem>
-            <IonItemOptions side="end">
-                <IonItemOption
-                    color="primary"
-                    onClick={() => openEditSectionModal(section)}
-                >
-                    <IonIcon slot="icon-only" icon={create} />
-                </IonItemOption>
-                <IonItemOption
-                    color="danger"
-                    onClick={() => confirmDeleteSection(section)}
-                >
-                    <IonIcon slot="icon-only" icon={trash} />
-                </IonItemOption>
-            </IonItemOptions>
-        </IonItemSliding>
+        <IonItem style={{ paddingLeft: "32px" }}>
+            <IonLabel>
+                <p>{section.name}</p>
+            </IonLabel>
+            <IonButton
+                slot="end"
+                fill="clear"
+                onClick={() => openEditSectionModal(section)}
+            >
+                <IonIcon icon={create} color="medium" />
+            </IonButton>
+            <IonReorder slot="end" />
+        </IonItem>
     );
 };

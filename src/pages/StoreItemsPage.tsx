@@ -1,6 +1,7 @@
 import {
     IonAlert,
     IonBackButton,
+    IonButton,
     IonButtons,
     IonContent,
     IonFab,
@@ -8,9 +9,7 @@ import {
     IonHeader,
     IonIcon,
     IonItem,
-    IonItemOption,
-    IonItemOptions,
-    IonItemSliding,
+    IonItemDivider,
     IonLabel,
     IonPage,
     IonSearchbar,
@@ -18,43 +17,83 @@ import {
     IonTitle,
     IonToolbar,
 } from "@ionic/react";
-import { add, create, trash } from "ionicons/icons";
-import { useCallback, useMemo, useRef, useState } from "react";
+import {
+    add,
+    cart,
+    cartOutline,
+    create,
+    star,
+    starOutline,
+} from "ionicons/icons";
+import { useCallback, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useDebounce } from "use-debounce";
 import { GroupedItemList } from "../components/shared/GroupedItemList";
 import { StoreItemEditorModal } from "../components/storeitem/StoreItemEditorModal";
-import { useDeleteItem, useStore, useStoreItemsWithDetails } from "../db/hooks";
-import { StoreItem } from "../db/types";
+import {
+    useActiveShoppingList,
+    useDeleteShoppingListItem,
+    useShoppingListItems,
+    useStore,
+    useStoreItemsWithDetails,
+    useToggleFavorite,
+    useUpsertShoppingListItem,
+} from "../db/hooks";
+import { StoreItemWithDetails } from "../db/types";
+import { useToast } from "../hooks/useToast";
 
 const StoreItemsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const { data: store } = useStore(id);
     const { data: items, isLoading } = useStoreItemsWithDetails(id);
-    const deleteItem = useDeleteItem();
+    const { data: activeList } = useActiveShoppingList(id);
+    const { data: shoppingListItems } = useShoppingListItems(
+        activeList?.id || ""
+    );
+    const toggleFavorite = useToggleFavorite();
+    const upsertShoppingListItem = useUpsertShoppingListItem();
+    const deleteShoppingListItem = useDeleteShoppingListItem();
+    const { showSuccess, showError } = useToast();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState<StoreItem | null>(null);
-    const [deleteAlert, setDeleteAlert] = useState<{
-        id: string;
-        name: string;
+    const [editingItem, setEditingItem] = useState<StoreItemWithDetails | null>(
+        null
+    );
+    const [removeFromListAlert, setRemoveFromListAlert] = useState<{
+        itemId: string;
+        itemName: string;
+        shoppingListItemId: string;
     } | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
 
-    const slidingRefs = useRef<Map<string | number, HTMLIonItemSlidingElement>>(
-        new Map()
-    );
+    // Create a map of store_item_id -> shopping_list_item for quick lookups
+    const shoppingListItemMap = useMemo(() => {
+        const map = new Map<string, string>();
+        if (shoppingListItems) {
+            for (const item of shoppingListItems) {
+                map.set(item.store_item_id, item.id);
+            }
+        }
+        return map;
+    }, [shoppingListItems]);
 
-    // Filter items based on debounced search term
-    const filteredItems = useMemo(() => {
-        if (!items) return [];
-        if (!debouncedSearchTerm.trim()) return items;
+    // Filter and split items into favorites and regular
+    const { favoriteItems, regularItems } = useMemo(() => {
+        if (!items) return { favoriteItems: [], regularItems: [] };
 
-        const lowerSearch = debouncedSearchTerm.toLowerCase();
-        return items.filter((item) =>
-            item.name.toLowerCase().includes(lowerSearch)
-        );
+        let filtered = items;
+        if (debouncedSearchTerm.trim()) {
+            const lowerSearch = debouncedSearchTerm.toLowerCase();
+            filtered = items.filter((item) =>
+                item.name.toLowerCase().includes(lowerSearch)
+            );
+        }
+
+        const favorites = filtered.filter((item) => item.is_favorite === 1);
+        const regular = filtered.filter((item) => item.is_favorite === 0);
+
+        return { favoriteItems: favorites, regularItems: regular };
     }, [items, debouncedSearchTerm]);
 
     const openCreateModal = () => {
@@ -62,10 +101,9 @@ const StoreItemsPage: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const openEditModal = useCallback((item: StoreItem) => {
+    const openEditModal = useCallback((item: StoreItemWithDetails) => {
         setEditingItem(item);
         setIsModalOpen(true);
-        slidingRefs.current.get(item.id)?.close();
     }, []);
 
     const closeModal = () => {
@@ -73,16 +111,110 @@ const StoreItemsPage: React.FC = () => {
         setEditingItem(null);
     };
 
-    const confirmDelete = useCallback((item: StoreItem) => {
-        setDeleteAlert({ id: item.id, name: item.name });
-        slidingRefs.current.get(item.id)?.close();
-    }, []);
+    const handleToggleFavorite = useCallback(
+        async (item: StoreItemWithDetails) => {
+            try {
+                await toggleFavorite.mutateAsync({ id: item.id, storeId: id });
+            } catch {
+                showError("Failed to update favorite");
+            }
+        },
+        [id, showError, toggleFavorite]
+    );
 
-    const executeDelete = async () => {
-        if (deleteAlert) {
-            await deleteItem.mutateAsync({ id: deleteAlert.id, storeId: id });
-            setDeleteAlert(null);
+    const handleAddToShoppingList = useCallback(
+        async (item: StoreItemWithDetails) => {
+            if (!activeList) {
+                showError("No active shopping list");
+                return;
+            }
+
+            try {
+                await upsertShoppingListItem.mutateAsync({
+                    list_id: activeList.id,
+                    store_id: id,
+                    store_item_id: item.id,
+                    qty: 1,
+                    unit_id: null,
+                    notes: null,
+                });
+                showSuccess("Added to shopping list");
+            } catch {
+                showError("Failed to add to shopping list");
+            }
+        },
+        [activeList, id, upsertShoppingListItem, showSuccess, showError]
+    );
+
+    const confirmRemoveFromShoppingList = useCallback(
+        (item: StoreItemWithDetails) => {
+            const shoppingListItemId = shoppingListItemMap.get(item.id);
+            if (!shoppingListItemId) return;
+
+            setRemoveFromListAlert({
+                itemId: item.id,
+                itemName: item.name,
+                shoppingListItemId,
+            });
+        },
+        [shoppingListItemMap]
+    );
+
+    const executeRemoveFromShoppingList = async () => {
+        if (!removeFromListAlert || !activeList) return;
+
+        try {
+            await deleteShoppingListItem.mutateAsync({
+                id: removeFromListAlert.shoppingListItemId,
+                listId: activeList.id,
+            });
+            showSuccess("Removed from shopping list");
+            setRemoveFromListAlert(null);
+        } catch {
+            showError("Failed to remove from shopping list");
         }
+    };
+
+    const renderItem = (item: StoreItemWithDetails) => {
+        const isInShoppingList = shoppingListItemMap.has(item.id);
+        const isFavorite = item.is_favorite === 1;
+
+        return (
+            <IonItem key={item.id}>
+                <IonButton
+                    slot="start"
+                    fill="clear"
+                    onClick={() => handleToggleFavorite(item)}
+                >
+                    <IonIcon
+                        icon={isFavorite ? star : starOutline}
+                        color={isFavorite ? "warning" : "medium"}
+                    />
+                </IonButton>
+                <IonLabel>{item.name}</IonLabel>
+                <IonButton
+                    slot="end"
+                    fill="clear"
+                    onClick={() =>
+                        isInShoppingList
+                            ? confirmRemoveFromShoppingList(item)
+                            : handleAddToShoppingList(item)
+                    }
+                >
+                    <IonIcon
+                        icon={isInShoppingList ? cart : cartOutline}
+                        color={isInShoppingList ? "primary" : "medium"}
+                    />
+                </IonButton>
+                <IonButton
+                    slot="end"
+                    fill="clear"
+                    onClick={() => openEditModal(item)}
+                >
+                    <IonIcon icon={create} color="medium" />
+                </IonButton>
+            </IonItem>
+        );
     };
 
     return (
@@ -107,7 +239,7 @@ const StoreItemsPage: React.FC = () => {
                     <div style={{ padding: "20px", textAlign: "center" }}>
                         <IonText color="medium">Loading items...</IonText>
                     </div>
-                ) : filteredItems.length === 0 ? (
+                ) : favoriteItems.length === 0 && regularItems.length === 0 ? (
                     <div style={{ padding: "20px", textAlign: "center" }}>
                         <IonText color="medium">
                             {items?.length === 0 ? (
@@ -121,44 +253,37 @@ const StoreItemsPage: React.FC = () => {
                         </IonText>
                     </div>
                 ) : (
-                    <GroupedItemList<(typeof filteredItems)[number]>
-                        items={filteredItems}
-                        renderItem={(item) => (
-                            <IonItemSliding
-                                key={item.id}
-                                ref={(el) => {
-                                    if (el) {
-                                        slidingRefs.current.set(item.id, el);
-                                    }
-                                }}
-                            >
-                                <IonItem>
-                                    <IonLabel>{item.name}</IonLabel>
-                                </IonItem>
-                                <IonItemOptions side="end">
-                                    <IonItemOption
-                                        color="primary"
-                                        onClick={() => openEditModal(item)}
-                                    >
-                                        <IonIcon
-                                            slot="icon-only"
-                                            icon={create}
-                                        />
-                                    </IonItemOption>
-                                    <IonItemOption
-                                        color="danger"
-                                        onClick={() => confirmDelete(item)}
-                                    >
-                                        <IonIcon
-                                            slot="icon-only"
-                                            icon={trash}
-                                        />
-                                    </IonItemOption>
-                                </IonItemOptions>
-                            </IonItemSliding>
+                    <>
+                        {favoriteItems.length > 0 && (
+                            <GroupedItemList<(typeof favoriteItems)[number]>
+                                items={favoriteItems}
+                                renderItem={renderItem}
+                                headerSlot={
+                                    <IonItemDivider sticky>
+                                        <IonLabel>
+                                            <strong>Favorites</strong>
+                                        </IonLabel>
+                                    </IonItemDivider>
+                                }
+                                emptyMessage="No favorite items"
+                            />
                         )}
-                        emptyMessage="No items"
-                    />
+                        {favoriteItems.length > 0 &&
+                            regularItems.length > 0 && (
+                                <IonItemDivider>
+                                    <IonLabel>
+                                        <strong>Other Store Items</strong>
+                                    </IonLabel>
+                                </IonItemDivider>
+                            )}
+                        {regularItems.length > 0 && (
+                            <GroupedItemList<(typeof regularItems)[number]>
+                                items={regularItems}
+                                renderItem={renderItem}
+                                emptyMessage="No items"
+                            />
+                        )}
+                    </>
                 )}
 
                 <IonFab slot="fixed" vertical="bottom" horizontal="end">
@@ -175,19 +300,19 @@ const StoreItemsPage: React.FC = () => {
                 />
 
                 <IonAlert
-                    isOpen={!!deleteAlert}
-                    onDidDismiss={() => setDeleteAlert(null)}
-                    header="Delete Item"
-                    message={`Are you sure you want to delete "${deleteAlert?.name}"?`}
+                    isOpen={!!removeFromListAlert}
+                    onDidDismiss={() => setRemoveFromListAlert(null)}
+                    header="Remove from Shopping List"
+                    message={`Remove "${removeFromListAlert?.itemName}" from your shopping list?`}
                     buttons={[
                         {
                             text: "Cancel",
                             role: "cancel",
                         },
                         {
-                            text: "Delete",
+                            text: "Remove",
                             role: "destructive",
-                            handler: executeDelete,
+                            handler: executeRemoveFromShoppingList,
                         },
                     ]}
                 />
