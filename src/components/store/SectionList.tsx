@@ -1,4 +1,4 @@
-import { useState, forwardRef, useImperativeHandle } from "react";
+import { useState, forwardRef, useImperativeHandle, useMemo } from "react";
 import {
     IonList,
     IonItem,
@@ -20,9 +20,11 @@ import {
     IonButton,
     IonContent,
     IonInput,
-    IonSelect,
-    IonSelectOption,
 } from "@ionic/react";
+import {
+    ClickableSelectionModal,
+    SelectableItem,
+} from "../shared/ClickableSelectionModal";
 import { create, trash } from "ionicons/icons";
 import { ItemReorderEventDetail } from "@ionic/core";
 import {
@@ -306,32 +308,44 @@ const SectionList = forwardRef<ListHandle, SectionListProps>(
                             <Controller
                                 name="aisle_id"
                                 control={control}
-                                render={({ field }) => (
-                                    <IonItem>
-                                        <IonLabel position="stacked">
-                                            Aisle
-                                        </IonLabel>
-                                        <IonSelect
-                                            value={field.value}
-                                            placeholder="Select an aisle"
-                                            onIonChange={(e) =>
-                                                field.onChange(e.detail.value)
-                                            }
-                                        >
-                                            <IonSelectOption value={null}>
-                                                None
-                                            </IonSelectOption>
-                                            {aisles?.map((aisle) => (
-                                                <IonSelectOption
-                                                    key={aisle.id}
-                                                    value={aisle.id}
-                                                >
-                                                    {aisle.name}
-                                                </IonSelectOption>
-                                            ))}
-                                        </IonSelect>
-                                    </IonItem>
-                                )}
+                                render={({ field }) => {
+                                    const [isAisleModalOpen, setIsAisleModalOpen] = useState(false);
+                                    const aisleItems: SelectableItem[] = useMemo(() => {
+                                        return aisles?.map((aisle) => ({
+                                            id: aisle.id,
+                                            label: aisle.name,
+                                        })) || [];
+                                    }, [aisles]);
+                                    const selectedAisle = aisles?.find((a) => a.id === field.value);
+                                    
+                                    return (
+                                        <>
+                                            <IonItem
+                                                button
+                                                onClick={() => aisleItems.length > 0 && setIsAisleModalOpen(true)}
+                                                disabled={aisleItems.length === 0}
+                                            >
+                                                <IonLabel position="stacked">
+                                                    Aisle
+                                                </IonLabel>
+                                                <div style={{ color: field.value ? "var(--ion-color-dark)" : "var(--ion-color-medium)" }}>
+                                                    {field.value ? selectedAisle?.name : "None"}
+                                                </div>
+                                            </IonItem>
+
+                                            <ClickableSelectionModal
+                                                items={aisleItems}
+                                                value={field.value || undefined}
+                                                onSelect={(aisleId) => field.onChange(aisleId)}
+                                                isOpen={isAisleModalOpen}
+                                                onDismiss={() => setIsAisleModalOpen(false)}
+                                                title="Select Aisle"
+                                                searchPlaceholder="Search aisles..."
+                                                showSearch={true}
+                                            />
+                                        </>
+                                    );
+                                }}
                             />
 
                             <IonButton

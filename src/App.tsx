@@ -14,13 +14,14 @@ import { Suspense } from "react";
 import { Redirect, Route } from "react-router-dom";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import LoadingFallback from "./components/LoadingFallback";
+import { DatabaseProvider } from "./db/DatabaseContext";
+import { LLMModalProvider } from "./llm/shared/LLMModalContext";
 import Settings from "./pages/Settings";
 import ShoppingList from "./pages/ShoppingList";
-import StoresList from "./pages/StoresList";
+import StoreAislesPage from "./pages/StoreAislesPage";
 import StoreDetail from "./pages/StoreDetail";
 import StoreItemsPage from "./pages/StoreItemsPage";
-import StoreAislesPage from "./pages/StoreAislesPage";
-import { DatabaseProvider } from "./db/DatabaseContext";
+import StoresList from "./pages/StoresList";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -61,60 +62,65 @@ const App: React.FC = () => {
                 <AppErrorBoundary>
                     <Suspense fallback={<LoadingFallback />}>
                         <DatabaseProvider>
-                            <IonTabs>
-                                <IonRouterOutlet>
-                                    <Route exact path="/stores">
-                                        <StoresList />
-                                    </Route>
-                                    <Route exact path="/stores/:id">
-                                        <StoreDetail />
-                                    </Route>
-                                    <Route exact path="/stores/:id/items">
-                                        <StoreItemsPage />
-                                    </Route>
-                                    <Route exact path="/stores/:id/aisles">
-                                        <StoreAislesPage />
-                                    </Route>
-                                    <Route exact path="/shoppinglist">
-                                        <ShoppingList />
-                                    </Route>
-                                    <Route path="/settings">
-                                        <Settings />
-                                    </Route>
-                                    <Route exact path="/">
-                                        <Redirect to="/stores" />
-                                    </Route>
-                                </IonRouterOutlet>
-                                <IonTabBar slot="bottom">
-                                    <IonTabButton tab="stores" href="/stores">
-                                        <IonIcon
-                                            aria-hidden="true"
-                                            icon={cartOutline}
-                                        />
-                                        <IonLabel>Stores</IonLabel>
-                                    </IonTabButton>
-                                    <IonTabButton
-                                        tab="shoppinglist"
-                                        href="/shoppinglist"
-                                    >
-                                        <IonIcon
-                                            aria-hidden="true"
-                                            icon={listCircle}
-                                        />
-                                        <IonLabel>Basket</IonLabel>
-                                    </IonTabButton>
-                                    <IonTabButton
-                                        tab="settings"
-                                        href="/settings"
-                                    >
-                                        <IonIcon
-                                            aria-hidden="true"
-                                            icon={settings}
-                                        />
-                                        <IonLabel>Settings</IonLabel>
-                                    </IonTabButton>
-                                </IonTabBar>
-                            </IonTabs>
+                            <LLMModalProvider>
+                                <IonTabs>
+                                    <IonRouterOutlet>
+                                        <Route exact path="/stores">
+                                            <StoresList />
+                                        </Route>
+                                        <Route exact path="/stores/:id">
+                                            <StoreDetail />
+                                        </Route>
+                                        <Route exact path="/stores/:id/items">
+                                            <StoreItemsPage />
+                                        </Route>
+                                        <Route exact path="/stores/:id/aisles">
+                                            <StoreAislesPage />
+                                        </Route>
+                                        <Route exact path="/shoppinglist">
+                                            <ShoppingList />
+                                        </Route>
+                                        <Route path="/settings">
+                                            <Settings />
+                                        </Route>
+                                        <Route exact path="/">
+                                            <Redirect to="/stores" />
+                                        </Route>
+                                    </IonRouterOutlet>
+                                    <IonTabBar slot="bottom">
+                                        <IonTabButton
+                                            tab="stores"
+                                            href="/stores"
+                                        >
+                                            <IonIcon
+                                                aria-hidden="true"
+                                                icon={cartOutline}
+                                            />
+                                            <IonLabel>Stores</IonLabel>
+                                        </IonTabButton>
+                                        <IonTabButton
+                                            tab="shoppinglist"
+                                            href="/shoppinglist"
+                                        >
+                                            <IonIcon
+                                                aria-hidden="true"
+                                                icon={listCircle}
+                                            />
+                                            <IonLabel>Basket</IonLabel>
+                                        </IonTabButton>
+                                        <IonTabButton
+                                            tab="settings"
+                                            href="/settings"
+                                        >
+                                            <IonIcon
+                                                aria-hidden="true"
+                                                icon={settings}
+                                            />
+                                            <IonLabel>Settings</IonLabel>
+                                        </IonTabButton>
+                                    </IonTabBar>
+                                </IonTabs>
+                            </LLMModalProvider>
                         </DatabaseProvider>
                     </Suspense>
                 </AppErrorBoundary>

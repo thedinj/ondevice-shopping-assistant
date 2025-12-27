@@ -8,18 +8,18 @@ import {
     IonContent,
     IonItem,
     IonLabel,
-    IonSelect,
-    IonSelectOption,
     IonInput,
     IonText,
-    IonSegment,
-    IonSegmentButton,
     IonAlert,
 } from "@ionic/react";
 import { Controller, useForm } from "react-hook-form";
+import {
+    ClickableSelectionModal,
+    SelectableItem,
+} from "../shared/ClickableSelectionModal";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useStoreManagement } from "./StoreManagementContext";
 import {
     useCreateAisle,
@@ -68,6 +68,7 @@ export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
     const deleteAisle = useDeleteAisle();
     const deleteSection = useDeleteSection();
     const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+    const [isAisleModalOpen, setIsAisleModalOpen] = useState(false);
 
     const {
         control,
@@ -86,6 +87,15 @@ export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
     });
 
     const entityType = watch("type");
+
+    const aisleItems: SelectableItem[] = useMemo(() => {
+        return (
+            aisles?.map((aisle) => ({
+                id: aisle.id,
+                label: aisle.name,
+            })) || []
+        );
+    }, [aisles]);
 
     // Reset form when modal opens/closes or editing entity changes
     useEffect(() => {
@@ -188,22 +198,57 @@ export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
                             name="type"
                             control={control}
                             render={({ field }) => (
-                                <IonItem>
-                                    <IonLabel position="stacked">Type</IonLabel>
-                                    <IonSegment
-                                        value={field.value}
-                                        onIonChange={(e) =>
-                                            field.onChange(e.detail.value)
-                                        }
+                                <div style={{ marginBottom: "16px" }}>
+                                    <IonLabel
+                                        style={{
+                                            display: "block",
+                                            marginBottom: "8px",
+                                            fontSize: "14px",
+                                            marginLeft: "16px",
+                                        }}
                                     >
-                                        <IonSegmentButton value="aisle">
-                                            <IonLabel>Aisle</IonLabel>
-                                        </IonSegmentButton>
-                                        <IonSegmentButton value="section">
-                                            <IonLabel>Section</IonLabel>
-                                        </IonSegmentButton>
-                                    </IonSegment>
-                                </IonItem>
+                                        Type
+                                    </IonLabel>
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            gap: "8px",
+                                            paddingLeft: "16px",
+                                            paddingRight: "16px",
+                                        }}
+                                    >
+                                        <IonButton
+                                            expand="block"
+                                            fill={
+                                                field.value === "aisle"
+                                                    ? "solid"
+                                                    : "outline"
+                                            }
+                                            color="primary"
+                                            onClick={() =>
+                                                field.onChange("aisle")
+                                            }
+                                            style={{ flex: 1 }}
+                                        >
+                                            Aisle
+                                        </IonButton>
+                                        <IonButton
+                                            expand="block"
+                                            fill={
+                                                field.value === "section"
+                                                    ? "solid"
+                                                    : "outline"
+                                            }
+                                            color="primary"
+                                            onClick={() =>
+                                                field.onChange("section")
+                                            }
+                                            style={{ flex: 1 }}
+                                        >
+                                            Section
+                                        </IonButton>
+                                    </div>
+                                </div>
                             )}
                         />
                     )}
@@ -213,29 +258,56 @@ export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
                             <Controller
                                 name="aisle_id"
                                 control={control}
-                                render={({ field }) => (
-                                    <IonItem>
-                                        <IonLabel position="stacked">
-                                            Aisle
-                                        </IonLabel>
-                                        <IonSelect
-                                            value={field.value}
-                                            placeholder="Select an aisle"
-                                            onIonChange={(e) =>
-                                                field.onChange(e.detail.value)
-                                            }
-                                        >
-                                            {aisles?.map((aisle) => (
-                                                <IonSelectOption
-                                                    key={aisle.id}
-                                                    value={aisle.id}
+                                render={({ field }) => {
+                                    const selectedAisle = aisles?.find(
+                                        (a) => a.id === field.value
+                                    );
+
+                                    return (
+                                        <>
+                                            <IonItem
+                                                button
+                                                onClick={() =>
+                                                    aisleItems.length > 0 &&
+                                                    setIsAisleModalOpen(true)
+                                                }
+                                                disabled={
+                                                    aisleItems.length === 0
+                                                }
+                                            >
+                                                <IonLabel position="stacked">
+                                                    Aisle
+                                                </IonLabel>
+                                                <div
+                                                    style={{
+                                                        color: field.value
+                                                            ? "var(--ion-color-dark)"
+                                                            : "var(--ion-color-medium)",
+                                                    }}
                                                 >
-                                                    {aisle.name}
-                                                </IonSelectOption>
-                                            ))}
-                                        </IonSelect>
-                                    </IonItem>
-                                )}
+                                                    {field.value
+                                                        ? selectedAisle?.name
+                                                        : "Select an aisle"}
+                                                </div>
+                                            </IonItem>
+
+                                            <ClickableSelectionModal
+                                                items={aisleItems}
+                                                value={field.value || undefined}
+                                                onSelect={(aisleId) =>
+                                                    field.onChange(aisleId)
+                                                }
+                                                isOpen={isAisleModalOpen}
+                                                onDismiss={() =>
+                                                    setIsAisleModalOpen(false)
+                                                }
+                                                title="Select Aisle"
+                                                searchPlaceholder="Search aisles..."
+                                                showSearch={true}
+                                            />
+                                        </>
+                                    );
+                                }}
                             />
                             {errors.aisle_id && (
                                 <IonText color="danger">

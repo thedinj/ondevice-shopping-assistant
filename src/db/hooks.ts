@@ -448,6 +448,104 @@ export function useReorderSections() {
     });
 }
 
+/**
+ * Hook to bulk replace all aisles and sections for a store
+ * Deletes all existing aisles (CASCADE deletes sections) then creates new ones
+ */
+export function useBulkReplaceAislesAndSections() {
+    const database = useDatabase();
+    const queryClient = useQueryClient();
+    const { showError, showSuccess } = useToast();
+
+    return useTanstackMutation({
+        mutationFn: async ({
+            storeId,
+            aisles,
+            sections,
+        }: {
+            storeId: string;
+            aisles: Array<{ name: string; sort_order: number }>;
+            sections: Array<{
+                aisleName: string;
+                name: string;
+                sort_order: number;
+            }>;
+        }) => {
+            // Step 1: Get all existing aisles
+            const existingAisles = await database.getAislesByStore(storeId);
+
+            // Step 2: Delete all existing aisles (CASCADE will delete sections)
+            for (const aisle of existingAisles) {
+                await database.deleteAisle(aisle.id);
+            }
+
+            // Step 3: Create new aisles and build a map of name -> id
+            const aisleNameToId = new Map<string, string>();
+
+            for (const aisleData of aisles) {
+                const createdAisle = await database.insertAisle(
+                    storeId,
+                    aisleData.name
+                );
+                aisleNameToId.set(aisleData.name, createdAisle.id);
+
+                // Update sort order if needed (insertAisle assigns automatically)
+                if (createdAisle.sort_order !== aisleData.sort_order) {
+                    await database.reorderAisles([
+                        {
+                            id: createdAisle.id,
+                            sort_order: aisleData.sort_order,
+                        },
+                    ]);
+                }
+            }
+
+            // Step 4: Create sections for each aisle
+            for (const sectionData of sections) {
+                const aisleId = aisleNameToId.get(sectionData.aisleName);
+                if (!aisleId) {
+                    console.warn(
+                        `Aisle not found for section: ${sectionData.name} in ${sectionData.aisleName}`
+                    );
+                    continue;
+                }
+
+                const createdSection = await database.insertSection(
+                    storeId,
+                    sectionData.name,
+                    aisleId
+                );
+
+                // Update sort order if needed
+                if (createdSection.sort_order !== sectionData.sort_order) {
+                    await database.reorderSections([
+                        {
+                            id: createdSection.id,
+                            sort_order: sectionData.sort_order,
+                        },
+                    ]);
+                }
+            }
+
+            return { aisleCount: aisles.length, sectionCount: sections.length };
+        },
+        onSuccess: (result, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: ["aisles", variables.storeId],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["sections", variables.storeId],
+            });
+            showSuccess(
+                `Successfully imported ${result.aisleCount} aisles and ${result.sectionCount} sections`
+            );
+        },
+        onError: (error: Error) => {
+            showError(`Failed to replace aisles/sections: ${error.message}`);
+        },
+    });
+}
+
 // ============================================================================
 // StoreItem Query & Mutation Hooks
 // ============================================================================

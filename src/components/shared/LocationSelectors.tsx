@@ -1,14 +1,20 @@
-import { useMemo } from "react";
-import { IonItem, IonLabel, IonSelect, IonSelectOption } from "@ionic/react";
+import { IonItem, IonLabel } from "@ionic/react";
+import { useMemo, useState } from "react";
 import {
-    Controller,
     Control,
+    Controller,
+    FieldValues,
     UseFormSetValue,
     UseFormWatch,
-    FieldValues,
+    Path,
+    PathValue,
 } from "react-hook-form";
 import { useStoreAisles, useStoreSections } from "../../db/hooks";
 import { StoreAisle, StoreSection } from "../../models/Store";
+import {
+    ClickableSelectionModal,
+    SelectableItem,
+} from "./ClickableSelectionModal";
 
 interface LocationSelectorsProps<T extends FieldValues = FieldValues> {
     control: Control<T>;
@@ -28,8 +34,11 @@ export function LocationSelectors<T extends FieldValues = FieldValues>({
     const { data: aisles } = useStoreAisles(storeId);
     const { data: sections } = useStoreSections(storeId);
 
-    const currentAisleId = watch("aisleId" as any);
-    const currentSectionId = watch("sectionId" as any);
+    const [isAisleModalOpen, setIsAisleModalOpen] = useState(false);
+    const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
+
+    const currentAisleId = watch("aisleId" as Path<T>);
+    const currentSectionId = watch("sectionId" as Path<T>);
 
     // Filter and sort sections by selected aisle, then alphabetically
     const filteredSections = useMemo(() => {
@@ -52,95 +61,149 @@ export function LocationSelectors<T extends FieldValues = FieldValues>({
             );
     }, [aisles]);
 
+    // Convert to SelectableItem format
+    const aisleItems: SelectableItem[] = useMemo(() => {
+        return (
+            sortedAisles?.map((aisle) => ({
+                id: aisle.id,
+                label: aisle.name,
+            })) || []
+        );
+    }, [sortedAisles]);
+
+    const sectionItems: SelectableItem[] = useMemo(() => {
+        return (
+            filteredSections?.map((section) => ({
+                id: section.id,
+                label: section.name,
+            })) || []
+        );
+    }, [filteredSections]);
+
+    // Get display names
+    const selectedAisleName = sortedAisles?.find(
+        (a) => a.id === currentAisleId
+    )?.name;
+    const selectedSectionName = filteredSections?.find(
+        (s) => s.id === currentSectionId
+    )?.name;
+
     return (
         <>
             {/* Aisle */}
             <Controller
-                name={"aisleId" as any}
+                name={"aisleId" as Path<T>}
                 control={control}
                 render={({ field }) => (
-                    <IonItem>
-                        <IonLabel position="stacked">Aisle</IonLabel>
-                        <IonSelect
-                            value={field.value ?? ""}
-                            onIonChange={(e) => {
-                                const value =
-                                    e.detail.value === ""
-                                        ? null
-                                        : e.detail.value;
-                                field.onChange(value);
+                    <>
+                        <IonItem
+                            button
+                            onClick={() =>
+                                !disabled &&
+                                aisleItems.length > 0 &&
+                                setIsAisleModalOpen(true)
+                            }
+                            disabled={disabled || aisleItems.length === 0}
+                        >
+                            <IonLabel position="stacked">Aisle</IonLabel>
+                            <div
+                                style={{
+                                    color: field.value
+                                        ? "var(--ion-color-dark)"
+                                        : "var(--ion-color-medium)",
+                                }}
+                            >
+                                {field.value ? selectedAisleName : "None"}
+                            </div>
+                        </IonItem>
+
+                        <ClickableSelectionModal
+                            items={aisleItems}
+                            value={field.value || undefined}
+                            onSelect={(aisleId) => {
+                                field.onChange(aisleId);
                                 // Clear section if aisle changed and section doesn't belong to new aisle
                                 if (currentSectionId) {
                                     const section = sections?.find(
                                         (s: StoreSection) =>
                                             s.id === currentSectionId
                                     );
-                                    if (section && section.aisle_id !== value) {
+                                    if (
+                                        section &&
+                                        section.aisle_id !== aisleId
+                                    ) {
                                         setValue(
-                                            "sectionId" as any,
-                                            null as any
+                                            "sectionId" as Path<T>,
+                                            null as PathValue<T, Path<T>>
                                         );
                                     }
                                 }
                             }}
-                            disabled={disabled}
-                        >
-                            <IonSelectOption value="">None</IonSelectOption>
-                            {sortedAisles?.map((aisle: StoreAisle) => (
-                                <IonSelectOption
-                                    key={aisle.id}
-                                    value={aisle.id}
-                                >
-                                    {aisle.name}
-                                </IonSelectOption>
-                            ))}
-                        </IonSelect>
-                    </IonItem>
+                            isOpen={isAisleModalOpen}
+                            onDismiss={() => setIsAisleModalOpen(false)}
+                            title="Select Aisle"
+                            searchPlaceholder="Search aisles..."
+                            showSearch={true}
+                        />
+                    </>
                 )}
             />
 
             {/* Section */}
             <Controller
-                name={"sectionId" as any}
+                name={"sectionId" as Path<T>}
                 control={control}
                 render={({ field }) => (
-                    <IonItem>
-                        <IonLabel position="stacked">Section</IonLabel>
-                        <IonSelect
-                            value={field.value ?? ""}
-                            onIonChange={(e) => {
-                                const value =
-                                    e.detail.value === ""
-                                        ? null
-                                        : e.detail.value;
-                                field.onChange(value);
+                    <>
+                        <IonItem
+                            button
+                            onClick={() =>
+                                !disabled &&
+                                sectionItems.length > 0 &&
+                                setIsSectionModalOpen(true)
+                            }
+                            disabled={disabled || sectionItems.length === 0}
+                        >
+                            <IonLabel position="stacked">Section</IonLabel>
+                            <div
+                                style={{
+                                    color: field.value
+                                        ? "var(--ion-color-dark)"
+                                        : "var(--ion-color-medium)",
+                                }}
+                            >
+                                {field.value ? selectedSectionName : "None"}
+                            </div>
+                        </IonItem>
 
+                        <ClickableSelectionModal
+                            items={sectionItems}
+                            value={field.value || undefined}
+                            onSelect={(sectionId) => {
+                                field.onChange(sectionId);
                                 // If a section is selected, automatically set its aisle
-                                if (value && sections) {
+                                if (sectionId && sections) {
                                     const section = sections.find(
-                                        (s: StoreSection) => s.id === value
+                                        (s: StoreSection) => s.id === sectionId
                                     );
                                     if (section) {
                                         setValue(
-                                            "aisleId" as any,
-                                            section.aisle_id as any
+                                            "aisleId" as Path<T>,
+                                            section.aisle_id as PathValue<
+                                                T,
+                                                Path<T>
+                                            >
                                         );
                                     }
                                 }
                             }}
-                            disabled={disabled || !filteredSections?.length}
-                        >
-                            <IonSelectOption value="">None</IonSelectOption>
-                            {filteredSections?.map((section: StoreSection) => (
-                                <IonSelectOption
-                                    key={section.id}
-                                    value={section.id}
-                                >
-                                    {section.name}
-                                </IonSelectOption>
-                            ))}
-                        </IonSelect>
-                    </IonItem>
+                            isOpen={isSectionModalOpen}
+                            onDismiss={() => setIsSectionModalOpen(false)}
+                            title="Select Section"
+                            searchPlaceholder="Search sections..."
+                            showSearch={true}
+                        />
+                    </>
                 )}
             />
         </>

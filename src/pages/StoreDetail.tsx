@@ -23,7 +23,19 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useHistory, useParams } from "react-router-dom";
 import { z } from "zod";
-import { useDeleteStore, useStore, useUpdateStore } from "../db/hooks";
+import {
+    useDeleteStore,
+    useStore,
+    useUpdateStore,
+    useBulkReplaceAislesAndSections,
+} from "../db/hooks";
+import { useLLMModal, LLMItem } from "../llm/shared";
+import {
+    transformStoreScanResult,
+    validateStoreScanResult,
+    type StoreScanResult,
+} from "../llm/features/storeScan";
+import { STORE_SCAN_PROMPT } from "../llm/features/storeScanPrompt";
 
 const storeFormSchema = z.object({
     name: z
@@ -40,6 +52,8 @@ const StoreDetail: React.FC = () => {
     const { data: store, isLoading } = useStore(id);
     const updateStore = useUpdateStore();
     const deleteStore = useDeleteStore();
+    const bulkReplace = useBulkReplaceAislesAndSections();
+    const { openModal } = useLLMModal();
     const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
     const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
@@ -76,6 +90,81 @@ const StoreDetail: React.FC = () => {
         history.replace("/stores");
     };
 
+    const handleAutoScan = () => {
+        openModal<StoreScanResult>({
+            title: "Scan Store Directory",
+            prompt: STORE_SCAN_PROMPT,
+            userInstructions:
+                "Take a photo of the store directory showing aisle numbers and their sections/categories.",
+            model: "gpt-4o", // Use gpt-4o for vision capabilities
+            allowAttachments: true,
+            allowTextInput: false,
+            buttonText: "Scan Aisles & Sections",
+            renderOutput: (response) => {
+                if (!validateStoreScanResult(response.data)) {
+                    return (
+                        <IonText color="danger">
+                            <p>Invalid scan result format</p>
+                        </IonText>
+                    );
+                }
+
+                const result = response.data;
+                return (
+                    <div>
+                        <IonText color="medium">
+                            <p>
+                                Found {result.aisles.length} aisle
+                                {result.aisles.length !== 1 ? "s" : ""}
+                            </p>
+                        </IonText>
+                        <IonList>
+                            {result.aisles.map((aisle, idx) => (
+                                <div key={idx}>
+                                    <IonItem lines="none">
+                                        <IonLabel>
+                                            <h3>
+                                                <strong>{aisle.name}</strong>
+                                            </h3>
+                                        </IonLabel>
+                                    </IonItem>
+                                    {aisle.sections.length > 0 && (
+                                        <IonItem>
+                                            <IonLabel
+                                                className="ion-text-wrap"
+                                                style={{ paddingLeft: "16px" }}
+                                            >
+                                                <p>
+                                                    {aisle.sections.join(", ")}
+                                                </p>
+                                            </IonLabel>
+                                        </IonItem>
+                                    )}
+                                </div>
+                            ))}
+                        </IonList>
+                    </div>
+                );
+            },
+            onAccept: async (response) => {
+                if (!validateStoreScanResult(response.data)) {
+                    return;
+                }
+
+                try {
+                    const transformed = transformStoreScanResult(response.data);
+                    await bulkReplace.mutateAsync({
+                        storeId: id,
+                        aisles: transformed.aisles,
+                        sections: transformed.sections,
+                    });
+                } catch (error) {
+                    console.error("Failed to import aisles/sections:", error);
+                }
+            },
+        });
+    };
+
     return (
         <IonPage>
             <IonHeader>
@@ -105,6 +194,17 @@ const StoreDetail: React.FC = () => {
             </IonHeader>
             <IonContent fullscreen>
                 <IonList>
+                    <LLMItem
+                        button
+                        detail={true}
+                        onClick={handleAutoScan}
+                        requireApiKey={false}
+                    >
+                        <IonLabel>
+                            <h2>Auto-Scan Aisles/Sections</h2>
+                            <p>Import from store directory photo</p>
+                        </IonLabel>
+                    </LLMItem>
                     <IonItem
                         button
                         detail={true}

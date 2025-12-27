@@ -1,43 +1,59 @@
-import { IonItem, IonLabel, IonSelect, IonSelectOption } from "@ionic/react";
+import { IonItem } from "@ionic/react";
+import { useMemo, useState } from "react";
 import { useStores } from "../../db/hooks";
+import {
+    ClickableSelectionModal,
+    SelectableItem,
+} from "../shared/ClickableSelectionModal";
 import { useShoppingListContext } from "./useShoppingListContext";
 
 export const StoreSelector = () => {
     const { data: stores, isLoading } = useStores();
     const { selectedStoreId, setSelectedStoreId } = useShoppingListContext();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const storeItems: SelectableItem[] = useMemo(() => {
+        return (
+            stores?.map((store) => ({
+                id: store.id,
+                label: store.name,
+            })) || []
+        );
+    }, [stores]);
+
+    const selectedStore = stores?.find((s) => s.id === selectedStoreId);
 
     if (isLoading) {
         return null;
     }
 
-    // HACK: Force IonSelect to remount when store names change.
-    // IonSelect is an Ionic web component that maintains its own internal state
-    // for displaying the selected option's text. When stores are updated on another
-    // tab (e.g., renaming a store on the Stores tab), React Query properly refetches
-    // and updates the stores data, React re-renders this component with new
-    // IonSelectOption children, BUT the IonSelect web component doesn't sync its
-    // internal display state from the updated options. By changing the key when any
-    // store name changes, we force React to unmount the old IonSelect and mount a
-    // fresh one that rebuilds its internal state from scratch with the correct names.
-    // This is a common issue with web components in React - they have their own state
-    // management separate from React's virtual DOM reconciliation.
-    const key = stores?.map((s) => s.name).join(",");
-
     return (
-        <IonItem>
-            <IonLabel>Store</IonLabel>
-            <IonSelect
-                key={key}
-                value={selectedStoreId}
-                placeholder="Select a store"
-                onIonChange={(e) => setSelectedStoreId(e.detail.value)}
+        <>
+            <IonItem
+                button
+                onClick={() => storeItems.length > 0 && setIsModalOpen(true)}
+                disabled={storeItems.length === 0}
             >
-                {stores?.map((store) => (
-                    <IonSelectOption key={store.id} value={store.id}>
-                        {store.name}
-                    </IonSelectOption>
-                ))}
-            </IonSelect>
-        </IonItem>
+                <div
+                    style={{
+                        color: selectedStoreId
+                            ? "var(--ion-color-dark)"
+                            : "var(--ion-color-medium)",
+                    }}
+                >
+                    {selectedStoreId ? selectedStore?.name : "Select a store"}
+                </div>
+            </IonItem>
+
+            <ClickableSelectionModal
+                items={storeItems}
+                value={selectedStoreId || undefined}
+                onSelect={(storeId) => setSelectedStoreId(storeId)}
+                isOpen={isModalOpen}
+                onDismiss={() => setIsModalOpen(false)}
+                title="Select Store"
+                showSearch={false}
+            />
+        </>
     );
 };
