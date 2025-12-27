@@ -4,6 +4,7 @@ import {
     ShoppingListItemOptionalId,
     ShoppingListItemWithDetails,
     Store,
+    StoreItemWithDetails,
 } from "../models/Store";
 import { BaseDatabase } from "./base";
 import {
@@ -146,6 +147,12 @@ export class RemoteDatabase extends BaseDatabase {
     }
 
     async getItemsByStore(_storeId: string): Promise<StoreItem[]> {
+        throw new Error("RemoteDatabase not yet implemented");
+    }
+
+    async getItemsByStoreWithDetails(
+        _storeId: string
+    ): Promise<StoreItemWithDetails[]> {
         throw new Error("RemoteDatabase not yet implemented");
     }
 

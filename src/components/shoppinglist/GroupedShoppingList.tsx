@@ -1,33 +1,14 @@
-import {
-    IonButton,
-    IonIcon,
-    IonLabel,
-    IonList,
-    IonListHeader,
-} from "@ionic/react";
+import { IonButton, IonIcon, IonLabel, IonListHeader } from "@ionic/react";
 import { checkmarkDone } from "ionicons/icons";
 import { ShoppingListItemWithDetails } from "../../models/Store";
 import { ShoppingListItem } from "./ShoppingListItem";
+import { GroupedItemList } from "../shared/GroupedItemList";
 
 interface GroupedShoppingListProps {
     items: ShoppingListItemWithDetails[];
     isChecked: boolean;
     onClearChecked?: () => void;
     isClearing?: boolean;
-}
-
-interface AisleGroup {
-    aisleId: string | null;
-    aisleName: string | null;
-    aisleSortOrder: number | null;
-    sections: SectionGroup[];
-}
-
-interface SectionGroup {
-    sectionId: string | null;
-    sectionName: string | null;
-    sectionSortOrder: number | null;
-    items: ShoppingListItemWithDetails[];
 }
 
 export const GroupedShoppingList = ({
@@ -40,150 +21,38 @@ export const GroupedShoppingList = ({
         return null;
     }
 
-    const groupedItems = groupItemsByAisleAndSection(items);
+    const headerSlot = isChecked ? (
+        <IonListHeader>
+            <IonLabel>
+                <h2>Checked Items</h2>
+            </IonLabel>
+            {onClearChecked && (
+                <IonButton
+                    fill="clear"
+                    size="small"
+                    onClick={onClearChecked}
+                    disabled={isClearing}
+                >
+                    <IonIcon slot="start" icon={checkmarkDone} />
+                    Clear
+                </IonButton>
+            )}
+        </IonListHeader>
+    ) : undefined;
 
     return (
-        <>
-            {isChecked && (
-                <IonListHeader>
-                    <IonLabel>
-                        <h2>Checked Items</h2>
-                    </IonLabel>
-                    {onClearChecked && (
-                        <IonButton
-                            fill="clear"
-                            size="small"
-                            onClick={onClearChecked}
-                            disabled={isClearing}
-                        >
-                            <IonIcon slot="start" icon={checkmarkDone} />
-                            Clear
-                        </IonButton>
-                    )}
-                </IonListHeader>
+        <GroupedItemList<ShoppingListItemWithDetails>
+            items={items}
+            renderItem={(item) => (
+                <ShoppingListItem
+                    key={item.id}
+                    item={item}
+                    isChecked={isChecked}
+                />
             )}
-            <IonList>
-                {groupedItems.map((aisleGroup, aisleIdx) => (
-                    <div
-                        key={`${isChecked ? "checked" : "unchecked"}-aisle-${
-                            aisleGroup.aisleId || "none"
-                        }-${aisleIdx}`}
-                    >
-                        {/* Aisle Header - skip for checked items */}
-                        {!isChecked && aisleGroup.aisleName && (
-                            <IonListHeader>
-                                <IonLabel>
-                                    {aisleGroup.aisleName || "Uncategorized"}
-                                </IonLabel>
-                            </IonListHeader>
-                        )}
-
-                        {aisleGroup.sections.map((sectionGroup, sectionIdx) => (
-                            <div
-                                key={`${
-                                    isChecked ? "checked" : "unchecked"
-                                }-section-${
-                                    sectionGroup.sectionId || "none"
-                                }-${sectionIdx}`}
-                            >
-                                {/* Section subheader - skip for checked items */}
-                                {!isChecked && sectionGroup.sectionName && (
-                                    <IonListHeader
-                                        style={{ paddingLeft: "32px" }}
-                                    >
-                                        <IonLabel style={{ fontSize: "0.9em" }}>
-                                            {sectionGroup.sectionName}
-                                        </IonLabel>
-                                    </IonListHeader>
-                                )}
-
-                                {/* Items */}
-                                {sectionGroup.items.map((item) => (
-                                    <ShoppingListItem
-                                        key={item.id}
-                                        item={item}
-                                        isChecked={isChecked}
-                                    />
-                                ))}
-                            </div>
-                        ))}
-                    </div>
-                ))}
-            </IonList>
-        </>
+            showAisleHeaders={!isChecked}
+            showSectionHeaders={!isChecked}
+            headerSlot={headerSlot}
+        />
     );
 };
-
-// Helper function
-function groupItemsByAisleAndSection(
-    items: ShoppingListItemWithDetails[]
-): AisleGroup[] {
-    const aisleMap = new Map<
-        string | null,
-        Map<string | null, ShoppingListItemWithDetails[]>
-    >();
-
-    for (const item of items) {
-        const aisleKey = item.aisle_id;
-        const sectionKey = item.section_id;
-
-        if (!aisleMap.has(aisleKey)) {
-            aisleMap.set(aisleKey, new Map());
-        }
-
-        const sectionMap = aisleMap.get(aisleKey)!;
-        if (!sectionMap.has(sectionKey)) {
-            sectionMap.set(sectionKey, []);
-        }
-
-        sectionMap.get(sectionKey)!.push(item);
-    }
-
-    // Convert to array structure and sort by aisle_sort_order
-    const sortedAisles = Array.from(aisleMap.entries()).sort((a, b) => {
-        const aisleA = items.find((item) => item.aisle_id === a[0]);
-        const aisleB = items.find((item) => item.aisle_id === b[0]);
-        const sortOrderA = aisleA?.aisle_sort_order ?? 999999;
-        const sortOrderB = aisleB?.aisle_sort_order ?? 999999;
-        return sortOrderA - sortOrderB;
-    });
-
-    const result: AisleGroup[] = [];
-
-    for (const [aisleId, sectionMap] of sortedAisles) {
-        const aisleItem = items.find((item) => item.aisle_id === aisleId);
-
-        const sections: SectionGroup[] = [];
-
-        // Sort sections by section_sort_order
-        const sortedSections = Array.from(sectionMap.entries()).sort((a, b) => {
-            const sectionA = items.find((item) => item.section_id === a[0]);
-            const sectionB = items.find((item) => item.section_id === b[0]);
-            const sortOrderA = sectionA?.section_sort_order ?? 999999;
-            const sortOrderB = sectionB?.section_sort_order ?? 999999;
-            return sortOrderA - sortOrderB;
-        });
-
-        for (const [sectionId, sectionItems] of sortedSections) {
-            const sectionItem = items.find(
-                (item) => item.section_id === sectionId
-            );
-
-            sections.push({
-                sectionId,
-                sectionName: sectionItem?.section_name || null,
-                sectionSortOrder: sectionItem?.section_sort_order || null,
-                items: sectionItems,
-            });
-        }
-
-        result.push({
-            aisleId: aisleId,
-            aisleName: aisleItem?.aisle_name || null,
-            aisleSortOrder: aisleItem?.aisle_sort_order || null,
-            sections,
-        });
-    }
-
-    return result;
-}

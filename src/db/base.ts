@@ -7,6 +7,7 @@ import {
     Store,
     StoreAisle,
     StoreItem,
+    StoreItemWithDetails,
     StoreSection,
 } from "../models/Store";
 import { Database, DatabaseChangeListener } from "./types";
@@ -73,6 +74,9 @@ export abstract class BaseDatabase implements Database {
         sectionId?: string | null
     ): Promise<StoreItem>;
     abstract getItemsByStore(storeId: string): Promise<StoreItem[]>;
+    abstract getItemsByStoreWithDetails(
+        storeId: string
+    ): Promise<StoreItemWithDetails[]>;
     abstract getItemById(id: string): Promise<StoreItem | null>;
     abstract updateItem(
         id: string,
@@ -150,8 +154,7 @@ export abstract class BaseDatabase implements Database {
 
             if (shouldSeedTestData) {
                 // Create a sample store with test data
-                const store = await this.insertStore("Sample Store");
-                await this.insertTestData(store.id);
+                await this.insertTestData();
             } else {
                 // Create a basic empty store
                 await this.insertStore("Unnamed Store");
@@ -163,12 +166,16 @@ export abstract class BaseDatabase implements Database {
      * Inserts realistic test data into a store for development/testing purposes.
      * Creates a grocery store structure with aisles, sections, store items, and a shopping list.
      */
-    protected async insertTestData(storeId: string): Promise<void> {
+    protected async insertTestData(): Promise<void> {
+        // Initial store
+        const store = await this.insertStore("Sample Store");
+        const storeId = store.id;
+
         // Create aisles
         const produceAisle = await this.insertAisle(storeId, "Produce");
-        const bakeryAisle = await this.insertAisle(storeId, "Aisle 1 - Bakery");
-        const pantryAisle = await this.insertAisle(storeId, "Aisle 2 - Pantry");
-        const snacksAisle = await this.insertAisle(storeId, "Aisle 3 - Snacks");
+        const bakeryAisle = await this.insertAisle(storeId, "Aisle 1");
+        const pantryAisle = await this.insertAisle(storeId, "Aisle 2");
+        const snacksAisle = await this.insertAisle(storeId, "Aisle 3");
         const dairyAisle = await this.insertAisle(
             storeId,
             "Dairy & Refrigerated"
@@ -309,5 +316,7 @@ export abstract class BaseDatabase implements Database {
             unit_id: "bag",
             notes: null,
         });
+
+        await this.insertStore("Empty Store");
     }
 }

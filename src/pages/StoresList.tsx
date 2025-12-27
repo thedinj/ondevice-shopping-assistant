@@ -1,37 +1,37 @@
-import { useState, useMemo } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
-    IonContent,
-    IonHeader,
-    IonItem,
-    IonLabel,
-    IonList,
-    IonPage,
-    IonTitle,
-    IonToolbar,
-    IonSkeletonText,
-    IonFab,
-    IonFabButton,
-    IonIcon,
-    IonItemSliding,
-    IonItemOptions,
-    IonItemOption,
     IonAlert,
     IonButton,
     IonButtons,
-    IonModal,
+    IonContent,
+    IonFab,
+    IonFabButton,
+    IonHeader,
+    IonIcon,
     IonInput,
+    IonItem,
+    IonItemOption,
+    IonItemOptions,
+    IonItemSliding,
+    IonLabel,
+    IonList,
+    IonModal,
+    IonPage,
+    IonSkeletonText,
     IonText,
+    IonTitle,
+    IonToolbar,
 } from "@ionic/react";
-import { add, trash, create } from "ionicons/icons";
-import {
-    useStores,
-    useCreateStore,
-    useUpdateStore,
-    useDeleteStore,
-} from "../db/hooks";
+import { add, create, trash } from "ionicons/icons";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import {
+    useCreateStore,
+    useDeleteStore,
+    useStores,
+    useUpdateStore,
+} from "../db/hooks";
 
 const storeFormSchema = z.object({
     name: z
@@ -67,12 +67,6 @@ const StoresList: React.FC = () => {
         resolver: zodResolver(storeFormSchema),
         mode: "onChange",
     });
-
-    // Alphabetically sorted stores
-    const sortedStores = useMemo(() => {
-        if (!stores) return [];
-        return [...stores].sort((a, b) => a.name.localeCompare(b.name));
-    }, [stores]);
 
     const openCreateModal = () => {
         setEditingStore(null);
@@ -142,7 +136,7 @@ const StoresList: React.FC = () => {
                             </IonItem>
                         ))}
                     </IonList>
-                ) : sortedStores.length === 0 ? (
+                ) : !stores?.length ? (
                     <div
                         style={{
                             textAlign: "center",
@@ -156,7 +150,7 @@ const StoresList: React.FC = () => {
                     </div>
                 ) : (
                     <IonList>
-                        {sortedStores.map((store) => (
+                        {stores.map((store) => (
                             <IonItemSliding key={store.id}>
                                 <IonItem
                                     routerLink={`/stores/${store.id}`}

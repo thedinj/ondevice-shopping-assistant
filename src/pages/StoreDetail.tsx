@@ -1,10 +1,8 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import {
     IonBackButton,
     IonButtons,
     IonContent,
-    IonFab,
-    IonFabButton,
     IonHeader,
     IonIcon,
     IonPage,
@@ -17,14 +15,19 @@ import {
     IonItem,
     IonLabel,
     IonText,
+    IonList,
 } from "@ionic/react";
-import { useParams } from "react-router-dom";
-import { add, create } from "ionicons/icons";
+import { useParams, useHistory } from "react-router-dom";
+import {
+    create,
+    listOutline,
+    gridOutline,
+    chevronForward,
+} from "ionicons/icons";
 import { useStore, useUpdateStore } from "../db/hooks";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import AisleSectionList from "../components/store/AisleSectionList";
 
 const storeFormSchema = z.object({
     name: z
@@ -35,17 +38,12 @@ const storeFormSchema = z.object({
 
 type StoreFormData = z.infer<typeof storeFormSchema>;
 
-export interface ListHandle {
-    openCreateModal: () => void;
-}
-
 const StoreDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const history = useHistory();
     const { data: store, isLoading } = useStore(id);
     const updateStore = useUpdateStore();
     const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
-
-    const listRef = useRef<ListHandle>(null);
 
     const {
         control,
@@ -72,10 +70,6 @@ const StoreDetail: React.FC = () => {
     const onSubmitRename = async (data: StoreFormData) => {
         await updateStore.mutateAsync({ id, name: data.name });
         closeRenameModal();
-    };
-
-    const handleFabClick = () => {
-        listRef.current?.openCreateModal();
     };
 
     return (
@@ -106,13 +100,32 @@ const StoreDetail: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>
-                <AisleSectionList storeId={id} ref={listRef} />
-
-                <IonFab slot="fixed" vertical="bottom" horizontal="end">
-                    <IonFabButton onClick={handleFabClick}>
-                        <IonIcon icon={add} />
-                    </IonFabButton>
-                </IonFab>
+                <IonList>
+                    <IonItem
+                        button
+                        detail={true}
+                        onClick={() => history.push(`/stores/${id}/aisles`)}
+                    >
+                        <IonIcon icon={gridOutline} slot="start" />
+                        <IonLabel>
+                            <h2>Edit Aisles/Sections</h2>
+                            <p>Organize store layout</p>
+                        </IonLabel>
+                        <IonIcon icon={chevronForward} slot="end" />
+                    </IonItem>
+                    <IonItem
+                        button
+                        detail={true}
+                        onClick={() => history.push(`/stores/${id}/items`)}
+                    >
+                        <IonIcon icon={listOutline} slot="start" />
+                        <IonLabel>
+                            <h2>Edit Store Items</h2>
+                            <p>Manage products and their locations</p>
+                        </IonLabel>
+                        <IonIcon icon={chevronForward} slot="end" />
+                    </IonItem>
+                </IonList>
 
                 {/* Rename Store Modal */}
                 <IonModal

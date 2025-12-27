@@ -99,6 +99,16 @@ export type ShoppingListItemWithDetails = ShoppingListItem & {
     aisle_sort_order: number | null;
 };
 
+/**
+ * Store item with joined location details from the database
+ */
+export type StoreItemWithDetails = StoreItem & {
+    aisle_name: string | null;
+    aisle_sort_order: number | null;
+    section_name: string | null;
+    section_sort_order: number | null;
+};
+
 export const getInitializedStore = (
     name: string = DEFAULT_STORE_NAME
 ): Store => {

@@ -36,7 +36,7 @@ import {
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ListHandle } from "../../pages/StoreDetail";
+import { ListHandle } from "./types";
 
 const sectionFormSchema = z.object({
     name: z

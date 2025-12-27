@@ -465,6 +465,18 @@ export function useStoreItems(storeId: string) {
 }
 
 /**
+ * Hook to fetch all items for a store with location details (joined)
+ */
+export function useStoreItemsWithDetails(storeId: string) {
+    const database = useDatabase();
+    return useTanstackQuery({
+        queryKey: ["items", "with-details", storeId],
+        queryFn: () => database.getItemsByStoreWithDetails(storeId),
+        enabled: !!storeId,
+    });
+}
+
+/**
  * Hook to fetch a single item by ID
  */
 export function useItem(id: string) {
@@ -500,6 +512,9 @@ export function useCreateItem() {
             queryClient.invalidateQueries({
                 queryKey: ["items", variables.storeId],
             });
+            queryClient.invalidateQueries({
+                queryKey: ["items", "with-details", variables.storeId],
+            });
         },
         onError: (error: Error) => {
             showError(`Failed to create item: ${error.message}`);
@@ -531,6 +546,9 @@ export function useUpdateItem() {
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
                 queryKey: ["items", variables.storeId],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["items", "with-details", variables.storeId],
             });
             queryClient.invalidateQueries({
                 queryKey: ["items", "detail", variables.id],
@@ -577,6 +595,9 @@ export function useGetOrCreateStoreItem() {
             queryClient.invalidateQueries({
                 queryKey: ["items", variables.storeId],
             });
+            queryClient.invalidateQueries({
+                queryKey: ["items", "with-details", variables.storeId],
+            });
         },
         onError: (error: Error) => {
             showError(`Failed to get or create item: ${error.message}`);
@@ -598,6 +619,9 @@ export function useDeleteItem() {
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
                 queryKey: ["items", variables.storeId],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["items", "with-details", variables.storeId],
             });
         },
         onError: (error: Error) => {

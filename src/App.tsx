@@ -18,6 +18,8 @@ import Settings from "./pages/Settings";
 import ShoppingList from "./pages/ShoppingList";
 import StoresList from "./pages/StoresList";
 import StoreDetail from "./pages/StoreDetail";
+import StoreItemsPage from "./pages/StoreItemsPage";
+import StoreAislesPage from "./pages/StoreAislesPage";
 import { DatabaseProvider } from "./db/DatabaseContext";
 
 /* Core CSS required for Ionic components to work properly */
@@ -66,6 +68,12 @@ const App: React.FC = () => {
                                     </Route>
                                     <Route exact path="/stores/:id">
                                         <StoreDetail />
+                                    </Route>
+                                    <Route exact path="/stores/:id/items">
+                                        <StoreItemsPage />
+                                    </Route>
+                                    <Route exact path="/stores/:id/aisles">
+                                        <StoreAislesPage />
                                     </Route>
                                     <Route exact path="/shoppinglist">
                                         <ShoppingList />

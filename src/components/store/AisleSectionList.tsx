@@ -7,7 +7,7 @@ import {
     useReorderAisles,
     useReorderSections,
 } from "../../db/hooks";
-import { ListHandle } from "../../pages/StoreDetail";
+import { ListHandle } from "./types";
 import { useStoreManagement } from "./StoreManagementContext";
 import { StoreManagementProvider } from "./StoreManagementProvider";
 import { EntityFormModal } from "./EntityFormModal";

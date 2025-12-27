@@ -7,6 +7,7 @@ import {
     Store,
     StoreAisle,
     StoreItem,
+    StoreItemWithDetails,
     StoreSection,
 } from "../models/Store";
 
@@ -189,6 +190,13 @@ export interface EntityDatabase {
      * Get all non-deleted, non-hidden items for a store
      */
     getItemsByStore(storeId: string): Promise<StoreItem[]>;
+
+    /**
+     * Get all non-deleted, non-hidden items for a store with location details
+     */
+    getItemsByStoreWithDetails(
+        storeId: string
+    ): Promise<StoreItemWithDetails[]>;
 
     /**
      * Get a single item by ID

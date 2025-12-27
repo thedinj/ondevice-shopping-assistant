@@ -9,6 +9,7 @@ import {
     Store,
     StoreAisle,
     StoreItem,
+    StoreItemWithDetails,
     StoreSection,
 } from "../models/Store";
 import { BaseDatabase } from "./base";
@@ -231,10 +232,8 @@ export class FakeDatabase extends BaseDatabase {
     }
 
     async loadAllStores(): Promise<Store[]> {
-        return Array.from(this.stores.values()).sort(
-            (a, b) =>
-                new Date(a.created_at).getTime() -
-                new Date(b.created_at).getTime()
+        return Array.from(this.stores.values()).sort((a, b) =>
+            a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
         );
     }
 
@@ -482,6 +481,44 @@ export class FakeDatabase extends BaseDatabase {
         return Array.from(this.items.values())
             .filter((item) => item.store_id === storeId && item.is_hidden === 0)
             .sort((a, b) => a.name_norm.localeCompare(b.name_norm));
+    }
+
+    async getItemsByStoreWithDetails(
+        storeId: string
+    ): Promise<StoreItemWithDetails[]> {
+        const items = Array.from(this.items.values()).filter(
+            (item) => item.store_id === storeId && item.is_hidden === 0
+        );
+
+        return items
+            .map((item) => {
+                const section = item.section_id
+                    ? this.sections.get(item.section_id)
+                    : null;
+                const aisleId = section?.aisle_id || item.aisle_id;
+                const aisle = aisleId ? this.aisles.get(aisleId) : null;
+
+                return {
+                    ...item,
+                    aisle_id: aisleId || null,
+                    aisle_name: aisle?.name || null,
+                    aisle_sort_order: aisle?.sort_order || null,
+                    section_name: section?.name || null,
+                    section_sort_order: section?.sort_order || null,
+                };
+            })
+            .sort((a, b) => {
+                const aSortOrder = a.aisle_sort_order ?? 999999;
+                const bSortOrder = b.aisle_sort_order ?? 999999;
+                if (aSortOrder !== bSortOrder) return aSortOrder - bSortOrder;
+
+                const aSectionSort = a.section_sort_order ?? 999999;
+                const bSectionSort = b.section_sort_order ?? 999999;
+                if (aSectionSort !== bSectionSort)
+                    return aSectionSort - bSectionSort;
+
+                return a.name_norm.localeCompare(b.name_norm);
+            });
     }
 
     async getItemById(id: string): Promise<StoreItem | null> {

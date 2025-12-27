@@ -12,6 +12,8 @@ import {
     IonSelectOption,
     IonInput,
     IonText,
+    IonSegment,
+    IonSegmentButton,
 } from "@ionic/react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -160,20 +162,19 @@ export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
                             render={({ field }) => (
                                 <IonItem>
                                     <IonLabel position="stacked">Type</IonLabel>
-                                    <IonSelect
+                                    <IonSegment
                                         value={field.value}
-                                        placeholder="Select type"
                                         onIonChange={(e) =>
                                             field.onChange(e.detail.value)
                                         }
                                     >
-                                        <IonSelectOption value="aisle">
-                                            Aisle
-                                        </IonSelectOption>
-                                        <IonSelectOption value="section">
-                                            Section
-                                        </IonSelectOption>
-                                    </IonSelect>
+                                        <IonSegmentButton value="aisle">
+                                            <IonLabel>Aisle</IonLabel>
+                                        </IonSegmentButton>
+                                        <IonSegmentButton value="section">
+                                            <IonLabel>Section</IonLabel>
+                                        </IonSegmentButton>
+                                    </IonSegment>
                                 </IonItem>
                             )}
                         />

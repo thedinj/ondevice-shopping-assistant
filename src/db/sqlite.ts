@@ -13,6 +13,7 @@ import {
     Store,
     StoreAisle,
     StoreItem,
+    StoreItemWithDetails,
     StoreSection,
 } from "../models/Store";
 import { BaseDatabase } from "./base";
@@ -322,7 +323,7 @@ export class SQLiteDatabase extends BaseDatabase {
     async loadAllStores(): Promise<Store[]> {
         const conn = await this.getConnection();
         const res = await conn.query(
-            "SELECT id, name, created_at, updated_at FROM store ORDER BY created_at"
+            "SELECT id, name, created_at, updated_at FROM store ORDER BY name COLLATE NOCASE"
         );
         return res.values || [];
     }
@@ -618,6 +619,31 @@ export class SQLiteDatabase extends BaseDatabase {
              FROM store_item 
              WHERE store_id = ? AND is_hidden = 0 
              ORDER BY name_norm`,
+            [storeId]
+        );
+        return res.values || [];
+    }
+
+    async getItemsByStoreWithDetails(
+        storeId: string
+    ): Promise<StoreItemWithDetails[]> {
+        const conn = await this.getConnection();
+        const res = await conn.query(
+            `SELECT 
+                si.id, si.store_id, si.name, si.name_norm, 
+                si.aisle_id, si.section_id, 
+                si.usage_count, si.last_used_at, si.is_hidden,
+                si.created_at, si.updated_at,
+                ss.name as section_name, ss.sort_order as section_sort_order,
+                sa.id as aisle_id, sa.name as aisle_name, sa.sort_order as aisle_sort_order
+             FROM store_item si
+             LEFT JOIN store_section ss ON si.section_id = ss.id
+             LEFT JOIN store_aisle sa ON COALESCE(ss.aisle_id, si.aisle_id) = sa.id
+             WHERE si.store_id = ? AND si.is_hidden = 0 
+             ORDER BY 
+                COALESCE(sa.sort_order, 999999) ASC,
+                COALESCE(ss.sort_order, 999999) ASC,
+                si.name_norm ASC`,
             [storeId]
         );
         return res.values || [];
