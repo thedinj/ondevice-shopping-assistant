@@ -20,7 +20,7 @@ import {
  */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export class RemoteDatabase extends BaseDatabase {
-    async initialize(): Promise<void> {
+    protected async initializeStorage(): Promise<void> {
         throw new Error("RemoteDatabase not yet implemented");
     }
 

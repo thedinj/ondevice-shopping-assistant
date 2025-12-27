@@ -1,8 +1,4 @@
--   Review code holistically one more time--any more dead code?
--   Fix how database org works--the derived classes' init needs to call base insert initial data method. Derived classes shouldn't need to know what to call on the base class.
--   Favorite items
--   Add items to list from store item list
--   Avoid slide-to-edit UX for editing shopping list items (and store items, and maybe even stores/aisles/sections?)
+-   Review code holistically one more time--any more dead code? Is database good?
 -   Come up with cool name/icon/package name
 -   Generating aisles from OpenAI response
 -   Confirm Suspense works if database response time is slow

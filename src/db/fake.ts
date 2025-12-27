@@ -29,7 +29,7 @@ export class FakeDatabase extends BaseDatabase {
     private quantityUnits: Map<string, QuantityUnit> = new Map();
     private initialized = false;
 
-    async initialize(): Promise<void> {
+    protected async initializeStorage(): Promise<void> {
         if (this.initialized) {
             return;
         }
@@ -37,7 +37,6 @@ export class FakeDatabase extends BaseDatabase {
         // Initialize quantity units
         this.initializeQuantityUnits();
 
-        await this.ensureInitialData();
         this.initialized = true;
         this.notifyChange();
     }

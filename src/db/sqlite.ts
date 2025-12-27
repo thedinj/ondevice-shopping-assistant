@@ -201,7 +201,7 @@ export class SQLiteDatabase extends BaseDatabase {
         throw new Error("Database not initialized. Call initialize() first.");
     }
 
-    async initialize(): Promise<void> {
+    protected async initializeStorage(): Promise<void> {
         if (this.connection) {
             return; // Already initialized
         }
@@ -224,7 +224,6 @@ export class SQLiteDatabase extends BaseDatabase {
                 await this.runMigrations(conn);
 
                 this.connection = conn;
-                await this.ensureInitialData();
             } catch (err) {
                 if (conn) {
                     try {

@@ -1,33 +1,28 @@
-import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
     IonBackButton,
+    IonButton,
     IonButtons,
     IonContent,
     IonHeader,
     IonIcon,
-    IonPage,
-    IonTitle,
-    IonToolbar,
-    IonSkeletonText,
-    IonButton,
-    IonModal,
     IonInput,
     IonItem,
     IonLabel,
-    IonText,
     IonList,
+    IonModal,
+    IonPage,
+    IonSkeletonText,
+    IonText,
+    IonTitle,
+    IonToolbar,
 } from "@ionic/react";
-import { useParams, useHistory } from "react-router-dom";
-import {
-    create,
-    listOutline,
-    gridOutline,
-    chevronForward,
-} from "ionicons/icons";
-import { useStore, useUpdateStore } from "../db/hooks";
+import { create, gridOutline, listOutline } from "ionicons/icons";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useHistory, useParams } from "react-router-dom";
 import { z } from "zod";
+import { useStore, useUpdateStore } from "../db/hooks";
 
 const storeFormSchema = z.object({
     name: z
@@ -111,7 +106,6 @@ const StoreDetail: React.FC = () => {
                             <h2>Edit Aisles/Sections</h2>
                             <p>Organize store layout</p>
                         </IonLabel>
-                        <IonIcon icon={chevronForward} slot="end" />
                     </IonItem>
                     <IonItem
                         button
@@ -123,7 +117,6 @@ const StoreDetail: React.FC = () => {
                             <h2>Edit Store Items</h2>
                             <p>Manage products and their locations</p>
                         </IonLabel>
-                        <IonIcon icon={chevronForward} slot="end" />
                     </IonItem>
                 </IonList>
 

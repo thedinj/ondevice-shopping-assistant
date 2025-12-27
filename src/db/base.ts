@@ -19,8 +19,25 @@ import { Database, DatabaseChangeListener } from "./types";
 export abstract class BaseDatabase implements Database {
     private listeners: Set<DatabaseChangeListener> = new Set();
 
-    // ========== Lifecycle Methods (Abstract) ==========
-    abstract initialize(): Promise<void>;
+    // ========== Lifecycle Methods ==========
+    /**
+     * Initialize the database. This method orchestrates the initialization process:
+     * 1. Calls initializeStorage() for storage-specific setup
+     * 2. Ensures initial data exists
+     * 
+     * Derived classes should implement initializeStorage() instead of overriding this method.
+     */
+    async initialize(): Promise<void> {
+        await this.initializeStorage();
+        await this.ensureInitialData();
+    }
+
+    /**
+     * Initialize the storage mechanism (e.g., open database connection, create tables, etc.)
+     * This is called by initialize() before ensuring initial data exists.
+     */
+    protected abstract initializeStorage(): Promise<void>;
+
     abstract close(): Promise<void>;
     abstract reset(tablesToPersist?: string[]): Promise<void>;
 

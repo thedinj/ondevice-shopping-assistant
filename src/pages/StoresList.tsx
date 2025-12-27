@@ -19,7 +19,7 @@ import {
     IonTitle,
     IonToolbar,
 } from "@ionic/react";
-import { add, create } from "ionicons/icons";
+import { add, cartOutline } from "ionicons/icons";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -68,12 +68,6 @@ const StoresList: React.FC = () => {
     const openCreateModal = () => {
         setEditingStore(null);
         reset({ name: "" });
-        setIsModalOpen(true);
-    };
-
-    const openEditModal = (store: { id: string; name: string }) => {
-        setEditingStore(store);
-        reset({ name: store.name });
         setIsModalOpen(true);
     };
 
@@ -152,19 +146,12 @@ const StoresList: React.FC = () => {
                                 key={store.id}
                                 routerLink={`/stores/${store.id}`}
                                 button
+                                detail
                             >
-                                <IonLabel>{store.name}</IonLabel>
-                                <IonButton
-                                    slot="end"
-                                    fill="clear"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        openEditModal(store);
-                                    }}
-                                >
-                                    <IonIcon icon={create} color="medium" />
-                                </IonButton>
+                                <IonIcon icon={cartOutline} slot="start" />
+                                <IonLabel>
+                                    <h2>{store.name}</h2>
+                                </IonLabel>
                             </IonItem>
                         ))}
                     </IonList>
