@@ -104,6 +104,7 @@ interface GroupedItemListProps<T extends GroupedDisplayItem> {
     showAisleHeaders?: boolean;
     showSectionHeaders?: boolean;
     headerSlot?: ReactNode;
+    footerSlot?: ReactNode;
     emptyMessage?: string;
 }
 
@@ -113,6 +114,7 @@ export function GroupedItemList<T extends GroupedDisplayItem>({
     showAisleHeaders = true,
     showSectionHeaders = true,
     headerSlot,
+    footerSlot,
     emptyMessage = "No items",
 }: GroupedItemListProps<T>) {
     const aisleGroups = useMemo(
@@ -182,6 +184,7 @@ export function GroupedItemList<T extends GroupedDisplayItem>({
                     </div>
                 );
             })}
+            {footerSlot}
         </IonList>
     );
 }

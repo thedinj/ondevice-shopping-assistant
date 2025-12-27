@@ -1,30 +1,33 @@
 import {
+    IonAlert,
     IonContent,
-    IonHeader,
-    IonPage,
-    IonTitle,
-    IonToolbar,
     IonFab,
     IonFabButton,
+    IonHeader,
     IonIcon,
-    IonAlert,
+    IonItem,
+    IonList,
+    IonPage,
     IonSkeletonText,
     IonText,
-    IonList,
-    IonItem,
+    IonTitle,
+    IonToolbar,
 } from "@ionic/react";
 import { add } from "ionicons/icons";
+import { useBulkImportModal } from "../components/shoppinglist/BulkImportModal";
+import { CheckedItems } from "../components/shoppinglist/CheckedItems";
+import { ItemEditorModal } from "../components/shoppinglist/ItemEditorModal";
 import { ShoppingListProvider } from "../components/shoppinglist/ShoppingListProvider";
 import { StoreSelector } from "../components/shoppinglist/StoreSelector";
 import { UncheckedItems } from "../components/shoppinglist/UncheckedItems";
-import { CheckedItems } from "../components/shoppinglist/CheckedItems";
-import { ItemEditorModal } from "../components/shoppinglist/ItemEditorModal";
+import { useBulkImport } from "../components/shoppinglist/useBulkImport";
 import { useShoppingListContext } from "../components/shoppinglist/useShoppingListContext";
 import {
     useActiveShoppingList,
-    useShoppingListItems,
     useClearCheckedItems,
+    useShoppingListItems,
 } from "../db/hooks";
+import { LLMFabButton } from "../llm/shared";
 
 const ShoppingListContent: React.FC = () => {
     const {
@@ -41,6 +44,13 @@ const ShoppingListContent: React.FC = () => {
         shoppingList?.id || ""
     );
     const clearChecked = useClearCheckedItems();
+
+    const { importItems, isImporting } = useBulkImport(
+        shoppingList?.id || "",
+        selectedStoreId || ""
+    );
+
+    const { openBulkImport } = useBulkImportModal(importItems);
 
     const uncheckedItems = items?.filter((item) => item.is_checked === 0) || [];
     const checkedItems = items?.filter((item) => item.is_checked === 1) || [];
@@ -127,10 +137,27 @@ const ShoppingListContent: React.FC = () => {
 
                 {selectedStoreId && shoppingList && (
                     <>
+                        {/* Add Item FAB */}
                         <IonFab vertical="bottom" horizontal="end" slot="fixed">
-                            <IonFabButton onClick={openCreateModal}>
+                            <IonFabButton
+                                color="primary"
+                                onClick={openCreateModal}
+                            >
                                 <IonIcon icon={add} />
                             </IonFabButton>
+                        </IonFab>
+
+                        {/* Bulk Import FAB */}
+                        <IonFab
+                            vertical="bottom"
+                            horizontal="end"
+                            slot="fixed"
+                            style={{ marginRight: "72px" }}
+                        >
+                            <LLMFabButton
+                                onClick={openBulkImport}
+                                disabled={isImporting}
+                            />
                         </IonFab>
 
                         <ItemEditorModal

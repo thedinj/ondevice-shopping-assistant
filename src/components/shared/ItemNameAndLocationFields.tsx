@@ -5,6 +5,7 @@ import {
     FieldValues,
     UseFormSetValue,
     UseFormWatch,
+    Path,
 } from "react-hook-form";
 import { ReactNode } from "react";
 import { LocationSelectors } from "./LocationSelectors";
@@ -32,6 +33,7 @@ export function ItemNameAndLocationFields<T extends FieldValues = FieldValues>({
     renderNameField,
 }: ItemNameAndLocationFieldsProps<T>) {
     const storeIdStr = typeof storeId === "number" ? String(storeId) : storeId;
+    const itemName = watch("name" as Path<T>);
 
     return (
         <>
@@ -59,6 +61,7 @@ export function ItemNameAndLocationFields<T extends FieldValues = FieldValues>({
                 setValue={setValue}
                 watch={watch}
                 disabled={disabled}
+                itemName={itemName}
             />
         </>
     );

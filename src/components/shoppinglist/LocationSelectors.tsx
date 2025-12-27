@@ -3,6 +3,7 @@ import { useItemEditorContext } from "./useItemEditorContext";
 
 export const LocationSelectors = () => {
     const { control, setValue, watch, storeId } = useItemEditorContext();
+    const itemName = watch("name");
 
     return (
         <SharedLocationSelectors
@@ -10,6 +11,7 @@ export const LocationSelectors = () => {
             setValue={setValue}
             watch={watch}
             storeId={storeId}
+            itemName={itemName}
         />
     );
 };

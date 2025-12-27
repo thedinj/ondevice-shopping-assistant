@@ -3,6 +3,7 @@ import { checkmarkDone } from "ionicons/icons";
 import { ShoppingListItemWithDetails } from "../../models/Store";
 import { ShoppingListItem } from "./ShoppingListItem";
 import { GroupedItemList } from "../shared/GroupedItemList";
+import { FabSpacer } from "../shared/FabSpacer";
 
 interface GroupedShoppingListProps {
     items: ShoppingListItemWithDetails[];
@@ -53,6 +54,7 @@ export const GroupedShoppingList = ({
             showAisleHeaders={!isChecked}
             showSectionHeaders={!isChecked}
             headerSlot={headerSlot}
+            footerSlot={<FabSpacer />}
         />
     );
 };

@@ -1,18 +1,14 @@
 import React, { ComponentProps, useState } from "react";
-import { IonButton, IonIcon, IonAlert } from "@ionic/react";
+import { IonFabButton, IonIcon, IonAlert } from "@ionic/react";
 import { useOpenAIApiKey } from "../../settings/useOpenAIApiKey";
-import { LLM_ICON } from "./constants";
+import { LLM_ICON, LLM_COLOR, LLM_COLOR_ACTIVATED } from "./constants";
 
 /**
- * Reusable button for triggering LLM features
- * Distinctive styling: purple border, robot icon, robotic font
+ * FAB button for LLM features with distinctive styling
  * Shows alert if clicked without API key configured
  */
-export const LLMButton: React.FC<ComponentProps<typeof IonButton>> = ({
-    children,
+export const LLMFabButton: React.FC<ComponentProps<typeof IonFabButton>> = ({
     disabled = false,
-    expand = "block",
-    style,
     onClick,
     ...props
 }) => {
@@ -20,7 +16,7 @@ export const LLMButton: React.FC<ComponentProps<typeof IonButton>> = ({
     const [showApiKeyAlert, setShowApiKeyAlert] = useState(false);
     const isDisabled = disabled || isLoading;
 
-    const handleClick = (e: React.MouseEvent<HTMLIonButtonElement>) => {
+    const handleClick = (e: React.MouseEvent<HTMLIonFabButtonElement>) => {
         if (!apiKey?.value) {
             setShowApiKeyAlert(true);
             return;
@@ -30,27 +26,18 @@ export const LLMButton: React.FC<ComponentProps<typeof IonButton>> = ({
 
     return (
         <>
-            <IonButton
-                fill="outline"
-                expand={expand}
+            <IonFabButton
                 disabled={isDisabled}
                 onClick={handleClick}
                 style={{
-                    "--border-color": "#8b5cf6",
-                    "--border-width": "2px",
-                    "--color": "#8b5cf6",
-                    fontFamily: "'Courier New', 'Roboto Mono', monospace",
-                    fontWeight: 600,
-                    letterSpacing: "0.5px",
-                    textTransform: "none",
-                    ...style,
+                    "--background": LLM_COLOR,
+                    "--background-activated": LLM_COLOR_ACTIVATED,
+                    "--background-hover": LLM_COLOR_ACTIVATED,
                 }}
-                className="llm-button"
                 {...props}
             >
-                <IonIcon icon={LLM_ICON} slot="start" />
-                {children}
-            </IonButton>
+                <IonIcon icon={LLM_ICON} />
+            </IonFabButton>
 
             <IonAlert
                 isOpen={showApiKeyAlert}
