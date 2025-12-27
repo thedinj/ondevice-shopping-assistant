@@ -73,20 +73,22 @@ const Settings: React.FC = () => {
                     </IonList>
 
                     {/* Database Section */}
-                    <IonList>
-                        <IonListHeader>
-                            <h2>Database</h2>
-                        </IonListHeader>
-                        <div className="ion-padding">
-                            <IonButton
-                                expand="block"
-                                color="danger"
-                                onClick={resetOnClick}
-                            >
-                                Reset Database
-                            </IonButton>
-                        </div>
-                    </IonList>
+                    {import.meta.env.VITE_SHOW_DATABASE_RESET === "true" && (
+                        <IonList>
+                            <IonListHeader>
+                                <h2>Database</h2>
+                            </IonListHeader>
+                            <div className="ion-padding">
+                                <IonButton
+                                    expand="block"
+                                    color="danger"
+                                    onClick={resetOnClick}
+                                >
+                                    Reset Database
+                                </IonButton>
+                            </div>
+                        </IonList>
+                    )}
                 </form>
             </IonContent>
         </IonPage>
