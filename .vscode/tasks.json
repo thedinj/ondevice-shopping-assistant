@@ -15,7 +15,7 @@
             "label": "Reset Android Emulator App Data",
             "type": "shell",
             "command": "adb",
-            "args": ["shell", "pm", "clear", "io.ionic.starter"],
+            "args": ["shell", "pm", "clear", "com.basketbot.app"],
             "problemMatcher": []
         },
         {

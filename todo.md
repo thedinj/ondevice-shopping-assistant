@@ -6,9 +6,6 @@
 -   Confirm API key is stored more securely
 -   What is this IonHeader stuff?
 -   More readable zero states, walk the user through the workflow with a pretty UI
--   Move settings to hamburger menu?
 -   Cool name and animations
--   Switch to quickbuttons for some inputs, like aisle vs section. And some simpler dropdowns?
 -   Does deleting a shopping list item also delete the store item? It should. REVIEW THIS CODE.
--   Define some mock test data that is applied when an env setting is set and the database is empty
 -   Cool animations

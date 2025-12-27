@@ -10,7 +10,7 @@ export const EmptyState = () => {
             }}
         >
             <IonText color="medium">
-                <p>No aisles or sections yet. Tap the + button to add one.</p>
+                <p>No aisles configured. Tap + to organize this store properly.</p>
             </IonText>
         </div>
     );

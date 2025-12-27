@@ -101,7 +101,7 @@ const App: React.FC = () => {
                                             aria-hidden="true"
                                             icon={listCircle}
                                         />
-                                        <IonLabel>List</IonLabel>
+                                        <IonLabel>Basket</IonLabel>
                                     </IonTabButton>
                                     <IonTabButton
                                         tab="settings"

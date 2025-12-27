@@ -57,7 +57,7 @@ const ShoppingListContent: React.FC = () => {
         <>
             <IonHeader>
                 <IonToolbar>
-                    <IonTitle>Shopping List</IonTitle>
+                    <IonTitle>Basket</IonTitle>
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>
@@ -72,7 +72,10 @@ const ShoppingListContent: React.FC = () => {
                         }}
                     >
                         <IonText color="medium">
-                            <p>Select a store to view your shopping list</p>
+                            <p>
+                                Select a store, human. I cannot assist without
+                                data.
+                            </p>
                         </IonText>
                     </div>
                 )}
@@ -104,7 +107,8 @@ const ShoppingListContent: React.FC = () => {
                         >
                             <IonText color="medium">
                                 <p>
-                                    No items yet. Tap the + button to add one!
+                                    Your basket is empty. Tap + to add items, if
+                                    your memory permits.
                                 </p>
                             </IonText>
                         </div>
@@ -140,8 +144,8 @@ const ShoppingListContent: React.FC = () => {
             <IonAlert
                 isOpen={!!deleteAlert}
                 onDidDismiss={cancelDelete}
-                header="Delete Item"
-                message={`Are you sure you want to delete "${deleteAlert?.name}"?`}
+                header="Remove Item"
+                message={`Delete "${deleteAlert?.name}" from your basket?`}
                 buttons={[
                     {
                         text: "Cancel",

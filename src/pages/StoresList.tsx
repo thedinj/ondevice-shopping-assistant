@@ -136,7 +136,7 @@ const StoresList: React.FC = () => {
                         }}
                     >
                         <IonText color="medium">
-                            <p>No stores yet. Tap the + button to add one.</p>
+                            <p>No stores configured. Add one to begin optimizing your shopping.</p>
                         </IonText>
                     </div>
                 ) : (
