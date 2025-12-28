@@ -27,6 +27,7 @@ import {
     useShoppingListItems,
 } from "../db/hooks";
 import { LLMFabButton } from "../llm/shared";
+import { useCallback, useState } from "react";
 
 const ShoppingListContent: React.FC = () => {
     const {
@@ -52,11 +53,18 @@ const ShoppingListContent: React.FC = () => {
     const uncheckedItems = items?.filter((item) => item.is_checked === 0) || [];
     const checkedItems = items?.filter((item) => item.is_checked === 1) || [];
 
-    const handleClearChecked = () => {
+    const [showClearCheckedAlert, setShowClearCheckedAlert] = useState(false);
+
+    const handleClearChecked = useCallback(() => {
+        setShowClearCheckedAlert(true);
+    }, []);
+
+    const confirmClearChecked = useCallback(() => {
         if (shoppingList) {
             clearChecked.mutate({ listId: shoppingList.id });
         }
-    };
+        setShowClearCheckedAlert(false);
+    }, [clearChecked, shoppingList]);
 
     const isLoading = isLoadingList || isLoadingItems;
 
@@ -179,6 +187,26 @@ const ShoppingListContent: React.FC = () => {
                         text: "Delete",
                         role: "destructive",
                         handler: executeDelete,
+                    },
+                ]}
+            />
+
+            <IonAlert
+                isOpen={showClearCheckedAlert}
+                onDidDismiss={() => setShowClearCheckedAlert(false)}
+                header="Obliterate Checked Items?"
+                message={
+                    "Clear all checked items? If you're certain you're done with them."
+                }
+                buttons={[
+                    {
+                        text: "Cancel",
+                        role: "cancel",
+                    },
+                    {
+                        text: "Obliterate",
+                        role: "destructive",
+                        handler: confirmClearChecked,
                     },
                 ]}
             />

@@ -26,7 +26,7 @@ export function useBulkImportModal(listId: string, storeId: string) {
             allowAttachments: true,
             userInstructions:
                 "Paste your shopping list as text or upload a photo of a handwritten/printed list.",
-            buttonText: "Parse List",
+            buttonText: "Scan List",
             validateResponse: (response: LLMResponse) => {
                 if (!validateBulkImportResult(response.data)) {
                     throw new Error(

@@ -35,7 +35,7 @@ export const GroupedShoppingList = ({
                     disabled={isClearing}
                 >
                     <IonIcon slot="start" icon={checkmarkDone} />
-                    OBLITERATE
+                    Obliterate
                 </IonButton>
             )}
         </IonListHeader>
