@@ -23,6 +23,7 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { useCreateStore, useStores, useUpdateStore } from "../db/hooks";
+import { closeOutline } from "ionicons/icons";
 
 const storeFormSchema = z.object({
     name: z
@@ -153,7 +154,7 @@ const StoresList: React.FC = () => {
                             </IonTitle>
                             <IonButtons slot="end">
                                 <IonButton onClick={closeModal}>
-                                    Cancel
+                                    <IonIcon icon={closeOutline} />
                                 </IonButton>
                             </IonButtons>
                         </IonToolbar>

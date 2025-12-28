@@ -3,12 +3,14 @@ import {
     IonAlert,
     IonButton,
     IonButtons,
+    IonIcon,
     IonContent,
     IonHeader,
     IonModal,
     IonTitle,
     IonToolbar,
 } from "@ionic/react";
+import { closeOutline } from "ionicons/icons";
 import { UseMutationResult } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -147,7 +149,9 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
                         {editingItem ? "Edit Item" : "Add Item"}
                     </IonTitle>
                     <IonButtons slot="end">
-                        <IonButton onClick={closeItemModal}>Cancel</IonButton>
+                        <IonButton onClick={closeItemModal}>
+                            <IonIcon icon={closeOutline} />
+                        </IonButton>
                     </IonButtons>
                 </IonToolbar>
             </IonHeader>

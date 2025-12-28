@@ -1,43 +1,43 @@
-import { useState, forwardRef, useImperativeHandle, useMemo } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ItemReorderEventDetail } from "@ionic/core";
 import {
-    IonList,
+    IonAlert,
+    IonButton,
+    IonButtons,
+    IonContent,
+    IonHeader,
+    IonIcon,
+    IonInput,
     IonItem,
+    IonItemOption,
+    IonItemOptions,
+    IonItemSliding,
     IonLabel,
+    IonList,
+    IonModal,
     IonReorder,
     IonReorderGroup,
     IonSkeletonText,
-    IonItemSliding,
-    IonItemOptions,
-    IonItemOption,
-    IonIcon,
-    IonAlert,
     IonText,
-    IonModal,
-    IonHeader,
-    IonToolbar,
     IonTitle,
-    IonButtons,
-    IonButton,
-    IonContent,
-    IonInput,
+    IonToolbar,
 } from "@ionic/react";
+import { closeOutline, create, trash } from "ionicons/icons";
+import { forwardRef, useImperativeHandle, useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
+import {
+    useCreateSection,
+    useDeleteSection,
+    useReorderSections,
+    useStoreAisles,
+    useStoreSections,
+    useUpdateSection,
+} from "../../db/hooks";
 import {
     ClickableSelectionModal,
     SelectableItem,
 } from "../shared/ClickableSelectionModal";
-import { create, trash } from "ionicons/icons";
-import { ItemReorderEventDetail } from "@ionic/core";
-import {
-    useStoreSections,
-    useStoreAisles,
-    useCreateSection,
-    useUpdateSection,
-    useDeleteSection,
-    useReorderSections,
-} from "../../db/hooks";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { ListHandle } from "./types";
 
 const sectionFormSchema = z.object({
@@ -322,7 +322,7 @@ const SectionList = forwardRef<ListHandle, SectionListProps>(
                             </IonTitle>
                             <IonButtons slot="end">
                                 <IonButton onClick={closeModal}>
-                                    Cancel
+                                    <IonIcon icon={closeOutline} />
                                 </IonButton>
                             </IonButtons>
                         </IonToolbar>

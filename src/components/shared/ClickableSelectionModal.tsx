@@ -1,18 +1,20 @@
-import React, { useState, useMemo } from "react";
 import {
-    IonModal,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
     IonButton,
+    IonButtons,
+    IonCheckbox,
     IonContent,
-    IonList,
+    IonHeader,
+    IonIcon,
     IonItem,
     IonLabel,
+    IonList,
+    IonModal,
     IonSearchbar,
-    IonCheckbox,
+    IonTitle,
+    IonToolbar,
 } from "@ionic/react";
+import { closeOutline } from "ionicons/icons";
+import React, { useMemo, useState } from "react";
 
 export interface SelectableItem {
     id: string;
@@ -46,7 +48,9 @@ interface ClickableSelectionModalProps {
  * - Checkbox indicator for currently selected item
  * - Clean, simple UX replacing IonSelect + OK/Cancel patterns
  */
-export const ClickableSelectionModal: React.FC<ClickableSelectionModalProps> = ({
+export const ClickableSelectionModal: React.FC<
+    ClickableSelectionModalProps
+> = ({
     items,
     value,
     onSelect,
@@ -86,14 +90,18 @@ export const ClickableSelectionModal: React.FC<ClickableSelectionModalProps> = (
                 <IonToolbar>
                     <IonTitle>{title}</IonTitle>
                     <IonButtons slot="end">
-                        <IonButton onClick={handleDismiss}>Cancel</IonButton>
+                        <IonButton onClick={handleDismiss}>
+                            <IonIcon icon={closeOutline} />
+                        </IonButton>
                     </IonButtons>
                 </IonToolbar>
                 {showSearch && (
                     <IonToolbar>
                         <IonSearchbar
                             value={searchText}
-                            onIonInput={(e) => setSearchText(e.detail.value || "")}
+                            onIonInput={(e) =>
+                                setSearchText(e.detail.value || "")
+                            }
                             placeholder={searchPlaceholder}
                             debounce={300}
                         />
@@ -105,7 +113,9 @@ export const ClickableSelectionModal: React.FC<ClickableSelectionModalProps> = (
                     {filteredItems.length === 0 ? (
                         <IonItem>
                             <IonLabel color="medium">
-                                {searchText ? "No matching items found" : "No items available"}
+                                {searchText
+                                    ? "No matching items found"
+                                    : "No items available"}
                             </IonLabel>
                         </IonItem>
                     ) : (

@@ -5,6 +5,7 @@ import {
     IonTitle,
     IonButtons,
     IonButton,
+    IonIcon,
     IonContent,
     IonItem,
     IonLabel,
@@ -12,6 +13,7 @@ import {
     IonText,
     IonAlert,
 } from "@ionic/react";
+import { closeOutline } from "ionicons/icons";
 import { Controller, useForm } from "react-hook-form";
 import {
     ClickableSelectionModal,
@@ -187,7 +189,9 @@ export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
                 <IonToolbar>
                     <IonTitle>{getModalTitle()}</IonTitle>
                     <IonButtons slot="end">
-                        <IonButton onClick={closeModal}>Cancel</IonButton>
+                        <IonButton onClick={closeModal}>
+                            <IonIcon icon={closeOutline} />
+                        </IonButton>
                     </IonButtons>
                 </IonToolbar>
             </IonHeader>

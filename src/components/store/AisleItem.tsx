@@ -18,12 +18,16 @@ interface AisleItemProps {
         event: CustomEvent<ItemReorderEventDetail>,
         aisleId: string
     ) => void;
+    showReorderHandle?: boolean;
+    showSectionReorderHandles?: boolean;
 }
 
 export const AisleItem = ({
     aisle,
     sections,
     onSectionReorder,
+    showReorderHandle = true,
+    showSectionReorderHandles = true,
 }: AisleItemProps) => {
     const { openEditAisleModal } = useStoreManagement();
 
@@ -31,7 +35,7 @@ export const AisleItem = ({
 
     return (
         <div>
-            <IonItem>
+            <IonItem className="aisle-item" lines="none">
                 <IonLabel>
                     <h2 style={{ fontWeight: "bold" }}>{aisle.name}</h2>
                 </IonLabel>
@@ -39,19 +43,37 @@ export const AisleItem = ({
                     slot="end"
                     fill="clear"
                     onClick={() => openEditAisleModal(aisle)}
+                    aria-label={`Edit aisle ${aisle.name}`}
+                    style={{ marginRight: 0 }}
                 >
-                    <IonIcon icon={create} color="medium" />
+                    <IonIcon icon={create} />
                 </IonButton>
-                <IonReorder slot="end" />
+                {showReorderHandle ? (
+                    <IonReorder slot="end" />
+                ) : (
+                    <div
+                        slot="end"
+                        style={{
+                            width: 32,
+                            minWidth: 32,
+                            height: 24,
+                            display: "inline-block",
+                        }}
+                    />
+                )}
             </IonItem>
 
             {aisleSections.length > 0 && (
                 <IonReorderGroup
-                    disabled={false}
+                    disabled={!showSectionReorderHandles}
                     onIonItemReorder={(e) => onSectionReorder(e, aisle.id)}
                 >
                     {aisleSections.map((section) => (
-                        <SectionItem key={section.id} section={section} />
+                        <SectionItem
+                            key={section.id}
+                            section={section}
+                            showReorderHandle={showSectionReorderHandles}
+                        />
                     ))}
                 </IonReorderGroup>
             )}

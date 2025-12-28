@@ -423,6 +423,54 @@ export function useDeleteSection() {
 }
 
 /**
+ * Hook to move a section to a different aisle and update sort orders
+ */
+export function useMoveSection() {
+    const database = useDatabase();
+    const queryClient = useQueryClient();
+    const { showError } = useToast();
+
+    return useTanstackMutation({
+        mutationFn: async ({
+            sectionId,
+            newAisleId,
+            sourceSections,
+            destSections,
+            sectionName,
+        }: {
+            sectionId: string;
+            newAisleId: string;
+            newSortOrder: number;
+            sourceSections: Array<{ id: string; sort_order: number }>;
+            destSections: Array<{ id: string; sort_order: number }>;
+            storeId: string;
+            sectionName: string;
+        }) => {
+            // Update section's aisle (sort_order will be set by reorderSections)
+            await database.updateSection(sectionId, sectionName, newAisleId);
+
+            // Reorder sections in source aisle (close the gap)
+            if (sourceSections.length > 0) {
+                await database.reorderSections(sourceSections);
+            }
+
+            // Reorder sections in destination aisle (make room and set moved section's sort_order)
+            if (destSections.length > 0) {
+                await database.reorderSections(destSections);
+            }
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: ["sections", variables.storeId],
+            });
+        },
+        onError: (error: Error) => {
+            showError(`Failed to move section: ${error.message}`);
+        },
+    });
+}
+
+/**
  * Hook to reorder sections
  */
 export function useReorderSections() {

@@ -18,24 +18,30 @@ import {
     IonTitle,
     IonToolbar,
 } from "@ionic/react";
-import { create, gridOutline, listOutline, trash } from "ionicons/icons";
+import {
+    closeOutline,
+    create,
+    gridOutline,
+    listOutline,
+    trash,
+} from "ionicons/icons";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useHistory, useParams } from "react-router-dom";
 import { z } from "zod";
 import {
+    useBulkReplaceAislesAndSections,
     useDeleteStore,
     useStore,
     useUpdateStore,
-    useBulkReplaceAislesAndSections,
 } from "../db/hooks";
-import { useLLMModal, LLMItem } from "../llm/shared";
 import {
     transformStoreScanResult,
     validateStoreScanResult,
     type StoreScanResult,
 } from "../llm/features/storeScan";
 import { STORE_SCAN_PROMPT } from "../llm/features/storeScanPrompt";
+import { LLMItem, useLLMModal } from "../llm/shared";
 
 const storeFormSchema = z.object({
     name: z
@@ -248,7 +254,7 @@ const StoreDetail: React.FC = () => {
                             <IonTitle>Rename Store</IonTitle>
                             <IonButtons slot="end">
                                 <IonButton onClick={closeRenameModal}>
-                                    Cancel
+                                    <IonIcon icon={closeOutline} />
                                 </IonButton>
                             </IonButtons>
                         </IonToolbar>

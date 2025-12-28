@@ -513,7 +513,9 @@ const FeatureModal = () => {
                 <IonToolbar>
                     <IonTitle>Edit Item</IonTitle>
                     <IonButtons slot="end">
-                        <IonButton onClick={closeModal}>Close</IonButton>
+                        <IonButton onClick={closeModal}>
+                            <IonIcon icon={closeOutline} />
+                        </IonButton>
                     </IonButtons>
                 </IonToolbar>
             </IonHeader>
@@ -1290,7 +1292,9 @@ export const ItemEditorModal = () => {
                     <IonTitle>Fine, Add Another Item</IonTitle>{" "}
                     {/* ✅ Disdainful title */}
                     <IonButtons slot="end">
-                        <IonButton onClick={closeModal}>Cancel</IonButton>
+                        <IonButton onClick={closeModal}>
+                            <IonIcon icon={closeOutline} />
+                        </IonButton>
                     </IonButtons>
                 </IonToolbar>
             </IonHeader>
@@ -1930,7 +1934,11 @@ const EditorModal = () => {
                 <IonToolbar>
                     <IonTitle>Edit Item</IonTitle>
                     <IonButtons slot="end">
-                        <IonButton onClick={closeModal}>Cancel</IonButton>
+                        <IonButton onClick={closeModal}>
+                            Can
+                            <IonIcon icon={closeOutline} />
+                            cel
+                        </IonButton>
                     </IonButtons>
                 </IonToolbar>
             </IonHeader>

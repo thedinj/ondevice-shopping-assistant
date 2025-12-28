@@ -1,6 +1,6 @@
--   System prompt vs user prompt? Prompt injection?
--   "Perimeter" is not correct for Produce, etc. Did it just hallicinate the directory? Did it even refer to the image?
--   Review code holistically one more time--any more dead code? Is database good?
+-   Better process for store aisle scanning.
+-   Good set of initial data for a new store (potentially with all sections under a non-aisle aisle?). Maybe when you create a new store you can create an empty one or one with content?
+-   Review code holistically one more time.
 -   Come up with cool name/icon/package name
 -   Confirm Suspense works if database response time is slow
 -   Consider making a cooler suspender--maybe the robot head swirling around
