@@ -64,7 +64,7 @@ const ShoppingListContent: React.FC = () => {
         <>
             <IonHeader>
                 <IonToolbar>
-                    <IonTitle>Basket</IonTitle>
+                    <IonTitle>Shopping List</IonTitle>
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>

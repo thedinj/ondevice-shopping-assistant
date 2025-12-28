@@ -9,7 +9,7 @@ import {
     setupIonicReact,
 } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
-import { cartOutline, listCircle, settings } from "ionicons/icons";
+import { cartOutline, storefrontOutline, settings } from "ionicons/icons";
 import { Suspense } from "react";
 import { Redirect, Route } from "react-router-dom";
 import AppErrorBoundary from "./components/AppErrorBoundary";
@@ -84,29 +84,29 @@ const App: React.FC = () => {
                                             <Settings />
                                         </Route>
                                         <Route exact path="/">
-                                            <Redirect to="/stores" />
+                                            <Redirect to="/shoppinglist" />
                                         </Route>
                                     </IonRouterOutlet>
                                     <IonTabBar slot="bottom">
-                                        <IonTabButton
-                                            tab="stores"
-                                            href="/stores"
-                                        >
-                                            <IonIcon
-                                                aria-hidden="true"
-                                                icon={cartOutline}
-                                            />
-                                            <IonLabel>Stores</IonLabel>
-                                        </IonTabButton>
                                         <IonTabButton
                                             tab="shoppinglist"
                                             href="/shoppinglist"
                                         >
                                             <IonIcon
                                                 aria-hidden="true"
-                                                icon={listCircle}
+                                                icon={cartOutline}
                                             />
-                                            <IonLabel>Basket</IonLabel>
+                                            <IonLabel>Shopping List</IonLabel>
+                                        </IonTabButton>
+                                        <IonTabButton
+                                            tab="stores"
+                                            href="/stores"
+                                        >
+                                            <IonIcon
+                                                aria-hidden="true"
+                                                icon={storefrontOutline}
+                                            />
+                                            <IonLabel>Stores</IonLabel>
                                         </IonTabButton>
                                         <IonTabButton
                                             tab="settings"
