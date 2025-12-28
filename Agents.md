@@ -1353,6 +1353,132 @@ useEffect(() => {
 -   Soft deletes with timestamp columns
 -   JOIN queries return denormalized views for display
 
+**4a. Store Layout Schema: Aisles and Sections**
+
+Aisles and sections form a strict parent-child hierarchy within stores. This relationship is enforced at the database level to maintain data integrity.
+
+**Hierarchical Relationship:**
+
+```
+Store (id, name)
+  └─ Aisle (id, store_id, name, sort_order)
+       └─ Section (id, store_id, aisle_id, name, sort_order)
+```
+
+**Schema Definition:**
+
+```sql
+CREATE TABLE store_aisle (
+  id TEXT PRIMARY KEY,
+  store_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE
+);
+
+CREATE TABLE store_section (
+  id TEXT PRIMARY KEY,
+  store_id TEXT NOT NULL,
+  aisle_id TEXT NOT NULL,  -- Required! Sections MUST belong to an aisle
+  name TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
+  FOREIGN KEY (aisle_id) REFERENCES store_aisle(id) ON DELETE CASCADE
+);
+```
+
+**Key Constraints:**
+
+-   **Sections must have an aisle**: `aisle_id TEXT NOT NULL` prevents orphaned sections from existing in the database
+-   **CASCADE deletion**: Deleting an aisle automatically removes all its child sections (enforced by SQLite)
+-   **Empty aisles are allowed**: Aisles can exist without sections (useful for simple store layouts or during initial setup)
+-   **Sort order is aisle-scoped**: Section `sort_order` values are scoped to their parent aisle, not globally across the store. Multiple sections in different aisles can have the same `sort_order` value.
+
+**Business Rules:**
+
+1. **Section creation**: Sections cannot be created without specifying a valid parent aisle. The `insertSection()` database method requires an `aisleId` parameter.
+
+2. **Section reassignment**: Sections can be moved between aisles by updating their `aisle_id` via `updateSection()`. When moving sections between aisles:
+
+    - The section's `aisle_id` is updated to the new parent aisle
+    - The `sort_order` is recalculated to place the section in the correct position within the destination aisle
+    - Other sections in both source and destination aisles have their `sort_order` values adjusted to close gaps and make room
+
+3. **Aisle deletion**: Deleting an aisle cascades to all its sections. This is intentional—if a store reorganizes and removes an aisle, its sections should not persist as orphaned data.
+
+4. **Reordering behavior**:
+    - `useReorderAisles()`: Reorders aisles within a store by updating `sort_order` values
+    - `useReorderSections()`: Reorders sections within a single aisle by updating `sort_order` values
+    - `useMoveSection()`: Moves a section to a different aisle by updating both `aisle_id` and `sort_order`
+
+**UI Implementation:**
+
+The [AisleSectionList.tsx](src/components/store/AisleSectionList.tsx) component uses a **flat IonReorderGroup** to enable both:
+
+-   Dragging aisles to reorder them (all child sections move with the parent)
+-   Dragging sections between aisles (updates `aisle_id` and recalculates `sort_order`)
+
+The component uses data attributes (`data-item-type="aisle"` vs `data-item-type="section"`) to distinguish between aisle and section drag operations in the unified reorder handler.
+
+**Common Pitfalls:**
+
+-   ❌ **Don't try to create sections without an aisle**: `insertSection()` requires a valid `aisleId`. Attempting to pass `null` or omit this parameter will fail.
+-   ❌ **Don't assume sections can exist across multiple aisles**: Each section belongs to exactly one aisle at a time. The relationship is 1:N (aisle:sections), not M:N.
+-   ❌ **Don't expect global section sort order**: Section `sort_order` values restart at 0 for each aisle. When querying sections, always filter by `aisle_id` or join with aisles to understand their position.
+-   ❌ **Don't forget CASCADE behavior**: Deleting an aisle permanently deletes all its sections. Always warn users before aisle deletion if sections exist.
+
+**Why This Design:**
+
+**Benefits:**
+
+-   Enforces referential integrity at the database level
+-   Prevents orphaned sections that don't belong to any aisle
+-   CASCADE deletion simplifies store reorganization
+-   Aisle-scoped sort order enables efficient reordering within aisles without affecting other aisles
+
+**Tradeoffs:**
+
+-   Cannot have "floating" sections that exist outside the aisle hierarchy
+-   Aisle deletion is destructive (cascades to sections)
+-   Moving sections between aisles requires multiple database operations (update `aisle_id` + recalculate `sort_order` for affected aisles)
+
+**Code Examples:**
+
+```typescript
+// Create a section (must provide aisleId)
+const createSection = useCreateSection();
+await createSection.mutateAsync({
+    storeId: "store-123",
+    name: "Organic Produce",
+    aisleId: "aisle-456", // Required!
+});
+
+// Move a section to a different aisle
+const moveSection = useMoveSection();
+await moveSection.mutateAsync({
+    sectionId: "section-789",
+    newAisleId: "aisle-999",
+    newSortOrder: 2,
+    sectionName: "Organic Produce",
+    storeId: "store-123",
+});
+
+// Reorder sections within an aisle
+const reorderSections = useReorderSections();
+await reorderSections.mutateAsync({
+    updates: [
+        { id: "section-1", sort_order: 0 },
+        { id: "section-2", sort_order: 1 },
+        { id: "section-3", sort_order: 2 },
+    ],
+    storeId: "store-123",
+});
+```
+
 **5. Type Safety**
 
 -   All database methods return typed model objects

@@ -20,7 +20,6 @@ import { ItemEditorModal } from "../components/shoppinglist/ItemEditorModal";
 import { ShoppingListProvider } from "../components/shoppinglist/ShoppingListProvider";
 import { StoreSelector } from "../components/shoppinglist/StoreSelector";
 import { UncheckedItems } from "../components/shoppinglist/UncheckedItems";
-import { useBulkImport } from "../components/shoppinglist/useBulkImport";
 import { useShoppingListContext } from "../components/shoppinglist/useShoppingListContext";
 import {
     useActiveShoppingList,
@@ -45,12 +44,10 @@ const ShoppingListContent: React.FC = () => {
     );
     const clearChecked = useClearCheckedItems();
 
-    const { importItems, isImporting } = useBulkImport(
+    const { openBulkImport, isImporting } = useBulkImportModal(
         shoppingList?.id || "",
         selectedStoreId || ""
     );
-
-    const { openBulkImport } = useBulkImportModal(importItems);
 
     const uncheckedItems = items?.filter((item) => item.is_checked === 0) || [];
     const checkedItems = items?.filter((item) => item.is_checked === 1) || [];

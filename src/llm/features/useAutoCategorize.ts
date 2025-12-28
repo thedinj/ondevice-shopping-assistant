@@ -57,7 +57,9 @@ export function useAutoCategorize() {
             });
 
             if (!validateAutoCategorizeResult(response.data)) {
-                throw new Error("Invalid response from AI");
+                throw new Error(
+                    "Invalid response from AI: expected aisle_name, section_name, confidence, and reasoning fields"
+                );
             }
 
             const { aisleId, sectionId } = transformAutoCategorizeResult(

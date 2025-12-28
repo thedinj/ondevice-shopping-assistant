@@ -46,6 +46,7 @@ export function ItemNameAndLocationFields<T extends FieldValues = FieldValues>({
                         {...(control.register?.("name" as never) || {})}
                         aria-label="Item name"
                         disabled={disabled}
+                        autocapitalize="sentences"
                     />
                     {errors.name && (
                         <IonLabel color="danger">

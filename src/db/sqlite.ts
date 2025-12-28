@@ -18,6 +18,7 @@ import {
 } from "../models/Store";
 import { BaseDatabase } from "./base";
 import { DEFAULT_TABLES_TO_PERSIST } from "./types";
+import { normalizeItemName } from "../utils/stringUtils";
 
 const DB_NAME = "shopping_assistant";
 const DB_VERSION = 1;
@@ -576,7 +577,7 @@ export class SQLiteDatabase extends BaseDatabase {
         const conn = await this.getConnection();
         const id = crypto.randomUUID();
         const now = new Date().toISOString();
-        const name_norm = name.toLowerCase().trim();
+        const name_norm = normalizeItemName(name);
 
         // Normalize: store only section when present (null aisle), else store aisle
         const normalizedAisleId = sectionId ? null : aisleId ?? null;
@@ -670,7 +671,7 @@ export class SQLiteDatabase extends BaseDatabase {
     ): Promise<StoreItem> {
         const conn = await this.getConnection();
         const updated_at = new Date().toISOString();
-        const name_norm = name.toLowerCase().trim();
+        const name_norm = normalizeItemName(name);
 
         // Normalize: store only section when present (null aisle), else store aisle
         const normalizedAisleId = sectionId ? null : aisleId ?? null;
@@ -812,7 +813,7 @@ export class SQLiteDatabase extends BaseDatabase {
     ): Promise<StoreItem> {
         const conn = await this.getConnection();
         const now = new Date().toISOString();
-        const name_norm = name.toLowerCase().trim();
+        const name_norm = normalizeItemName(name);
 
         // Try to find existing item
         const existingItemRes = await conn.query(

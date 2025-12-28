@@ -16,34 +16,40 @@ export class OpenAIClient implements LLMApiClient {
         attachments?: LLMAttachment[];
         userText?: string;
     }): Promise<LLMResponse<T>> {
-        // Combine system prompt and user text
-        const fullPrompt = params.userText
-            ? `${params.prompt}\n\nUser Input: ${params.userText}`
-            : params.prompt;
-
+        // Use role-based message structure for prompt injection protection
         const messages: Array<{
             role: string;
             content: string | Array<unknown>;
         }> = [
             {
-                role: "user",
-                content: params.attachments
-                    ? [
-                          { type: "text", text: fullPrompt },
-                          ...params.attachments.map((att) => ({
-                              type: "image_url",
-                              image_url: {
-                                  url: `data:${att.mimeType};base64,${
-                                      typeof att.data === "string"
-                                          ? att.data
-                                          : ""
-                                  }`,
-                              },
-                          })),
-                      ]
-                    : fullPrompt,
+                role: "system",
+                content: params.prompt,
             },
         ];
+
+        // Add user message only if there's user text or attachments
+        if (params.userText || params.attachments) {
+            const userContent = params.attachments
+                ? [
+                      ...(params.userText
+                          ? [{ type: "text", text: params.userText }]
+                          : []),
+                      ...params.attachments.map((att) => ({
+                          type: "image_url",
+                          image_url: {
+                              url: `data:${att.mimeType};base64,${
+                                  typeof att.data === "string" ? att.data : ""
+                              }`,
+                          },
+                      })),
+                  ]
+                : params.userText;
+
+            messages.push({
+                role: "user",
+                content: userContent!,
+            });
+        }
 
         const response = await fetch(
             "https://api.openai.com/v1/chat/completions",

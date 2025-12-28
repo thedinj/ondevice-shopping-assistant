@@ -183,6 +183,23 @@ export const LLMModal: React.FC = () => {
                 userText: trimmedText || undefined,
             });
 
+            // Validate response if validator is provided
+            if (config.validateResponse) {
+                try {
+                    const isValid = config.validateResponse(llmResponse);
+                    if (!isValid) {
+                        throw new Error("Response validation failed");
+                    }
+                } catch (validationError) {
+                    showError(
+                        validationError instanceof Error
+                            ? `Invalid response: ${validationError.message}`
+                            : "Failed to validate LLM response. The output was not in the expected format."
+                    );
+                    return;
+                }
+            }
+
             setResponse(llmResponse);
         } catch (error) {
             showError(
@@ -348,26 +365,53 @@ export const LLMModal: React.FC = () => {
 
                     {/* Loading State */}
                     {isLoading && (
-                        <IonList style={{ marginTop: "20px" }}>
-                            <IonItem>
-                                <IonSkeletonText
-                                    animated
-                                    style={{ width: "100%" }}
-                                />
-                            </IonItem>
-                            <IonItem>
-                                <IonSkeletonText
-                                    animated
-                                    style={{ width: "80%" }}
-                                />
-                            </IonItem>
-                            <IonItem>
-                                <IonSkeletonText
-                                    animated
-                                    style={{ width: "90%" }}
-                                />
-                            </IonItem>
-                        </IonList>
+                        <>
+                            {config.showPatienceMessage && (
+                                <div
+                                    style={{
+                                        border: "2px solid var(--ion-color-primary)",
+                                        padding: "12px 16px",
+                                        borderRadius: "8px",
+                                        marginTop: "20px",
+                                        marginBottom: "16px",
+                                        backgroundColor:
+                                            "var(--ion-color-primary-tint)",
+                                    }}
+                                >
+                                    <IonText color="primary">
+                                        <p
+                                            style={{
+                                                margin: 0,
+                                                fontWeight: 500,
+                                            }}
+                                        >
+                                            ⏳ This might take a while.
+                                            Patience.
+                                        </p>
+                                    </IonText>
+                                </div>
+                            )}
+                            <IonList style={{ marginTop: "20px" }}>
+                                <IonItem>
+                                    <IonSkeletonText
+                                        animated
+                                        style={{ width: "100%" }}
+                                    />
+                                </IonItem>
+                                <IonItem>
+                                    <IonSkeletonText
+                                        animated
+                                        style={{ width: "80%" }}
+                                    />
+                                </IonItem>
+                                <IonItem>
+                                    <IonSkeletonText
+                                        animated
+                                        style={{ width: "90%" }}
+                                    />
+                                </IonItem>
+                            </IonList>
+                        </>
                     )}
 
                     {/* Output Display */}

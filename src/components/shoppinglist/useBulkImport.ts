@@ -11,6 +11,7 @@ import { useAutoCategorize } from "../../llm/features/useAutoCategorize";
 import { useToast } from "../../hooks/useToast";
 import type { ParsedShoppingItem } from "../../llm/features/bulkImport";
 import type { ShoppingListItemOptionalId } from "../../models/Store";
+import { normalizeItemName, toSentenceCase } from "../../utils/stringUtils";
 
 /**
  * Hook to handle bulk import of shopping list items
@@ -38,11 +39,10 @@ export function useBulkImport(listId: string, storeId: string) {
             try {
                 for (const parsed of parsedItems) {
                     try {
-                        // Find existing store item by name (case-insensitive)
+                        // Find existing store item by normalized name (handles singular/plural)
+                        const parsedNameNorm = normalizeItemName(parsed.name);
                         const existingItem = storeItems?.find(
-                            (item) =>
-                                item.name.toLowerCase() ===
-                                parsed.name.toLowerCase()
+                            (item) => item.name_norm === parsedNameNorm
                         );
 
                         let itemId: string;
@@ -86,11 +86,12 @@ export function useBulkImport(listId: string, storeId: string) {
                                 }
                             }
 
-                            // Create new store item
+                            // Create new store item with sentence-case formatting for LLM output
+                            const displayName = toSentenceCase(parsed.name);
                             const newItem =
                                 await getOrCreateStoreItem.mutateAsync({
                                     storeId,
-                                    name: parsed.name,
+                                    name: displayName,
                                     aisleId,
                                     sectionId,
                                 });

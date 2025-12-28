@@ -100,15 +100,15 @@ const StoreDetail: React.FC = () => {
             allowAttachments: true,
             allowTextInput: false,
             buttonText: "Scan Aisles & Sections",
-            renderOutput: (response) => {
+            validateResponse: (response) => {
                 if (!validateStoreScanResult(response.data)) {
-                    return (
-                        <IonText color="danger">
-                            <p>Invalid scan result format</p>
-                        </IonText>
+                    throw new Error(
+                        "Invalid scan result format. Could not parse aisles and sections."
                     );
                 }
-
+                return true;
+            },
+            renderOutput: (response) => {
                 const result = response.data;
                 return (
                     <div>
@@ -147,10 +147,6 @@ const StoreDetail: React.FC = () => {
                 );
             },
             onAccept: async (response) => {
-                if (!validateStoreScanResult(response.data)) {
-                    return;
-                }
-
                 try {
                     const transformed = transformStoreScanResult(response.data);
                     await bulkReplace.mutateAsync({

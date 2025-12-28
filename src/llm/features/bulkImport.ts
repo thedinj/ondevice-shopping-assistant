@@ -9,17 +9,27 @@ export interface ParsedShoppingItem {
     notes: string | null;
 }
 
+export interface BulkImportResponse {
+    items: ParsedShoppingItem[];
+}
+
 /**
  * Validates the LLM response for bulk import
  */
 export function validateBulkImportResult(
     data: unknown
-): data is ParsedShoppingItem[] {
-    if (!Array.isArray(data)) {
+): data is BulkImportResponse {
+    if (typeof data !== "object" || data === null) {
         return false;
     }
 
-    return data.every((item) => {
+    const response = data as Record<string, unknown>;
+
+    if (!Array.isArray(response.items)) {
+        return false;
+    }
+
+    return response.items.every((item) => {
         if (typeof item !== "object" || item === null) {
             return false;
         }

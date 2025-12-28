@@ -4,17 +4,18 @@ import { useLLMModal } from "../../llm/shared/useLLMModal";
 import { BULK_IMPORT_PROMPT } from "../../llm/features/bulkImportPrompt";
 import {
     validateBulkImportResult,
-    type ParsedShoppingItem,
+    type BulkImportResponse,
 } from "../../llm/features/bulkImport";
 import type { LLMResponse } from "../../llm/shared/types";
+import { useBulkImport } from "./useBulkImport";
 
 /**
  * Hook to open bulk import modal
+ * Handles the complete flow: modal display -> LLM parsing -> item import
  */
-export function useBulkImportModal(
-    onImport: (items: ParsedShoppingItem[]) => void
-) {
+export function useBulkImportModal(listId: string, storeId: string) {
     const { openModal } = useLLMModal();
+    const { importItems, isImporting } = useBulkImport(listId, storeId);
 
     const openBulkImport = React.useCallback(() => {
         openModal({
@@ -26,18 +27,17 @@ export function useBulkImportModal(
             userInstructions:
                 "Paste your shopping list as text or upload a photo of a handwritten/printed list.",
             buttonText: "Parse List",
-            renderOutput: (response: LLMResponse) => {
+            validateResponse: (response: LLMResponse) => {
                 if (!validateBulkImportResult(response.data)) {
-                    return (
-                        <IonText color="danger">
-                            <p>
-                                Failed to parse shopping list. Please try again.
-                            </p>
-                        </IonText>
+                    throw new Error(
+                        "Failed to parse shopping list. The response was not in the expected format."
                     );
                 }
-
-                const items = response.data as ParsedShoppingItem[];
+                return true;
+            },
+            renderOutput: (response: LLMResponse) => {
+                const result = response.data as BulkImportResponse;
+                const items = result.items;
                 return (
                     <div>
                         <IonText>
@@ -60,15 +60,14 @@ export function useBulkImportModal(
                 );
             },
             onAccept: (response: LLMResponse) => {
-                if (validateBulkImportResult(response.data)) {
-                    onImport(response.data as ParsedShoppingItem[]);
-                }
+                const result = response.data as BulkImportResponse;
+                importItems(result.items);
             },
             onCancel: () => {
                 // Nothing to do
             },
         });
-    }, [openModal, onImport]);
+    }, [openModal, importItems]);
 
-    return { openBulkImport };
+    return { openBulkImport, isImporting };
 }

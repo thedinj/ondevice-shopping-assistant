@@ -61,8 +61,12 @@ export interface LLMModalConfig<T = unknown> {
     onAccept: (response: LLMResponse<T>) => void;
     /** Optional callback when user cancels */
     onCancel?: () => void;
+    /** Optional validation function for LLM response. Return true if valid, false otherwise. */
+    validateResponse?: (response: LLMResponse<T>) => boolean;
     /** Modal title */
     title?: string;
     /** Text for the Run button (default: "Run LLM") */
     buttonText?: string;
+    /** Show "This might take a while" patience message during processing */
+    showPatienceMessage?: boolean;
 }

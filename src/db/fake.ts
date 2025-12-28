@@ -14,6 +14,7 @@ import {
 } from "../models/Store";
 import { BaseDatabase } from "./base";
 import { DEFAULT_TABLES_TO_PERSIST } from "./types";
+import { normalizeItemName } from "../utils/stringUtils";
 
 /**
  * In-memory fake database implementation for browser/development
@@ -452,7 +453,7 @@ export class FakeDatabase extends BaseDatabase {
     ): Promise<StoreItem> {
         const id = crypto.randomUUID();
         const now = new Date().toISOString();
-        const name_norm = name.toLowerCase().trim();
+        const name_norm = normalizeItemName(name);
 
         // Normalize: store only section when present (null aisle), else store aisle
         const normalizedAisleId = sectionId ? null : aisleId ?? null;
@@ -537,7 +538,7 @@ export class FakeDatabase extends BaseDatabase {
             throw new Error(`Item with id ${id} not found`);
         }
 
-        const name_norm = name.toLowerCase().trim();
+        const name_norm = normalizeItemName(name);
 
         // Normalize: store only section when present (null aisle), else store aisle
         const normalizedAisleId = sectionId ? null : aisleId ?? null;
@@ -708,7 +709,7 @@ export class FakeDatabase extends BaseDatabase {
         sectionId?: string | null
     ): Promise<StoreItem> {
         const now = new Date().toISOString();
-        const name_norm = name.toLowerCase().trim();
+        const name_norm = normalizeItemName(name);
 
         // Try to find existing item
         const existingItem = Array.from(this.items.values()).find(
