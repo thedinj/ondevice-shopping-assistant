@@ -74,10 +74,9 @@ const ShoppingListContent: React.FC = () => {
                 <IonToolbar>
                     <IonTitle>Shopping List</IonTitle>
                 </IonToolbar>
+                <StoreSelector />
             </IonHeader>
             <IonContent fullscreen>
-                <StoreSelector />
-
                 {!selectedStoreId && (
                     <div
                         style={{

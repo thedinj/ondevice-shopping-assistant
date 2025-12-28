@@ -367,29 +367,16 @@ export const LLMModal: React.FC = () => {
                     {isLoading && (
                         <>
                             {config.showPatienceMessage && (
-                                <div
-                                    style={{
-                                        border: "2px solid var(--ion-color-primary)",
-                                        padding: "12px 16px",
-                                        borderRadius: "8px",
-                                        marginTop: "20px",
-                                        marginBottom: "16px",
-                                        backgroundColor:
-                                            "var(--ion-color-primary-tint)",
-                                    }}
-                                >
-                                    <IonText color="primary">
-                                        <p
-                                            style={{
-                                                margin: 0,
-                                                fontWeight: 500,
-                                            }}
-                                        >
-                                            ⏳ This might take a while.
-                                            Patience.
-                                        </p>
-                                    </IonText>
-                                </div>
+                                <IonText color="primary">
+                                    <p
+                                        style={{
+                                            margin: 0,
+                                            fontWeight: 500,
+                                        }}
+                                    >
+                                        ⏳ This might take a while. Patience.
+                                    </p>
+                                </IonText>
                             )}
                             <IonList style={{ marginTop: "20px" }}>
                                 <IonItem>

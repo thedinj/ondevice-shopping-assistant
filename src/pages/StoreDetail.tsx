@@ -102,10 +102,11 @@ const StoreDetail: React.FC = () => {
             prompt: STORE_SCAN_PROMPT,
             userInstructions:
                 "Take a photo of the store directory showing aisle numbers and their sections/categories.",
-            model: "gpt-4o", // Use gpt-4o for vision capabilities
+            model: "gpt-5.2",
             allowAttachments: true,
             allowTextInput: false,
             buttonText: "Scan Aisles & Sections",
+            showPatienceMessage: true,
             validateResponse: (response) => {
                 if (!validateStoreScanResult(response.data)) {
                     throw new Error(

@@ -1,3 +1,6 @@
+-   Reordering aisles is gross when there are a lot of aisles!
+    Maybe we don't allow recording sections, and have a separate page for ordering aisles?
+-   Allow file uploads AND camera for native/phone?
 -   Better process for store aisle scanning.
 -   Good set of initial data for a new store (potentially with all sections under a non-aisle aisle?). Maybe when you create a new store you can create an empty one or one with content?
 -   Review code holistically one more time.
