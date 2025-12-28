@@ -1,3 +1,5 @@
+-   System prompt vs user prompt? Prompt injection?
+-   "Perimeter" is not correct for Produce, etc. Did it just hallicinate the directory? Did it even refer to the image?
 -   Review code holistically one more time--any more dead code? Is database good?
 -   Come up with cool name/icon/package name
 -   Confirm Suspense works if database response time is slow
