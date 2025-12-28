@@ -1,3 +1,4 @@
+-   Deleting a shopping list item should also delete the store item
 -   Reordering aisles is gross when there are a lot of aisles!
     Maybe we don't allow recording sections, and have a separate page for ordering aisles?
 -   Allow file uploads AND camera for native/phone?

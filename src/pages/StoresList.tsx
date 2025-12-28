@@ -18,12 +18,11 @@ import {
     IonTitle,
     IonToolbar,
 } from "@ionic/react";
-import { add, cartOutline } from "ionicons/icons";
+import { add, closeOutline, storefrontOutline } from "ionicons/icons";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { useCreateStore, useStores, useUpdateStore } from "../db/hooks";
-import { closeOutline } from "ionicons/icons";
 
 const storeFormSchema = z.object({
     name: z
@@ -130,7 +129,10 @@ const StoresList: React.FC = () => {
                                 button
                                 detail
                             >
-                                <IonIcon icon={cartOutline} slot="start" />
+                                <IonIcon
+                                    icon={storefrontOutline}
+                                    slot="start"
+                                />
                                 <IonLabel>
                                     <h2>{store.name}</h2>
                                 </IonLabel>
