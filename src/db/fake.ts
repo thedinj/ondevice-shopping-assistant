@@ -1,6 +1,7 @@
 import { AppSetting } from "../models/AppSetting";
 import {
     getInitializedStore,
+    QUANTITY_UNITS,
     QuantityUnit,
     ShoppingList,
     ShoppingListItem,
@@ -46,150 +47,7 @@ export class FakeDatabase extends BaseDatabase {
     }
 
     private initializeQuantityUnits(): void {
-        const units = [
-            {
-                id: "gram",
-                name: "Gram",
-                abbreviation: "g",
-                sort_order: 10,
-                category: "weight",
-            },
-            {
-                id: "kilogram",
-                name: "Kilogram",
-                abbreviation: "kg",
-                sort_order: 11,
-                category: "weight",
-            },
-            {
-                id: "milligram",
-                name: "Milligram",
-                abbreviation: "mg",
-                sort_order: 9,
-                category: "weight",
-            },
-            {
-                id: "ounce",
-                name: "Ounce",
-                abbreviation: "oz",
-                sort_order: 12,
-                category: "weight",
-            },
-            {
-                id: "pound",
-                name: "Pound",
-                abbreviation: "lb",
-                sort_order: 13,
-                category: "weight",
-            },
-            {
-                id: "milliliter",
-                name: "Milliliter",
-                abbreviation: "ml",
-                sort_order: 20,
-                category: "volume",
-            },
-            {
-                id: "liter",
-                name: "Liter",
-                abbreviation: "l",
-                sort_order: 21,
-                category: "volume",
-            },
-            {
-                id: "fluid-ounce",
-                name: "Fluid Ounce",
-                abbreviation: "fl oz",
-                sort_order: 22,
-                category: "volume",
-            },
-            {
-                id: "cup",
-                name: "Cup",
-                abbreviation: "cup",
-                sort_order: 23,
-                category: "volume",
-            },
-            {
-                id: "tablespoon",
-                name: "Tablespoon",
-                abbreviation: "tbsp",
-                sort_order: 24,
-                category: "volume",
-            },
-            {
-                id: "teaspoon",
-                name: "Teaspoon",
-                abbreviation: "tsp",
-                sort_order: 25,
-                category: "volume",
-            },
-            {
-                id: "count",
-                name: "Count",
-                abbreviation: "ct",
-                sort_order: 30,
-                category: "count",
-            },
-            {
-                id: "dozen",
-                name: "Dozen",
-                abbreviation: "doz",
-                sort_order: 31,
-                category: "count",
-            },
-            {
-                id: "package",
-                name: "Package",
-                abbreviation: "pkg",
-                sort_order: 40,
-                category: "package",
-            },
-            {
-                id: "can",
-                name: "Can",
-                abbreviation: "can",
-                sort_order: 41,
-                category: "package",
-            },
-            {
-                id: "box",
-                name: "Box",
-                abbreviation: "box",
-                sort_order: 42,
-                category: "package",
-            },
-            {
-                id: "bag",
-                name: "Bag",
-                abbreviation: "bag",
-                sort_order: 43,
-                category: "package",
-            },
-            {
-                id: "bottle",
-                name: "Bottle",
-                abbreviation: "btl",
-                sort_order: 44,
-                category: "package",
-            },
-            {
-                id: "jar",
-                name: "Jar",
-                abbreviation: "jar",
-                sort_order: 45,
-                category: "package",
-            },
-            {
-                id: "bunch",
-                name: "Bunch",
-                abbreviation: "bunch",
-                sort_order: 50,
-                category: "other",
-            },
-        ];
-
-        units.forEach((unit) => this.quantityUnits.set(unit.id, unit));
+        QUANTITY_UNITS.forEach((unit) => this.quantityUnits.set(unit.id, unit));
     }
 
     async close(): Promise<void> {

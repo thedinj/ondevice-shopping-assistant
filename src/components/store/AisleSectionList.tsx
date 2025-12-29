@@ -1,31 +1,29 @@
-import { forwardRef, useImperativeHandle, useState } from "react";
+import { ItemReorderEventDetail } from "@ionic/core";
 import {
+    IonLabel,
     IonList,
     IonReorderGroup,
     IonSegment,
     IonSegmentButton,
-    IonLabel,
-    IonItemDivider,
 } from "@ionic/react";
-import { ItemReorderEventDetail } from "@ionic/core";
+import React, { forwardRef, useImperativeHandle, useState } from "react";
 import {
-    useStoreAisles,
-    useStoreSections,
+    useMoveSection,
     useReorderAisles,
     useReorderSections,
-    useMoveSection,
+    useStoreAisles,
+    useStoreSections,
 } from "../../db/hooks";
-import { ListHandle } from "./types";
+import type { StoreAisle, StoreSection } from "../../db/types";
+import { AisleItem } from "./AisleItem";
+import { DeleteConfirmationAlert } from "./DeleteConfirmationAlert";
+import { EmptyState } from "./EmptyState";
+import { EntityFormModal } from "./EntityFormModal";
+import { LoadingState } from "./LoadingState";
+import { SectionItem } from "./SectionItem";
 import { useStoreManagement } from "./StoreManagementContext";
 import { StoreManagementProvider } from "./StoreManagementProvider";
-import { EntityFormModal } from "./EntityFormModal";
-import { DeleteConfirmationAlert } from "./DeleteConfirmationAlert";
-import { AisleItem } from "./AisleItem";
-import { SectionItem } from "./SectionItem";
-import { LoadingState } from "./LoadingState";
-import { EmptyState } from "./EmptyState";
-import React from "react";
-import type { StoreAisle, StoreSection } from "../../db/types";
+import { ListHandle } from "./types";
 
 type ReorderMode = "aisles" | "sections";
 
@@ -35,7 +33,7 @@ interface AisleSectionListProps {
 
 const AisleSectionListContent = forwardRef<ListHandle, AisleSectionListProps>(
     ({ storeId }, ref) => {
-        const [mode, setMode] = useState<ReorderMode>("aisles");
+        const [mode, setMode] = useState<ReorderMode>("sections");
         const { data: aisles, isLoading: aislesLoading } =
             useStoreAisles(storeId);
         const { data: sections, isLoading: sectionsLoading } =
@@ -263,11 +261,11 @@ const AisleSectionListContent = forwardRef<ListHandle, AisleSectionListProps>(
                             setMode(e.detail.value as ReorderMode)
                         }
                     >
-                        <IonSegmentButton value="aisles">
-                            <IonLabel>Reorder Aisles</IonLabel>
-                        </IonSegmentButton>
                         <IonSegmentButton value="sections">
                             <IonLabel>Reorder Sections</IonLabel>
+                        </IonSegmentButton>
+                        <IonSegmentButton value="aisles">
+                            <IonLabel>Reorder Aisles</IonLabel>
                         </IonSegmentButton>
                     </IonSegment>
                 </div>
@@ -282,7 +280,9 @@ const AisleSectionListContent = forwardRef<ListHandle, AisleSectionListProps>(
                                 <AisleItem
                                     key={aisle.id}
                                     aisle={aisle}
-                                    sections={sections}
+                                    sections={
+                                        [] /* sections omitted intentionally */
+                                    }
                                     onSectionReorder={handleSectionReorder}
                                     showReorderHandle={true}
                                     showSectionReorderHandles={false}

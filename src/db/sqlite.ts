@@ -6,6 +6,7 @@ import {
 import { AppSetting } from "../models/AppSetting";
 import {
     getInitializedStore,
+    QUANTITY_UNITS,
     QuantityUnit,
     ShoppingListItem,
     ShoppingListItemOptionalId,
@@ -45,26 +46,27 @@ const migrations: Array<{ version: number; up: string[] }> = [
 
             // Insert initial quantity units
             `INSERT INTO quantity_unit (id, name, abbreviation, sort_order, category) VALUES
-         ('gram', 'Gram', 'g', 10, 'weight'),
-         ('kilogram', 'Kilogram', 'kg', 11, 'weight'),
-         ('milligram', 'Milligram', 'mg', 9, 'weight'),
-         ('ounce', 'Ounce', 'oz', 12, 'weight'),
-         ('pound', 'Pound', 'lb', 13, 'weight'),
-         ('milliliter', 'Milliliter', 'ml', 20, 'volume'),
-         ('liter', 'Liter', 'l', 21, 'volume'),
-         ('fluid-ounce', 'Fluid Ounce', 'fl oz', 22, 'volume'),
-         ('cup', 'Cup', 'cup', 23, 'volume'),
-         ('tablespoon', 'Tablespoon', 'tbsp', 24, 'volume'),
-         ('teaspoon', 'Teaspoon', 'tsp', 25, 'volume'),
-         ('count', 'Count', 'ct', 30, 'count'),
-         ('dozen', 'Dozen', 'doz', 31, 'count'),
-         ('package', 'Package', 'pkg', 40, 'package'),
-         ('can', 'Can', 'can', 41, 'package'),
-         ('box', 'Box', 'box', 42, 'package'),
-         ('bag', 'Bag', 'bag', 43, 'package'),
-         ('bottle', 'Bottle', 'btl', 44, 'package'),
-         ('jar', 'Jar', 'jar', 45, 'package'),
-         ('bunch', 'Bunch', 'bunch', 50, 'other');`,
+            ('gram', 'Gram', 'g', 10, 'weight'),
+            ('kilogram', 'Kilogram', 'kg', 11, 'weight'),
+            ('milligram', 'Milligram', 'mg', 9, 'weight'),
+            ('ounce', 'Ounce', 'oz', 12, 'weight'),
+            ('pound', 'Pound', 'lb', 13, 'weight'),
+            ('milliliter', 'Milliliter', 'ml', 20, 'volume'),
+            ('liter', 'Liter', 'l', 21, 'volume'),
+            ('fluid-ounce', 'Fluid Ounce', 'fl oz', 22, 'volume'),
+            ('gallon', 'Gallon', 'gal', 23, 'volume'),
+            ('cup', 'Cup', 'cup', 24, 'volume'),
+            ('tablespoon', 'Tablespoon', 'tbsp', 25, 'volume'),
+            ('teaspoon', 'Teaspoon', 'tsp', 26, 'volume'),
+            ('count', 'Count', 'ct', 30, 'count'),
+            ('dozen', 'Dozen', 'doz', 31, 'count'),
+            ('package', 'Package', 'pkg', 40, 'package'),
+            ('can', 'Can', 'can', 41, 'package'),
+            ('box', 'Box', 'box', 42, 'package'),
+            ('bag', 'Bag', 'bag', 43, 'package'),
+            ('bottle', 'Bottle', 'btl', 44, 'package'),
+            ('jar', 'Jar', 'jar', 45, 'package'),
+            ('bunch', 'Bunch', 'bunch', 50, 'other');`,
 
             `CREATE TABLE IF NOT EXISTS store (
          id TEXT PRIMARY KEY,
@@ -202,6 +204,23 @@ export class SQLiteDatabase extends BaseDatabase {
         throw new Error("Database not initialized. Call initialize() first.");
     }
 
+    // Insert initial quantity units after table creation
+    // This must be run after DB init, so add to initializeStorage
+    private insertInitialQuantityUnits = async (conn: SQLiteDBConnection) => {
+        for (const quantityUnit of QUANTITY_UNITS) {
+            await conn.run(
+                `INSERT OR IGNORE INTO quantity_unit (id, name, abbreviation, sort_order, category) VALUES (?, ?, ?, ?, ?)`,
+                [
+                    quantityUnit.id,
+                    quantityUnit.name,
+                    quantityUnit.abbreviation,
+                    quantityUnit.sort_order,
+                    quantityUnit.category,
+                ]
+            );
+        }
+    };
+
     protected async initializeStorage(): Promise<void> {
         if (this.connection) {
             return; // Already initialized
@@ -223,6 +242,7 @@ export class SQLiteDatabase extends BaseDatabase {
                 );
                 await conn.open();
                 await this.runMigrations(conn);
+                await this.insertInitialQuantityUnits(conn);
 
                 this.connection = conn;
             } catch (err) {

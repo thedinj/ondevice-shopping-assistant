@@ -180,56 +180,23 @@ export abstract class BaseDatabase implements Database {
         const storeId = store.id;
 
         // Create aisles
+        await this.insertAisle(storeId, "Deli");
+        const bakeryAisle = await this.insertAisle(storeId, "Bakery");
         const produceAisle = await this.insertAisle(storeId, "Produce");
-        const bakeryAisle = await this.insertAisle(storeId, "Aisle 1");
-        const pantryAisle = await this.insertAisle(storeId, "Aisle 2");
-        const snacksAisle = await this.insertAisle(storeId, "Aisle 3");
-        const dairyAisle = await this.insertAisle(
-            storeId,
-            "Dairy & Refrigerated"
-        );
-
-        // Create sections (only for bakery and pantry aisles)
-        const breadSection = await this.insertSection(
-            storeId,
-            "Bread & Rolls",
-            bakeryAisle.id
-        );
-        const pastriesSection = await this.insertSection(
-            storeId,
-            "Pastries",
-            bakeryAisle.id
-        );
-        const cannedSection = await this.insertSection(
-            storeId,
-            "Canned Goods",
-            pantryAisle.id
-        );
+        await this.insertAisle(storeId, "Produce");
+        const aisle1 = await this.insertAisle(storeId, "Aisle 1");
+        await this.insertSection(storeId, "Canned Goods", aisle1.id);
         const pastaSection = await this.insertSection(
             storeId,
             "Pasta & Grains",
-            pantryAisle.id
+            aisle1.id
         );
+        await this.insertAisle(storeId, "Aisle 2");
+        const dairyAisle = await this.insertAisle(storeId, "Dairy & Eggs");
+        await this.insertAisle(storeId, "Frozen Foods");
+        await this.insertAisle(storeId, "Wine, Beer, and Liquor");
 
-        // Create store items across different locations
-        await this.insertItem(storeId, "Apples", produceAisle.id, null);
-        await this.insertItem(
-            storeId,
-            "Whole Wheat Bread",
-            null,
-            breadSection.id
-        );
-        await this.insertItem(storeId, "Croissants", null, pastriesSection.id);
-        await this.insertItem(
-            storeId,
-            "Canned Tomatoes",
-            null,
-            cannedSection.id
-        );
-        await this.insertItem(storeId, "Penne Pasta", null, pastaSection.id);
-        await this.insertItem(storeId, "Milk", dairyAisle.id, null);
-
-        // Create a shopping list with items (none pre-checked)
+        // Create sample items
         const shoppingList = await this.getOrCreateShoppingListForStore(
             storeId
         );
@@ -251,82 +218,50 @@ export abstract class BaseDatabase implements Database {
             is_sample: 1,
         });
 
-        const sourdough = await this.getOrCreateStoreItemByName(
+        const frenchBread = await this.getOrCreateStoreItemByName(
             storeId,
-            "Sourdough Bread",
-            null,
-            breadSection.id
+            "French Bread",
+            bakeryAisle.id,
+            null
         );
         await this.upsertShoppingListItem({
             list_id: shoppingList.id,
             store_id: storeId,
-            store_item_id: sourdough.id,
+            store_item_id: frenchBread.id,
             qty: 1,
             unit_id: null,
             notes: null,
             is_sample: 1,
         });
 
-        const tomatoes = await this.getOrCreateStoreItemByName(
+        const pennePasta = await this.getOrCreateStoreItemByName(
             storeId,
-            "Diced Tomatoes",
-            null,
-            cannedSection.id
-        );
-        await this.upsertShoppingListItem({
-            list_id: shoppingList.id,
-            store_id: storeId,
-            store_item_id: tomatoes.id,
-            qty: 2,
-            unit_id: "can",
-            notes: "14.5 oz cans",
-            is_sample: 1,
-        });
-
-        const spaghetti = await this.getOrCreateStoreItemByName(
-            storeId,
-            "Spaghetti",
+            "Penne Pasta",
             null,
             pastaSection.id
         );
         await this.upsertShoppingListItem({
             list_id: shoppingList.id,
             store_id: storeId,
-            store_item_id: spaghetti.id,
+            store_item_id: pennePasta.id,
             qty: 1,
-            unit_id: "box",
+            unit_id: null,
             notes: null,
             is_sample: 1,
         });
 
-        const cheese = await this.getOrCreateStoreItemByName(
+        const milk = await this.getOrCreateStoreItemByName(
             storeId,
-            "Cheddar Cheese",
+            "Milk",
             dairyAisle.id,
             null
         );
         await this.upsertShoppingListItem({
             list_id: shoppingList.id,
             store_id: storeId,
-            store_item_id: cheese.id,
+            store_item_id: milk.id,
             qty: 1,
-            unit_id: "pound",
-            notes: "Sharp, block style",
-            is_sample: 1,
-        });
-
-        const chips = await this.getOrCreateStoreItemByName(
-            storeId,
-            "Potato Chips",
-            snacksAisle.id,
-            null
-        );
-        await this.upsertShoppingListItem({
-            list_id: shoppingList.id,
-            store_id: storeId,
-            store_item_id: chips.id,
-            qty: 1,
-            unit_id: "bag",
+            unit_id: "gal",
             notes: null,
             is_sample: 1,
         });
