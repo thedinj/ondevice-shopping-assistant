@@ -21,11 +21,10 @@ import { BaseDatabase } from "./base";
 import { DEFAULT_TABLES_TO_PERSIST } from "./types";
 
 const DB_NAME = "shopping_assistant";
-const DB_VERSION = 1;
 
 const migrations: Array<{ version: number; up: string[] }> = [
     {
-        version: 1,
+        version: 2, // v1 had shopping_list, but we're pretending that never happened
         up: [
             `PRAGMA foreign_keys = ON;`,
 
@@ -118,48 +117,8 @@ const migrations: Array<{ version: number; up: string[] }> = [
             `CREATE UNIQUE INDEX IF NOT EXISTS ux_store_item_store_norm
          ON store_item(store_id, name_norm);`,
 
-            `CREATE TABLE IF NOT EXISTS shopping_list (
-         id TEXT PRIMARY KEY,
-         store_id TEXT NOT NULL,
-         title TEXT,
-         created_at TEXT NOT NULL DEFAULT (datetime('now')),
-         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-         completed_at TEXT,
-         FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE
-       );`,
             `CREATE TABLE IF NOT EXISTS shopping_list_item (
          id TEXT PRIMARY KEY,
-         list_id TEXT NOT NULL,
-         store_id TEXT NOT NULL,
-         store_item_id TEXT NOT NULL,
-         qty REAL NOT NULL DEFAULT 1,
-         unit_id TEXT,
-         notes TEXT,
-         is_checked INTEGER NOT NULL DEFAULT 0,
-         checked_at TEXT,
-         is_sample INTEGER,
-         created_at TEXT NOT NULL DEFAULT (datetime('now')),
-         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-         FOREIGN KEY (list_id) REFERENCES shopping_list(id) ON DELETE CASCADE,
-         FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
-         FOREIGN KEY (store_item_id) REFERENCES store_item(id) ON DELETE CASCADE,
-         FOREIGN KEY (unit_id) REFERENCES quantity_unit(id) ON DELETE SET NULL
-       );`,
-
-            `CREATE INDEX IF NOT EXISTS ix_list_item_list_checked
-         ON shopping_list_item(list_id, is_checked, updated_at);`,
-        ],
-    },
-    {
-        version: 2,
-        up: [
-            // Migration to remove shopping_list table and list_id from shopping_list_item
-            // Step 1: Rename old table
-            `ALTER TABLE shopping_list_item RENAME TO shopping_list_item_old;`,
-
-            // Step 2: Create new table without list_id
-            `CREATE TABLE shopping_list_item (
-         id TEXT PRIMARY KEY,
          store_id TEXT NOT NULL,
          store_item_id TEXT NOT NULL,
          qty REAL NOT NULL DEFAULT 1,
@@ -175,23 +134,8 @@ const migrations: Array<{ version: number; up: string[] }> = [
          FOREIGN KEY (unit_id) REFERENCES quantity_unit(id) ON DELETE SET NULL
        );`,
 
-            // Step 3: Migrate data (copy all fields except list_id)
-            `INSERT INTO shopping_list_item (
-         id, store_id, store_item_id, qty, unit_id, notes,
-         is_checked, checked_at, is_sample, created_at, updated_at
-       )
-       SELECT 
-         id, store_id, store_item_id, qty, unit_id, notes,
-         is_checked, checked_at, is_sample, created_at, updated_at
-       FROM shopping_list_item_old;`,
-
-            // Step 4: Create index for querying by store and checked status
             `CREATE INDEX IF NOT EXISTS ix_list_item_store_checked
          ON shopping_list_item(store_id, is_checked, updated_at);`,
-
-            // Step 5: Drop old tables
-            `DROP TABLE shopping_list_item_old;`,
-            `DROP TABLE shopping_list;`,
         ],
     },
 ];
@@ -264,7 +208,7 @@ export class SQLiteDatabase extends BaseDatabase {
                     DB_NAME,
                     false,
                     "no-encryption",
-                    DB_VERSION,
+                    1, // Leave the SQLite version as 1, handle migrations manually
                     false
                 );
                 await conn.open();
@@ -318,7 +262,6 @@ export class SQLiteDatabase extends BaseDatabase {
 
         const tablesToDelete = [
             "shopping_list_item",
-            "shopping_list",
             "store_item",
             "store_section",
             "store_aisle",
