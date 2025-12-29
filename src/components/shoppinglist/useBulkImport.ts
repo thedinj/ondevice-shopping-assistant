@@ -19,7 +19,7 @@ import { normalizeItemName, toSentenceCase } from "../../utils/stringUtils";
  * - Auto-categorizes new items
  * - Creates or updates items in the shopping list
  */
-export function useBulkImport(listId: string, storeId: string) {
+export function useBulkImport(storeId: string) {
     const [isImporting, setIsImporting] = useState(false);
     const upsertItem = useUpsertShoppingListItem();
     const getOrCreateStoreItem = useGetOrCreateStoreItem();
@@ -100,7 +100,6 @@ export function useBulkImport(listId: string, storeId: string) {
 
                         // Create shopping list item
                         const shoppingListItem: ShoppingListItemOptionalId = {
-                            list_id: listId,
                             store_item_id: itemId,
                             store_id: storeId,
                             qty: parsed.quantity ?? 1,
@@ -121,7 +120,7 @@ export function useBulkImport(listId: string, storeId: string) {
 
                 // Invalidate queries to refresh the list
                 queryClient.invalidateQueries({
-                    queryKey: ["shopping-list-items", listId],
+                    queryKey: ["shopping-list-items", storeId],
                 });
 
                 if (successCount > 0) {
@@ -150,7 +149,6 @@ export function useBulkImport(listId: string, storeId: string) {
             }
         },
         [
-            listId,
             storeId,
             storeItems,
             aisles,

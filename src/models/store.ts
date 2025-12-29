@@ -64,7 +64,6 @@ export type ShoppingList = {
 
 export type ShoppingListItem = {
     id: string;
-    list_id: string;
     store_id: string;
     store_item_id: string; // Non-nullable - shopping list items must reference a store item
     qty: number;
@@ -84,7 +83,7 @@ export type ShoppingListItem = {
 export type ShoppingListItemOptionalId = PartialPick<ShoppingListItem, "id"> &
     Pick<
         ShoppingListItem,
-        "list_id" | "store_id" | "store_item_id" | "qty" | "unit_id" | "notes"
+        "store_id" | "store_item_id" | "qty" | "unit_id" | "notes"
     > &
     Partial<Pick<ShoppingListItem, "is_sample">>;
 

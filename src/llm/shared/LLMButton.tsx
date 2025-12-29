@@ -1,7 +1,7 @@
+import { IonAlert, IonButton, IonIcon } from "@ionic/react";
 import React, { ComponentProps, useState } from "react";
-import { IonButton, IonIcon, IonAlert } from "@ionic/react";
 import { useOpenAIApiKey } from "../../settings/useOpenAIApiKey";
-import { LLM_ICON_SRC } from "./constants";
+import { LLM_COLOR, LLM_ICON_SRC } from "./constants";
 
 /**
  * Reusable button for triggering LLM features
@@ -36,11 +36,9 @@ export const LLMButton: React.FC<ComponentProps<typeof IonButton>> = ({
                 disabled={isDisabled}
                 onClick={handleClick}
                 style={{
-                    "--border-color": "#8b5cf6",
+                    "--border-color": LLM_COLOR,
                     "--border-width": "2px",
-                    "--color": "#8b5cf6",
-                    fontFamily: "'Courier New', 'Roboto Mono', monospace",
-                    fontWeight: 600,
+                    "--color": LLM_COLOR,
                     letterSpacing: "0.5px",
                     textTransform: "none",
                     ...style,

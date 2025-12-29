@@ -34,11 +34,10 @@ import { UnitSelector } from "./UnitSelector";
 import { useShoppingListContext } from "./useShoppingListContext";
 
 interface ItemEditorModalProps {
-    listId: string;
     storeId: string;
 }
 
-export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
+export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
     const { isItemModalOpen, editingItem, closeItemModal } =
         useShoppingListContext();
     const upsertItem = useUpsertShoppingListItem();
@@ -116,7 +115,6 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
         // Update or create shopping list item
         await upsertItem.mutateAsync({
             id: editingItem?.id,
-            list_id: listId,
             store_id: storeId,
             store_item_id: storeItemId,
             qty: data.qty,
@@ -132,7 +130,7 @@ export const ItemEditorModal = ({ listId, storeId }: ItemEditorModalProps) => {
         try {
             await deleteItem.mutateAsync({
                 id: editingItem.id,
-                listId: listId,
+                storeId: storeId,
             });
             setShowDeleteAlert(false);
             closeItemModal();

@@ -11,5 +11,5 @@ export const LLM_ICON_SRC = "/img/basket-bot.svg";
 /**
  * The purple color used for LLM UI elements
  */
-export const LLM_COLOR = "#8b5cf6";
-export const LLM_COLOR_ACTIVATED = "#7c3aed";
+export const LLM_COLOR = "rgb(124, 58, 237)";
+export const LLM_COLOR_ACTIVATED = "#7c3aed"; //TODO: match theme

@@ -252,24 +252,11 @@ export interface EntityDatabase {
 
     // ========== ShoppingList Operations ==========
     /**
-     * Get or create an active shopping list for a store
-     * Returns the most recent non-completed list or creates a new one
-     */
-    getOrCreateShoppingListForStore(storeId: string): Promise<{
-        id: string;
-        store_id: string;
-        title: string | null;
-        created_at: string;
-        updated_at: string;
-        completed_at: string | null;
-    }>;
-
-    /**
-     * Get all shopping list items for a list, joined with aisle/section info
+     * Get all shopping list items for a store, joined with aisle/section info
      * Ordered by: is_checked, aisle sort_order, section sort_order, item name
      */
-    getShoppingListItemsGrouped(
-        listId: string
+    getShoppingListItems(
+        storeId: string
     ): Promise<Array<ShoppingListItemWithDetails>>;
 
     /**
@@ -295,9 +282,9 @@ export interface EntityDatabase {
     deleteShoppingListItem(id: string): Promise<void>;
 
     /**
-     * Clear all checked items from a shopping list
+     * Clear all checked items from a shopping list for a store
      */
-    clearCheckedShoppingListItems(listId: string): Promise<void>;
+    clearCheckedShoppingListItems(storeId: string): Promise<void>;
 }
 
 /**

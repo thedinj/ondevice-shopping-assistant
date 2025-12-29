@@ -472,39 +472,11 @@ export class FakeDatabase extends BaseDatabase {
     }
 
     // ========== ShoppingList Operations ==========
-    async getOrCreateShoppingListForStore(
+    async getShoppingListItems(
         storeId: string
-    ): Promise<ShoppingList> {
-        // Find active list
-        const activeList = Array.from(this.shoppingLists.values()).find(
-            (list) => list.store_id === storeId && !list.completed_at
-        );
-
-        if (activeList) {
-            return activeList;
-        }
-
-        // Create new list
-        const id = crypto.randomUUID();
-        const now = new Date().toISOString();
-        const newList: ShoppingList = {
-            id,
-            store_id: storeId,
-            title: null,
-            created_at: now,
-            updated_at: now,
-            completed_at: null,
-        };
-        this.shoppingLists.set(id, newList);
-        this.notifyChange();
-        return newList;
-    }
-
-    async getShoppingListItemsGrouped(
-        listId: string
     ): Promise<ShoppingListItemWithDetails[]> {
         const items = Array.from(this.shoppingListItems.values())
-            .filter((item) => item.list_id === listId)
+            .filter((item) => item.store_id === storeId)
             .map((item) => {
                 // Join with store_item
                 const storeItem = this.items.get(item.store_item_id);
@@ -631,7 +603,6 @@ export class FakeDatabase extends BaseDatabase {
 
             const newItem: ShoppingListItem = {
                 id,
-                list_id: params.list_id,
                 store_id: params.store_id,
                 store_item_id: params.store_item_id,
                 qty: params.qty,
@@ -674,9 +645,9 @@ export class FakeDatabase extends BaseDatabase {
         }
     }
 
-    async clearCheckedShoppingListItems(listId: string): Promise<void> {
+    async clearCheckedShoppingListItems(storeId: string): Promise<void> {
         const items = Array.from(this.shoppingListItems.values()).filter(
-            (item) => item.list_id === listId && item.is_checked === 1
+            (item) => item.store_id === storeId && item.is_checked === 1
         );
 
         for (const item of items) {

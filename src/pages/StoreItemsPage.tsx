@@ -31,7 +31,6 @@ import { useDebounce } from "use-debounce";
 import { GroupedItemList } from "../components/shared/GroupedItemList";
 import { StoreItemEditorModal } from "../components/storeitem/StoreItemEditorModal";
 import {
-    useActiveShoppingList,
     useDeleteShoppingListItem,
     useShoppingListItems,
     useStore,
@@ -46,10 +45,7 @@ const StoreItemsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const { data: store } = useStore(id);
     const { data: items, isLoading } = useStoreItemsWithDetails(id);
-    const { data: activeList } = useActiveShoppingList(id);
-    const { data: shoppingListItems } = useShoppingListItems(
-        activeList?.id || ""
-    );
+    const { data: shoppingListItems } = useShoppingListItems(id);
     const toggleFavorite = useToggleFavorite();
     const upsertShoppingListItem = useUpsertShoppingListItem();
     const deleteShoppingListItem = useDeleteShoppingListItem();
@@ -124,14 +120,8 @@ const StoreItemsPage: React.FC = () => {
 
     const handleAddToShoppingList = useCallback(
         async (item: StoreItemWithDetails) => {
-            if (!activeList) {
-                showError("No active shopping list");
-                return;
-            }
-
             try {
                 await upsertShoppingListItem.mutateAsync({
-                    list_id: activeList.id,
                     store_id: id,
                     store_item_id: item.id,
                     qty: 1,
@@ -143,7 +133,7 @@ const StoreItemsPage: React.FC = () => {
                 showError("Failed to add to shopping list");
             }
         },
-        [activeList, id, upsertShoppingListItem, showSuccess, showError]
+        [id, upsertShoppingListItem, showSuccess, showError]
     );
 
     const confirmRemoveFromShoppingList = useCallback(
@@ -161,12 +151,12 @@ const StoreItemsPage: React.FC = () => {
     );
 
     const executeRemoveFromShoppingList = async () => {
-        if (!removeFromListAlert || !activeList) return;
+        if (!removeFromListAlert) return;
 
         try {
             await deleteShoppingListItem.mutateAsync({
                 id: removeFromListAlert.shoppingListItemId,
-                listId: activeList.id,
+                storeId: id,
             });
             showSuccess("Removed from shopping list");
             setRemoveFromListAlert(null);

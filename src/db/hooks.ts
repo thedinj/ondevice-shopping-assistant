@@ -807,28 +807,15 @@ export function useToggleFavorite() {
 // ========== ShoppingList Hooks ==========
 
 /**
- * Hook to get or create the active shopping list for a store
+ * Hook to get shopping list items for a store (grouped and sorted)
  */
-export function useActiveShoppingList(storeId: string) {
+export function useShoppingListItems(storeId: string) {
     const database = useDatabase();
 
     return useTanstackQuery({
-        queryKey: ["shopping-list", "active", storeId],
-        queryFn: () => database.getOrCreateShoppingListForStore(storeId),
+        queryKey: ["shopping-list-items", storeId],
+        queryFn: () => database.getShoppingListItems(storeId),
         enabled: !!storeId,
-    });
-}
-
-/**
- * Hook to get shopping list items (grouped and sorted)
- */
-export function useShoppingListItems(listId: string) {
-    const database = useDatabase();
-
-    return useTanstackQuery({
-        queryKey: ["shopping-list-items", listId],
-        queryFn: () => database.getShoppingListItemsGrouped(listId),
-        enabled: !!listId,
     });
 }
 
@@ -865,7 +852,7 @@ export function useUpsertShoppingListItem() {
             ) as Promise<ShoppingListItem>,
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
-                queryKey: ["shopping-list-items", variables.list_id],
+                queryKey: ["shopping-list-items", variables.store_id],
             });
             // Also invalidate store items for autocomplete
             queryClient.invalidateQueries({
@@ -893,12 +880,12 @@ export function useToggleItemChecked() {
         mutationFn: (params: {
             id: string;
             isChecked: boolean;
-            listId: string;
+            storeId: string;
         }) =>
             database.toggleShoppingListItemChecked(params.id, params.isChecked),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
-                queryKey: ["shopping-list-items", variables.listId],
+                queryKey: ["shopping-list-items", variables.storeId],
             });
         },
         onError: (error: Error) => {
@@ -916,11 +903,11 @@ export function useDeleteShoppingListItem() {
     const { showError } = useToast();
 
     return useTanstackMutation({
-        mutationFn: (params: { id: string; listId: string }) =>
+        mutationFn: (params: { id: string; storeId: string }) =>
             database.deleteShoppingListItem(params.id),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
-                queryKey: ["shopping-list-items", variables.listId],
+                queryKey: ["shopping-list-items", variables.storeId],
             });
         },
         onError: (error: Error) => {
@@ -938,11 +925,11 @@ export function useClearCheckedItems() {
     const { showError } = useToast();
 
     return useTanstackMutation({
-        mutationFn: ({ listId }: { listId: string }) =>
-            database.clearCheckedShoppingListItems(listId),
+        mutationFn: ({ storeId }: { storeId: string }) =>
+            database.clearCheckedShoppingListItems(storeId),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
-                queryKey: ["shopping-list-items", variables.listId],
+                queryKey: ["shopping-list-items", variables.storeId],
             });
         },
         onError: (error: Error) => {

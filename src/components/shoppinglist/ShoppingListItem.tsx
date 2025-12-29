@@ -26,7 +26,7 @@ export const ShoppingListItem = ({
         toggleChecked.mutate({
             id: item.id,
             isChecked: checked,
-            listId: item.list_id,
+            storeId: item.store_id,
         });
     };
 

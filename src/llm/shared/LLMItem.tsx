@@ -1,7 +1,7 @@
+import { IonIcon, IonItem, IonLabel } from "@ionic/react";
 import React, { ComponentProps } from "react";
-import { IonItem, IonIcon, IonLabel } from "@ionic/react";
 import { useOpenAIApiKey } from "../../settings/useOpenAIApiKey";
-import { LLM_ICON_SRC } from "./constants";
+import { LLM_COLOR, LLM_ICON_SRC } from "./constants";
 
 type LLMItemProps = ComponentProps<typeof IonItem> & {
     /** Whether to auto-disable when no API key is configured (default: true) */
@@ -28,7 +28,7 @@ export const LLMItem: React.FC<LLMItemProps> = ({
         <IonItem
             disabled={isDisabled}
             style={{
-                "--border-color": "#8b5cf6",
+                "--border-color": LLM_COLOR,
                 "--border-width": "2px",
                 "--border-style": "solid",
                 "--border-radius": "8px",
@@ -41,14 +41,12 @@ export const LLMItem: React.FC<LLMItemProps> = ({
             <IonIcon
                 src={LLM_ICON_SRC}
                 slot="start"
-                style={{ color: "#8b5cf6" }}
+                style={{ color: LLM_COLOR }}
             />
             {typeof children === "string" ? (
                 <IonLabel
                     style={{
-                        color: "#8b5cf6",
-                        fontFamily: "'Courier New', 'Roboto Mono', monospace",
-                        fontWeight: 600,
+                        color: LLM_COLOR,
                         letterSpacing: "0.5px",
                     }}
                 >
@@ -61,10 +59,7 @@ export const LLMItem: React.FC<LLMItemProps> = ({
                     >,
                     {
                         style: {
-                            color: "#8b5cf6",
-                            fontFamily:
-                                "'Courier New', 'Roboto Mono', monospace",
-                            fontWeight: 600,
+                            color: LLM_COLOR,
                             letterSpacing: "0.5px",
                             ...((
                                 children as React.ReactElement<
@@ -77,9 +72,7 @@ export const LLMItem: React.FC<LLMItemProps> = ({
             ) : (
                 <IonLabel
                     style={{
-                        color: "#8b5cf6",
-                        fontFamily: "'Courier New', 'Roboto Mono', monospace",
-                        fontWeight: 600,
+                        color: LLM_COLOR,
                         letterSpacing: "0.5px",
                     }}
                 >

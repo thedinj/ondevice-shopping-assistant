@@ -195,19 +195,8 @@ export class RemoteDatabase extends BaseDatabase {
     }
 
     // ========== ShoppingList Operations ==========
-    async getOrCreateShoppingListForStore(_storeId: string): Promise<{
-        id: string;
-        store_id: string;
-        title: string | null;
-        created_at: string;
-        updated_at: string;
-        completed_at: string | null;
-    }> {
-        throw new Error("RemoteDatabase not yet implemented");
-    }
-
-    async getShoppingListItemsGrouped(
-        listId: string
+    async getShoppingListItems(
+        _storeId: string
     ): Promise<ShoppingListItemWithDetails[]> {
         throw new Error("RemoteDatabase not yet implemented");
     }
@@ -229,7 +218,7 @@ export class RemoteDatabase extends BaseDatabase {
         throw new Error("RemoteDatabase not yet implemented");
     }
 
-    async clearCheckedShoppingListItems(_listId: string): Promise<void> {
+    async clearCheckedShoppingListItems(_storeId: string): Promise<void> {
         throw new Error("RemoteDatabase not yet implemented");
     }
 }

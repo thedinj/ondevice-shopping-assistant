@@ -150,6 +150,50 @@ const migrations: Array<{ version: number; up: string[] }> = [
          ON shopping_list_item(list_id, is_checked, updated_at);`,
         ],
     },
+    {
+        version: 2,
+        up: [
+            // Migration to remove shopping_list table and list_id from shopping_list_item
+            // Step 1: Rename old table
+            `ALTER TABLE shopping_list_item RENAME TO shopping_list_item_old;`,
+
+            // Step 2: Create new table without list_id
+            `CREATE TABLE shopping_list_item (
+         id TEXT PRIMARY KEY,
+         store_id TEXT NOT NULL,
+         store_item_id TEXT NOT NULL,
+         qty REAL NOT NULL DEFAULT 1,
+         unit_id TEXT,
+         notes TEXT,
+         is_checked INTEGER NOT NULL DEFAULT 0,
+         checked_at TEXT,
+         is_sample INTEGER,
+         created_at TEXT NOT NULL DEFAULT (datetime('now')),
+         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+         FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
+         FOREIGN KEY (store_item_id) REFERENCES store_item(id) ON DELETE CASCADE,
+         FOREIGN KEY (unit_id) REFERENCES quantity_unit(id) ON DELETE SET NULL
+       );`,
+
+            // Step 3: Migrate data (copy all fields except list_id)
+            `INSERT INTO shopping_list_item (
+         id, store_id, store_item_id, qty, unit_id, notes,
+         is_checked, checked_at, is_sample, created_at, updated_at
+       )
+       SELECT 
+         id, store_id, store_item_id, qty, unit_id, notes,
+         is_checked, checked_at, is_sample, created_at, updated_at
+       FROM shopping_list_item_old;`,
+
+            // Step 4: Create index for querying by store and checked status
+            `CREATE INDEX IF NOT EXISTS ix_list_item_store_checked
+         ON shopping_list_item(store_id, is_checked, updated_at);`,
+
+            // Step 5: Drop old tables
+            `DROP TABLE shopping_list_item_old;`,
+            `DROP TABLE shopping_list;`,
+        ],
+    },
 ];
 
 /**
@@ -731,58 +775,13 @@ export class SQLiteDatabase extends BaseDatabase {
     }
 
     // ========== ShoppingList Operations ==========
-    async getOrCreateShoppingListForStore(storeId: string): Promise<{
-        id: string;
-        store_id: string;
-        title: string | null;
-        created_at: string;
-        updated_at: string;
-        completed_at: string | null;
-    }> {
-        const conn = await this.getConnection();
-
-        // Try to find an active (non-completed) list for this store
-        const res = await conn.query(
-            `SELECT id, store_id, title, created_at, updated_at, completed_at 
-             FROM shopping_list 
-             WHERE store_id = ? AND completed_at IS NULL 
-             ORDER BY created_at DESC 
-             LIMIT 1`,
-            [storeId]
-        );
-
-        if (res.values && res.values.length > 0) {
-            return res.values[0];
-        }
-
-        // Create a new list
-        const id = crypto.randomUUID();
-        const now = new Date().toISOString();
-
-        await conn.run(
-            `INSERT INTO shopping_list (id, store_id, title, created_at, updated_at) 
-             VALUES (?, ?, ?, ?, ?)`,
-            [id, storeId, null, now, now]
-        );
-
-        this.notifyChange();
-        return {
-            id,
-            store_id: storeId,
-            title: null,
-            created_at: now,
-            updated_at: now,
-            completed_at: null,
-        };
-    }
-
-    async getShoppingListItemsGrouped(
-        listId: string
+    async getShoppingListItems(
+        storeId: string
     ): Promise<ShoppingListItemWithDetails[]> {
         const conn = await this.getConnection();
         const res = await conn.query(
             `SELECT 
-                sli.id, sli.list_id, sli.store_id, sli.store_item_id,
+                sli.id, sli.store_id, sli.store_item_id,
                 sli.qty, sli.unit_id, sli.notes,
                 sli.is_checked, sli.checked_at, sli.is_sample,
                 sli.created_at, sli.updated_at,
@@ -797,13 +796,13 @@ export class SQLiteDatabase extends BaseDatabase {
              LEFT JOIN quantity_unit qu ON sli.unit_id = qu.id
              LEFT JOIN store_section ss ON si.section_id = ss.id
              LEFT JOIN store_aisle sa ON COALESCE(ss.aisle_id, si.aisle_id) = sa.id
-             WHERE sli.list_id = ?
+             WHERE sli.store_id = ?
              ORDER BY 
                 sli.is_checked ASC,
                 COALESCE(sa.sort_order, 999999) ASC,
                 COALESCE(ss.sort_order, 999999) ASC,
                 si.name ASC`,
-            [listId]
+            [storeId]
         );
         return res.values || [];
     }
@@ -887,7 +886,7 @@ export class SQLiteDatabase extends BaseDatabase {
             );
 
             const itemRes = await conn.query(
-                `SELECT id, list_id, store_id, store_item_id, qty, unit_id, notes,
+                `SELECT id, store_id, store_item_id, qty, unit_id, notes,
                         is_checked, checked_at, is_sample, created_at, updated_at
                  FROM shopping_list_item WHERE id = ?`,
                 [params.id]
@@ -901,11 +900,10 @@ export class SQLiteDatabase extends BaseDatabase {
 
             await conn.run(
                 `INSERT INTO shopping_list_item 
-                 (id, list_id, store_id, store_item_id, qty, unit_id, notes, is_sample, created_at, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                 (id, store_id, store_item_id, qty, unit_id, notes, is_sample, created_at, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     id,
-                    params.list_id,
                     params.store_id,
                     params.store_item_id,
                     params.qty,
@@ -920,7 +918,6 @@ export class SQLiteDatabase extends BaseDatabase {
             this.notifyChange();
             return {
                 id,
-                list_id: params.list_id,
                 store_id: params.store_id,
                 store_item_id: params.store_item_id,
                 qty: params.qty,
@@ -959,12 +956,12 @@ export class SQLiteDatabase extends BaseDatabase {
         this.notifyChange();
     }
 
-    async clearCheckedShoppingListItems(listId: string): Promise<void> {
+    async clearCheckedShoppingListItems(storeId: string): Promise<void> {
         const conn = await this.getConnection();
 
         await conn.run(
-            "DELETE FROM shopping_list_item WHERE list_id = ? AND is_checked = 1",
-            [listId]
+            "DELETE FROM shopping_list_item WHERE store_id = ? AND is_checked = 1",
+            [storeId]
         );
         this.notifyChange();
     }

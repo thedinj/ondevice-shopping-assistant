@@ -1,28 +1,33 @@
-import React, { useState, useRef } from "react";
+import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
+import { Capacitor } from "@capacitor/core";
 import {
-    IonModal,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
     IonButton,
+    IonButtons,
+    IonChip,
     IonContent,
-    IonText,
-    IonSkeletonText,
+    IonHeader,
+    IonIcon,
     IonItem,
     IonLabel,
-    IonIcon,
     IonList,
-    IonChip,
+    IonModal,
+    IonSkeletonText,
+    IonText,
     IonTextarea,
+    IonTitle,
+    IonToolbar,
 } from "@ionic/react";
-import { close, attach, camera } from "ionicons/icons";
-import { Capacitor } from "@capacitor/core";
-import { useLLMModalContext } from "./useLLMModalContext";
+import { attach, camera, close } from "ionicons/icons";
+import React, { use, useRef, useState } from "react";
 import { useToast } from "../../hooks/useToast";
 import { useOpenAIApiKey } from "../../settings/useOpenAIApiKey";
 import { OpenAIClient } from "./openaiClient";
 import type { LLMAttachment } from "./types";
+import { useLLMModalContext } from "./useLLMModalContext";
+
+const checkCameraAllowedAsync = Capacitor.isNativePlatform()
+    ? Camera.requestPermissions({ permissions: ["camera"] }).then(() => true)
+    : Promise.resolve(false);
 
 /**
  * Modal for running LLM API calls with file attachments
@@ -37,6 +42,7 @@ export const LLMModal: React.FC = () => {
     const [attachments, setAttachments] = useState<LLMAttachment[]>([]);
     const [userText, setUserText] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const isAllowCamera = use(checkCameraAllowedAsync);
 
     const handleClose = () => {
         if (isLoading) return; // Prevent closing during API call
@@ -60,40 +66,32 @@ export const LLMModal: React.FC = () => {
         closeModal();
     };
 
-    const handleAddAttachment = async () => {
-        if (!config) return;
+    const handleCapture = async () => {
+        if (!config || !isAllowCamera) return;
 
         try {
-            if (Capacitor.isNativePlatform()) {
-                // Dynamically import Capacitor Camera for native platforms
-                try {
-                    // Use dynamic import with variable to bypass Vite static analysis
-                    const moduleName = "@capacitor/camera";
-                    const cameraModule = await import(
-                        /* @vite-ignore */ moduleName
-                    );
-                    const image = await cameraModule.Camera.getPhoto({
-                        quality: 90,
-                        allowEditing: false,
-                        resultType: cameraModule.CameraResultType.Base64,
-                        source: cameraModule.CameraSource.Photos,
-                    });
+            // Dynamically import Capacitor Camera for native platforms
+            try {
+                const image = await Camera.getPhoto({
+                    quality: 90,
+                    allowEditing: false,
+                    resultType: CameraResultType.Base64,
+                    source: CameraSource.Photos,
+                });
 
-                    if (image.base64String) {
-                        const attachment: LLMAttachment = {
-                            name: `image_${Date.now()}.${image.format}`,
-                            data: image.base64String,
-                            mimeType: `image/${image.format}`,
-                        };
-                        setAttachments((prev) => [...prev, attachment]);
-                    }
-                } catch {
-                    // Camera plugin not available
-                    showError("Camera plugin not available on this platform");
+                if (image.base64String) {
+                    const attachment: LLMAttachment = {
+                        name: `image_${Date.now()}.${image.format}`,
+                        data: image.base64String,
+                        mimeType: `image/${image.format}`,
+                    };
+                    setAttachments((prev) => [...prev, attachment]);
                 }
-            } else {
-                // Use file input on web
-                fileInputRef.current?.click();
+            } catch (err) {
+                // Camera plugin not available
+                showError(
+                    `Camera plugin not available on this platform: ${err}`
+                );
             }
         } catch (error: unknown) {
             if (
@@ -103,6 +101,11 @@ export const LLMModal: React.FC = () => {
                 showError(`Failed to add attachment: ${error.message}`);
             }
         }
+    };
+
+    const handleAddAttachment = async () => {
+        if (!config) return;
+        fileInputRef.current?.click();
     };
 
     const handleFileInputChange = async (
@@ -289,23 +292,30 @@ export const LLMModal: React.FC = () => {
                                 <IonLabel>
                                     <h3>Attachments</h3>
                                 </IonLabel>
-                                <IonButton
-                                    slot="end"
-                                    fill="outline"
-                                    size="small"
-                                    onClick={handleAddAttachment}
-                                    disabled={isLoading}
-                                >
-                                    <IonIcon
-                                        icon={
-                                            Capacitor.isNativePlatform()
-                                                ? camera
-                                                : attach
-                                        }
-                                        slot="start"
-                                    />
-                                    Add
-                                </IonButton>
+                                {isAllowCamera && (
+                                    <IonButton
+                                        slot="end"
+                                        fill="outline"
+                                        size="small"
+                                        onClick={handleCapture}
+                                        disabled={isLoading}
+                                    >
+                                        <IonIcon icon={camera} slot="start" />
+                                        Capture
+                                    </IonButton>
+                                )}
+                                {!isAllowCamera && (
+                                    <IonButton
+                                        slot="end"
+                                        fill="outline"
+                                        size="small"
+                                        onClick={handleAddAttachment}
+                                        disabled={isLoading}
+                                    >
+                                        <IonIcon icon={attach} slot="start" />
+                                        Add
+                                    </IonButton>
+                                )}
                             </IonItem>
 
                             {attachments.length > 0 && (
@@ -333,17 +343,15 @@ export const LLMModal: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* Hidden file input for web */}
-                            {!Capacitor.isNativePlatform() && (
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    multiple
-                                    accept="image/*"
-                                    style={{ display: "none" }}
-                                    onChange={handleFileInputChange}
-                                />
-                            )}
+                            {/* Hidden file input */}
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                multiple
+                                accept="image/*"
+                                style={{ display: "none" }}
+                                onChange={handleFileInputChange}
+                            />
                         </div>
                     )}
 

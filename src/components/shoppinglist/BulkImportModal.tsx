@@ -13,9 +13,9 @@ import { useBulkImport } from "./useBulkImport";
  * Hook to open bulk import modal
  * Handles the complete flow: modal display -> LLM parsing -> item import
  */
-export function useBulkImportModal(listId: string, storeId: string) {
+export function useBulkImportModal(storeId: string) {
     const { openModal } = useLLMModal();
-    const { importItems, isImporting } = useBulkImport(listId, storeId);
+    const { importItems, isImporting } = useBulkImport(storeId);
 
     const openBulkImport = React.useCallback(() => {
         openModal({

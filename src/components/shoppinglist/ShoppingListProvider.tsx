@@ -8,12 +8,10 @@ import { useDeleteShoppingListItem, useStores } from "../../db/hooks";
 
 interface ShoppingListProviderProps {
     children: ReactNode;
-    listId: string | null;
 }
 
 export const ShoppingListProvider = ({
     children,
-    listId,
 }: ShoppingListProviderProps) => {
     const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
@@ -58,10 +56,10 @@ export const ShoppingListProvider = ({
     };
 
     const executeDelete = async () => {
-        if (deleteAlert && listId) {
+        if (deleteAlert && selectedStoreId) {
             await deleteItemMutation.mutateAsync({
                 id: deleteAlert.id,
-                listId,
+                storeId: selectedStoreId,
             });
             setDeleteAlert(null);
         }

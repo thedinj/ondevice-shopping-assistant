@@ -14,8 +14,8 @@ import { useCallback } from "react";
 import { FormPasswordInput } from "../components/form/FormPasswordInput";
 import { useResetDatabase } from "../db/hooks";
 import { useToast } from "../hooks/useToast";
+import { LLM_COLOR, LLM_ICON_SRC } from "../llm/shared";
 import { useSettingsForm } from "../settings/useSettingsForm";
-import { LLM_ICON_SRC } from "../llm/shared";
 
 const Settings: React.FC = () => {
     const { showSuccess } = useToast();
@@ -45,7 +45,10 @@ const Settings: React.FC = () => {
                     <IonList>
                         <IonListHeader>
                             <h2>
-                                <IonIcon src={LLM_ICON_SRC} /> API Configuration
+                                <span style={{ color: LLM_COLOR }}>
+                                    <IonIcon src={LLM_ICON_SRC} />
+                                </span>{" "}
+                                API Configuration
                             </h2>
                         </IonListHeader>
 

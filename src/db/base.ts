@@ -116,16 +116,8 @@ export abstract class BaseDatabase implements Database {
     ): Promise<StoreItem>;
 
     // ========== ShoppingList Operations (Abstract) ==========
-    abstract getOrCreateShoppingListForStore(storeId: string): Promise<{
-        id: string;
-        store_id: string;
-        title: string | null;
-        created_at: string;
-        updated_at: string;
-        completed_at: string | null;
-    }>;
-    abstract getShoppingListItemsGrouped(
-        listId: string
+    abstract getShoppingListItems(
+        storeId: string
     ): Promise<Array<ShoppingListItemWithDetails>>;
     abstract upsertShoppingListItem(
         params: ShoppingListItemOptionalId
@@ -135,7 +127,7 @@ export abstract class BaseDatabase implements Database {
         isChecked: boolean
     ): Promise<void>;
     abstract deleteShoppingListItem(id: string): Promise<void>;
-    abstract clearCheckedShoppingListItems(listId: string): Promise<void>;
+    abstract clearCheckedShoppingListItems(storeId: string): Promise<void>;
 
     // ========== Helper for Store Checking (Abstract) ==========
     /**
@@ -197,10 +189,6 @@ export abstract class BaseDatabase implements Database {
         await this.insertAisle(storeId, "Wine, Beer, and Liquor");
 
         // Create sample items
-        const shoppingList = await this.getOrCreateShoppingListForStore(
-            storeId
-        );
-
         // Add items to the shopping list
         const bananas = await this.getOrCreateStoreItemByName(
             storeId,
@@ -209,7 +197,6 @@ export abstract class BaseDatabase implements Database {
             null
         );
         await this.upsertShoppingListItem({
-            list_id: shoppingList.id,
             store_id: storeId,
             store_item_id: bananas.id,
             qty: 1,
@@ -225,7 +212,6 @@ export abstract class BaseDatabase implements Database {
             null
         );
         await this.upsertShoppingListItem({
-            list_id: shoppingList.id,
             store_id: storeId,
             store_item_id: frenchBread.id,
             qty: 1,
@@ -241,7 +227,6 @@ export abstract class BaseDatabase implements Database {
             pastaSection.id
         );
         await this.upsertShoppingListItem({
-            list_id: shoppingList.id,
             store_id: storeId,
             store_item_id: pennePasta.id,
             qty: 1,
@@ -257,7 +242,6 @@ export abstract class BaseDatabase implements Database {
             null
         );
         await this.upsertShoppingListItem({
-            list_id: shoppingList.id,
             store_id: storeId,
             store_item_id: milk.id,
             qty: 1,

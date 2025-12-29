@@ -22,7 +22,6 @@ import { StoreSelector } from "../components/shoppinglist/StoreSelector";
 import { UncheckedItems } from "../components/shoppinglist/UncheckedItems";
 import { useShoppingListContext } from "../components/shoppinglist/useShoppingListContext";
 import {
-    useActiveShoppingList,
     useClearCheckedItems,
     useShoppingListItems,
 } from "../db/hooks";
@@ -38,15 +37,12 @@ const ShoppingListContent: React.FC = () => {
         executeDelete,
     } = useShoppingListContext();
 
-    const { data: shoppingList, isLoading: isLoadingList } =
-        useActiveShoppingList(selectedStoreId || "");
     const { data: items, isLoading: isLoadingItems } = useShoppingListItems(
-        shoppingList?.id || ""
+        selectedStoreId || ""
     );
     const clearChecked = useClearCheckedItems();
 
     const { openBulkImport, isImporting } = useBulkImportModal(
-        shoppingList?.id || "",
         selectedStoreId || ""
     );
 
@@ -60,13 +56,13 @@ const ShoppingListContent: React.FC = () => {
     }, []);
 
     const confirmClearChecked = useCallback(() => {
-        if (shoppingList) {
-            clearChecked.mutate({ listId: shoppingList.id });
+        if (selectedStoreId) {
+            clearChecked.mutate({ storeId: selectedStoreId });
         }
         setShowClearCheckedAlert(false);
-    }, [clearChecked, shoppingList]);
+    }, [clearChecked, selectedStoreId]);
 
-    const isLoading = isLoadingList || isLoadingItems;
+    const isLoading = isLoadingItems;
 
     return (
         <>
@@ -109,7 +105,6 @@ const ShoppingListContent: React.FC = () => {
 
                 {selectedStoreId &&
                     !isLoading &&
-                    shoppingList &&
                     items &&
                     items.length === 0 && (
                         <div
@@ -128,7 +123,7 @@ const ShoppingListContent: React.FC = () => {
                         </div>
                     )}
 
-                {selectedStoreId && !isLoading && shoppingList && (
+                {selectedStoreId && !isLoading && items && (
                     <>
                         <UncheckedItems items={uncheckedItems} />
                         <CheckedItems
@@ -139,7 +134,7 @@ const ShoppingListContent: React.FC = () => {
                     </>
                 )}
 
-                {selectedStoreId && shoppingList && (
+                {selectedStoreId && items && (
                     <>
                         {/* Add Item FAB */}
                         <IonFab vertical="bottom" horizontal="end" slot="fixed">
@@ -164,10 +159,7 @@ const ShoppingListContent: React.FC = () => {
                             />
                         </IonFab>
 
-                        <ItemEditorModal
-                            listId={shoppingList.id}
-                            storeId={selectedStoreId}
-                        />
+                        <ItemEditorModal storeId={selectedStoreId} />
                     </>
                 )}
             </IonContent>
@@ -216,7 +208,7 @@ const ShoppingListContent: React.FC = () => {
 const ShoppingList: React.FC = () => {
     return (
         <IonPage>
-            <ShoppingListProvider listId={null}>
+            <ShoppingListProvider>
                 <ShoppingListContent />
             </ShoppingListProvider>
         </IonPage>
