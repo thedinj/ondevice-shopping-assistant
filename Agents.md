@@ -260,7 +260,7 @@ const handleCreate = async () => {
 **Why this pattern:**
 
 -   Automatic cache management and invalidation
--   Loading and error states handled consistently
+-   Loading and error states handled consistently with TanStack Query
 -   Optimistic updates and retry logic built-in
 -   Database changes trigger UI updates automatically via change listeners
 
@@ -650,16 +650,44 @@ const MyComponent = () => {
 };
 ```
 
-**Silent errors (non-critical): Log only**
+**Async Data Loading: Use React Query Hooks**
+
+For async data (e.g., secure storage, LLM API keys, database queries), **always use React Query hooks** which provide proper caching, loading states, and error handling:
 
 ```typescript
-try {
-    await optionalOperation();
-} catch (error) {
-    console.warn("Optional operation failed:", error);
-    // Continue execution
+// Use the React Query hook wrapper
+const { data: apiKey, isLoading, error } = useSecureApiKey();
+
+if (isLoading) {
+    return <IonSpinner />;
 }
+
+if (error) {
+    return <IonText color="danger">Failed to load</IonText>;
+}
+
+// Use apiKey directly
 ```
+
+**Why not use() hook for async data?**
+
+React 19's `use()` hook requires promises to be **cached and stable** (created outside render). Calling async functions like `secureStorage.getApiKey()` inside `use()` creates uncached promises on every render, causing errors:
+
+```typescript
+// ❌ DON'T DO THIS - Creates uncached promise
+const apiKey = use(secureStorage.getApiKey()); // ERROR!
+
+// ✅ DO THIS - Use React Query hooks
+const { data: apiKey } = useSecureApiKey();
+```
+
+**When to use the use() hook:**
+
+-   Reading React Context values
+-   Unwrapping promises passed as props
+-   With libraries that provide cached/stable promises
+
+**For all app data (database, API, secure storage), use React Query hooks.**
 
 **Critical errors: Let Error Boundary catch**
 
@@ -1847,56 +1875,39 @@ const SearchComponent = () => {
 };
 ```
 
-### Pattern: Conditional Rendering with Loading/Error
+### Pattern: Async Data with React Query
 
-Standard pattern for components that fetch data:
+For async data (secure storage, database queries, API calls), always use React Query hooks which provide proper caching, loading states, and error handling:
 
 ```typescript
 const MyComponent = () => {
-    const { data, isLoading, error } = useSomeData();
+    const { data: apiKey, isLoading, error } = useSecureApiKey();
 
     if (isLoading) {
-        return (
-            <IonContent>
-                <div className="ion-text-center ion-padding">
-                    <IonSpinner />
-                    <IonText>
-                        <p>Loading...</p>
-                    </IonText>
-                </div>
-            </IonContent>
-        );
+        return <IonSpinner />;
     }
 
     if (error) {
-        return (
-            <IonContent>
-                <IonText color="danger">
-                    <p>Failed to load data. Try again?</p>
-                </IonText>
-            </IonContent>
-        );
+        return <IonText color="danger">Failed to load API key</IonText>;
     }
 
-    if (!data || data.length === 0) {
-        return (
-            <IonContent>
-                <IonText color="medium">
-                    <p>No data yet. Add something!</p>
-                </IonText>
-            </IonContent>
-        );
+    if (!apiKey) {
+        return <IonText color="warning">No API key configured</IonText>;
     }
 
-    return (
-        <IonContent>
-            {data.map((item) => (
-                <ItemCard key={item.id} item={item} />
-            ))}
-        </IonContent>
-    );
+    // Use apiKey directly
+    return <div>API Key loaded: {apiKey.slice(0, 10)}...</div>;
 };
 ```
+
+**Why React Query instead of use() hook:**
+
+-   React 19's `use()` hook requires **cached/stable promises** (created outside render)
+-   Calling `use(secureStorage.getApiKey())` creates uncached promises, causing errors
+-   React Query provides the caching layer that `use()` requires
+-   Automatic invalidation, refetching, and error handling
+
+**Note:** The `use()` hook is for Context, stable promises passed as props, or Suspense-compatible libraries. For app data, use React Query hooks.
 
 ### Pattern: Modal with Form
 

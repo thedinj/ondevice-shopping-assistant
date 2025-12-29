@@ -1,6 +1,6 @@
 import { IonAlert, IonButton, IonIcon } from "@ionic/react";
 import React, { ComponentProps, useState } from "react";
-import { useOpenAIApiKey } from "../../settings/useOpenAIApiKey";
+import { useSecureApiKey } from "../../hooks/useSecureStorage";
 import { LLM_COLOR, LLM_ICON_SRC } from "./constants";
 
 /**
@@ -10,18 +10,16 @@ import { LLM_COLOR, LLM_ICON_SRC } from "./constants";
  */
 export const LLMButton: React.FC<ComponentProps<typeof IonButton>> = ({
     children,
-    disabled = false,
     expand = "block",
     style,
     onClick,
     ...props
 }) => {
-    const { data: apiKey, isLoading } = useOpenAIApiKey();
+    const apiKeyValue = useSecureApiKey();
     const [showApiKeyAlert, setShowApiKeyAlert] = useState(false);
-    const isDisabled = disabled || isLoading;
 
     const handleClick = (e: React.MouseEvent<HTMLIonButtonElement>) => {
-        if (!apiKey?.value) {
+        if (!apiKeyValue) {
             setShowApiKeyAlert(true);
             return;
         }
@@ -33,7 +31,6 @@ export const LLMButton: React.FC<ComponentProps<typeof IonButton>> = ({
             <IonButton
                 fill="outline"
                 expand={expand}
-                disabled={isDisabled}
                 onClick={handleClick}
                 style={{
                     "--border-color": LLM_COLOR,

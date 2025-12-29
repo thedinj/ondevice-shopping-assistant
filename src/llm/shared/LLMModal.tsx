@@ -20,7 +20,7 @@ import {
 import { attach, camera, close } from "ionicons/icons";
 import React, { use, useRef, useState } from "react";
 import { useToast } from "../../hooks/useToast";
-import { useOpenAIApiKey } from "../../settings/useOpenAIApiKey";
+import { useSecureApiKey } from "../../hooks/useSecureStorage";
 import { OpenAIClient } from "./openaiClient";
 import type { LLMAttachment } from "./types";
 import { useLLMModalContext } from "./useLLMModalContext";
@@ -36,7 +36,7 @@ export const LLMModal: React.FC = () => {
     const { isOpen, config, closeModal, response, setResponse } =
         useLLMModalContext();
     const { showError } = useToast();
-    const { data: apiKey, isLoading: isLoadingApiKey } = useOpenAIApiKey();
+    const apiKeyValue = useSecureApiKey();
 
     const [isLoading, setIsLoading] = useState(false);
     const [attachments, setAttachments] = useState<LLMAttachment[]>([]);
@@ -160,7 +160,7 @@ export const LLMModal: React.FC = () => {
     const handleRunLLM = async () => {
         if (!config) return;
 
-        if (!apiKey?.value) {
+        if (!apiKeyValue) {
             showError(
                 "OpenAI API key not configured. Please add it in Settings."
             );
@@ -178,7 +178,7 @@ export const LLMModal: React.FC = () => {
         setResponse(null);
 
         try {
-            const client = new OpenAIClient(apiKey.value);
+            const client = new OpenAIClient(apiKeyValue);
             const llmResponse = await client.call({
                 prompt: config.prompt,
                 model: config.model || "gpt-4o-mini",
@@ -236,7 +236,7 @@ export const LLMModal: React.FC = () => {
 
                 <IonContent className="ion-padding">
                     {/* API Key Warning */}
-                    {!apiKey?.value && !isLoadingApiKey && (
+                    {!apiKeyValue && (
                         <div
                             style={{
                                 border: "2px solid var(--ion-color-danger)",
@@ -360,9 +360,7 @@ export const LLMModal: React.FC = () => {
                         <IonButton
                             expand="block"
                             onClick={handleRunLLM}
-                            disabled={
-                                isLoading || isLoadingApiKey || !apiKey?.value
-                            }
+                            disabled={isLoading || !apiKeyValue}
                             style={{ marginTop: "20px" }}
                         >
                             {isLoading

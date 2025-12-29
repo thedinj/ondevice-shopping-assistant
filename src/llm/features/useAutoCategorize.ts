@@ -3,7 +3,7 @@
  */
 
 import { useCallback } from "react";
-import { useOpenAIApiKey } from "../../settings/useOpenAIApiKey";
+import { useSecureApiKey } from "../../hooks/useSecureStorage";
 import { callLLMDirect } from "../shared/directCall";
 import { AUTO_CATEGORIZE_PROMPT } from "./autoCategorizePrompt";
 import {
@@ -26,16 +26,20 @@ export interface UseAutoCategorizeResult {
 
 /**
  * Hook that provides auto-categorization functionality.
- * Handles API key loading internally.
+ * Component will suspend until API key is loaded (via Suspense).
  */
 export function useAutoCategorize() {
-    const { data: apiKey } = useOpenAIApiKey();
+    const apiKeyValue = useSecureApiKey();
 
     const autoCategorize = useCallback(
         async ({
             itemName,
             aisles,
         }: UseAutoCategorizeOptions): Promise<UseAutoCategorizeResult> => {
+            if (!apiKeyValue) {
+                throw new Error("API key is not configured");
+            }
+
             if (!itemName?.trim()) {
                 throw new Error("Item name is required");
             }
@@ -50,7 +54,7 @@ export function useAutoCategorize() {
             };
 
             const response = await callLLMDirect({
-                apiKey: apiKey?.value,
+                apiKey: apiKeyValue,
                 prompt: AUTO_CATEGORIZE_PROMPT,
                 userText: JSON.stringify(input),
                 model: "gpt-4o-mini",
@@ -82,7 +86,7 @@ export function useAutoCategorize() {
                 sectionName: section?.name,
             };
         },
-        [apiKey]
+        [apiKeyValue]
     );
 
     return autoCategorize;

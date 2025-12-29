@@ -4,7 +4,7 @@ import { z } from "zod";
  * Setting keys used in the app
  */
 export const SETTING_KEYS = {
-    OPENAI_API_KEY: "openai_api_key",
+    // add keys here
 } as const;
 
 /**
@@ -36,18 +36,19 @@ export type SettingsFormData = z.infer<typeof settingsSchema>;
 /**
  * Helper to convert form data to database format (key-value pairs)
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function toSettingsKeyValues(data: SettingsFormData): Array<{
     key: string;
     value: string;
 }> {
     const pairs: Array<{ key: string; value: string }> = [];
 
-    if (data.openaiApiKey) {
+    /* if (data.openaiApiKey) {
         pairs.push({
             key: SETTING_KEYS.OPENAI_API_KEY,
             value: data.openaiApiKey,
         });
-    }
+    } */
 
     return pairs;
 }
@@ -55,10 +56,11 @@ export function toSettingsKeyValues(data: SettingsFormData): Array<{
 /**
  * Helper to convert database values to form data
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function fromSettingsKeyValues(values: {
     [key: string]: string | null | undefined;
 }): SettingsFormData {
     return {
-        openaiApiKey: values[SETTING_KEYS.OPENAI_API_KEY] || undefined,
+        /* openaiApiKey: values[SETTING_KEYS.OPENAI_API_KEY] || undefined, */
     };
 }

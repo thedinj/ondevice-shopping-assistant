@@ -1,6 +1,6 @@
 import React, { ComponentProps, useState } from "react";
 import { IonFabButton, IonIcon, IonAlert } from "@ionic/react";
-import { useOpenAIApiKey } from "../../settings/useOpenAIApiKey";
+import { useSecureApiKey } from "../../hooks/useSecureStorage";
 import { LLM_ICON_SRC, LLM_COLOR, LLM_COLOR_ACTIVATED } from "./constants";
 
 /**
@@ -8,16 +8,14 @@ import { LLM_ICON_SRC, LLM_COLOR, LLM_COLOR_ACTIVATED } from "./constants";
  * Shows alert if clicked without API key configured
  */
 export const LLMFabButton: React.FC<ComponentProps<typeof IonFabButton>> = ({
-    disabled = false,
     onClick,
     ...props
 }) => {
-    const { data: apiKey, isLoading } = useOpenAIApiKey();
+    const apiKeyValue = useSecureApiKey();
     const [showApiKeyAlert, setShowApiKeyAlert] = useState(false);
-    const isDisabled = disabled || isLoading;
 
     const handleClick = (e: React.MouseEvent<HTMLIonFabButtonElement>) => {
-        if (!apiKey?.value) {
+        if (!apiKeyValue) {
             setShowApiKeyAlert(true);
             return;
         }
@@ -27,7 +25,6 @@ export const LLMFabButton: React.FC<ComponentProps<typeof IonFabButton>> = ({
     return (
         <>
             <IonFabButton
-                disabled={isDisabled}
                 onClick={handleClick}
                 style={{
                     "--background": LLM_COLOR,

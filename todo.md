@@ -1,5 +1,6 @@
 # TO DO
 
+-   Are we losing details when auto-relocating?
 -   Confirm API key is stored more securely
     `Evaluate platform-native secure storage options (e.g., Android Keystore, iOS Keychain) for storing secrets.`
 -   Some visual for auto-added items, maybe temporarily

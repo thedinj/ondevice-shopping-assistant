@@ -37,6 +37,19 @@
                 "cwd": "${workspaceFolder}/android"
             },
             "problemMatcher": []
+        },
+        {
+            "label": "Android Emulator: Dump Last 30 Logcat Lines",
+            "type": "shell",
+            "command": "pwsh",
+            "args": [
+                "-Command",
+                "$appPid = adb shell pidof com.basketbot.app; adb logcat -d | findstr $appPid | Select-Object -Last 30"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always"
+            }
         }
     ]
 }

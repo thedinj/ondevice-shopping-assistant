@@ -1,29 +1,24 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useAppSetting, useSaveAppSetting } from "../db/hooks";
 import { useToast } from "../hooks/useToast";
 import {
-    fromSettingsKeyValues,
-    SETTING_KEYS,
-    settingsSchema,
-    toSettingsKeyValues,
-    type SettingsFormData,
-} from "./settingsSchema";
+    useSecureApiKey,
+    useSaveSecureApiKey,
+} from "../hooks/useSecureStorage";
+import { settingsSchema, type SettingsFormData } from "./settingsSchema";
 
 /**
  * Custom hook to manage settings form state and operations
  */
 export function useSettingsForm() {
-    const { showSuccess } = useToast();
+    const { showSuccess, showError } = useToast();
 
-    // Fetch current settings from database
-    const { data: openaiApiKey, isLoading: isLoadingOpenAI } = useAppSetting(
-        SETTING_KEYS.OPENAI_API_KEY
-    );
+    // Fetch API key from secure storage (suspends until loaded)
+    const apiKeyValue = useSecureApiKey();
 
-    // Save setting mutation
-    const { mutateAsync: saveSetting } = useSaveAppSetting();
+    // Save API key mutation
+    const { mutateAsync: saveApiKey } = useSaveSecureApiKey();
 
     // Initialize form
     const form = useForm<SettingsFormData>({
@@ -36,31 +31,30 @@ export function useSettingsForm() {
     const { reset, handleSubmit, formState } = form;
     const { isSubmitting } = formState;
 
-    // Update form when settings are loaded
+    // Update form when API key is loaded
     useEffect(() => {
-        if (!isLoadingOpenAI) {
-            reset(
-                fromSettingsKeyValues({
-                    [SETTING_KEYS.OPENAI_API_KEY]: openaiApiKey?.value,
-                })
-            );
-        }
-    }, [isLoadingOpenAI, openaiApiKey, reset]);
+        reset({
+            openaiApiKey: apiKeyValue || undefined,
+        });
+    }, [apiKeyValue, reset]);
 
     // Handle form submission
     const onSubmit = handleSubmit(async (data: SettingsFormData) => {
         try {
-            // Convert form data to key-value pairs and save each setting
-            const settingPairs = toSettingsKeyValues(data);
-
-            for (const { key, value } of settingPairs) {
-                await saveSetting({ key, value });
+            // Save API key to secure storage (if provided)
+            if (data.openaiApiKey && data.openaiApiKey.trim()) {
+                await saveApiKey(data.openaiApiKey.trim());
             }
 
             // Show success message
             showSuccess("Settings saved successfully");
         } catch (error) {
-            // Error toast is automatically shown by mutation hook
+            // Show error toast
+            showError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to save settings"
+            );
             console.error("Failed to save settings:", error);
         }
     });
@@ -68,7 +62,6 @@ export function useSettingsForm() {
     return {
         form,
         onSubmit,
-        isLoading: isLoadingOpenAI,
         isSubmitting,
     };
 }
