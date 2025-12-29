@@ -13,7 +13,7 @@ export { useLLMModalContext } from "./useLLMModalContext";
 export { useLLMModal } from "./useLLMModal";
 export { OpenAIClient } from "./openaiClient";
 export { callLLMDirect } from "./directCall";
-export { LLM_ICON, LLM_COLOR, LLM_COLOR_ACTIVATED } from "./constants";
+export { LLM_ICON_SRC, LLM_COLOR, LLM_COLOR_ACTIVATED } from "./constants";
 export type {
     LLMAttachment,
     LLMResponse,

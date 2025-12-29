@@ -166,17 +166,7 @@ export abstract class BaseDatabase implements Database {
     protected async ensureInitialData(): Promise<void> {
         const hasAnyStores = await this.hasStores();
         if (!hasAnyStores) {
-            // Check if test data seeding is enabled
-            const shouldSeedTestData =
-                import.meta.env.VITE_SEED_TEST_DATA === "true";
-
-            if (shouldSeedTestData) {
-                // Create a sample store with test data
-                await this.insertTestData();
-            } else {
-                // Create a basic empty store
-                await this.insertStore("Unnamed Store");
-            }
+            await this.insertInitialData();
         }
     }
 
@@ -184,7 +174,7 @@ export abstract class BaseDatabase implements Database {
      * Inserts realistic test data into a store for development/testing purposes.
      * Creates a grocery store structure with aisles, sections, store items, and a shopping list.
      */
-    protected async insertTestData(): Promise<void> {
+    protected async insertInitialData(): Promise<void> {
         // Initial store
         const store = await this.insertStore("Sample Store");
         const storeId = store.id;
@@ -258,6 +248,7 @@ export abstract class BaseDatabase implements Database {
             qty: 1,
             unit_id: "bunch",
             notes: "Ripe, not green",
+            is_sample: 1,
         });
 
         const sourdough = await this.getOrCreateStoreItemByName(
@@ -273,6 +264,7 @@ export abstract class BaseDatabase implements Database {
             qty: 1,
             unit_id: null,
             notes: null,
+            is_sample: 1,
         });
 
         const tomatoes = await this.getOrCreateStoreItemByName(
@@ -288,6 +280,7 @@ export abstract class BaseDatabase implements Database {
             qty: 2,
             unit_id: "can",
             notes: "14.5 oz cans",
+            is_sample: 1,
         });
 
         const spaghetti = await this.getOrCreateStoreItemByName(
@@ -303,6 +296,7 @@ export abstract class BaseDatabase implements Database {
             qty: 1,
             unit_id: "box",
             notes: null,
+            is_sample: 1,
         });
 
         const cheese = await this.getOrCreateStoreItemByName(
@@ -318,6 +312,7 @@ export abstract class BaseDatabase implements Database {
             qty: 1,
             unit_id: "pound",
             notes: "Sharp, block style",
+            is_sample: 1,
         });
 
         const chips = await this.getOrCreateStoreItemByName(
@@ -333,8 +328,7 @@ export abstract class BaseDatabase implements Database {
             qty: 1,
             unit_id: "bag",
             notes: null,
+            is_sample: 1,
         });
-
-        //await this.insertStore("Empty Store");
     }
 }

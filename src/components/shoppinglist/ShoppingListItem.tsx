@@ -11,17 +11,7 @@ import { ShoppingListItemWithDetails } from "../../models/Store";
 import { useShoppingListContext } from "./useShoppingListContext";
 
 interface ShoppingListItemProps {
-    item: {
-        id: string;
-        list_id: string;
-        item_name: string; // From store_item via JOIN
-        qty: number;
-        unit_abbreviation: string | null; // From quantity_unit via JOIN
-        notes: string | null;
-        section_name: string | null;
-        aisle_name: string | null;
-        is_checked: number;
-    };
+    item: ShoppingListItemWithDetails;
     isChecked: boolean;
 }
 
@@ -87,7 +77,17 @@ export const ShoppingListItem = ({
                                 ` ${item.unit_abbreviation}`}
                             )
                         </span>
-                    )}
+                    )}{" "}
+                    {item.is_sample === 1 ? (
+                        <span
+                            style={{
+                                fontSize: "0.6em",
+                                textTransform: "uppercase",
+                            }}
+                        >
+                            [sample]
+                        </span>
+                    ) : null}
                 </h2>
                 {item.notes && (
                     <p style={{ fontStyle: "italic" }}>{item.notes}</p>

@@ -1,7 +1,7 @@
 import React, { ComponentProps } from "react";
 import { IonItem, IonIcon, IonLabel } from "@ionic/react";
 import { useOpenAIApiKey } from "../../settings/useOpenAIApiKey";
-import { LLM_ICON } from "./constants";
+import { LLM_ICON_SRC } from "./constants";
 
 type LLMItemProps = ComponentProps<typeof IonItem> & {
     /** Whether to auto-disable when no API key is configured (default: true) */
@@ -39,7 +39,7 @@ export const LLMItem: React.FC<LLMItemProps> = ({
             {...props}
         >
             <IonIcon
-                icon={LLM_ICON}
+                src={LLM_ICON_SRC}
                 slot="start"
                 style={{ color: "#8b5cf6" }}
             />

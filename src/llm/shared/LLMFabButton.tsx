@@ -1,7 +1,7 @@
 import React, { ComponentProps, useState } from "react";
 import { IonFabButton, IonIcon, IonAlert } from "@ionic/react";
 import { useOpenAIApiKey } from "../../settings/useOpenAIApiKey";
-import { LLM_ICON, LLM_COLOR, LLM_COLOR_ACTIVATED } from "./constants";
+import { LLM_ICON_SRC, LLM_COLOR, LLM_COLOR_ACTIVATED } from "./constants";
 
 /**
  * FAB button for LLM features with distinctive styling
@@ -36,7 +36,7 @@ export const LLMFabButton: React.FC<ComponentProps<typeof IonFabButton>> = ({
                 }}
                 {...props}
             >
-                <IonIcon icon={LLM_ICON} />
+                <IonIcon src={LLM_ICON_SRC} />
             </IonFabButton>
 
             <IonAlert

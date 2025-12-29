@@ -35,6 +35,9 @@ export class FakeDatabase extends BaseDatabase {
             return;
         }
 
+        // Simulate async init delay (10ms, not 10s)
+        //await new Promise((resolve) => setTimeout(resolve, 10000));
+
         // Initialize quantity units
         this.initializeQuantityUnits();
 

@@ -2,13 +2,11 @@
  * Shared constants for LLM UI components
  */
 
-import { construct } from "ionicons/icons";
-
 /**
  * The icon used for all LLM-related UI elements
  * Currently using the construct icon (robot/worker with helmet)
  */
-export const LLM_ICON = construct;
+export const LLM_ICON_SRC = "/img/basket-bot.svg";
 
 /**
  * The purple color used for LLM UI elements

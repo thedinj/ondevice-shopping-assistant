@@ -6,33 +6,12 @@ import { RemoteDatabase } from "./remote";
 
 export type DatabaseType = "sqlite" | "fake" | "remote";
 
-const supportedDatabaseTypes: DatabaseType[] = ["sqlite", "fake", "remote"];
-
 let databaseInstance: Database | null = null;
 
 /**
  * Get the configured database type from environment variables
  */
 function getDatabaseType(): DatabaseType {
-    const envType = import.meta.env.VITE_DATABASE_TYPE as string | undefined;
-
-    if (envType) {
-        const normalized = envType.trim().toLowerCase();
-
-        if (supportedDatabaseTypes.includes(normalized as DatabaseType)) {
-            if (normalized === "sqlite" && !Capacitor.isNativePlatform()) {
-                throw new Error("SQLite can only be used on a native platform");
-            }
-            return normalized as DatabaseType;
-        }
-
-        throw new Error(
-            `Unsupported database type '${envType}'. Supported types: ${supportedDatabaseTypes.join(
-                ", "
-            )}`
-        );
-    }
-
     // Default: use SQLite on native platforms, fake on web
     if (Capacitor.isNativePlatform()) {
         return "sqlite";

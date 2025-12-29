@@ -1,21 +1,15 @@
-import { IonText } from "@ionic/react";
+import { IonIcon, IonText } from "@ionic/react";
+import { LLM_COLOR_ACTIVATED, LLM_ICON_SRC } from "../llm/shared";
 import "./LoadingFallback.css";
 
 const LoadingFallback: React.FC = () => {
     return (
         <div className="loading-fallback">
-            <div className="robot-head">
-                <div className="robot-antenna"></div>
-                <div className="robot-head-body">
-                    <div className="robot-eyes">
-                        <div className="robot-eye"></div>
-                        <div className="robot-eye"></div>
-                    </div>
-                    <div className="robot-mouth"></div>
-                    <div className="robot-gear robot-gear-left"></div>
-                    <div className="robot-gear robot-gear-right"></div>
-                </div>
-            </div>
+            <IonIcon
+                src={LLM_ICON_SRC}
+                className="floating-icon"
+                style={{ fontSize: 80, color: LLM_COLOR_ACTIVATED }}
+            />
             <IonText color="medium">
                 <p>Processing... Even you must wait.</p>
             </IonText>

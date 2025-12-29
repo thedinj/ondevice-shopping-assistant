@@ -1,7 +1,7 @@
 import React, { ComponentProps, useState } from "react";
 import { IonButton, IonIcon, IonAlert } from "@ionic/react";
 import { useOpenAIApiKey } from "../../settings/useOpenAIApiKey";
-import { LLM_ICON } from "./constants";
+import { LLM_ICON_SRC } from "./constants";
 
 /**
  * Reusable button for triggering LLM features
@@ -48,7 +48,7 @@ export const LLMButton: React.FC<ComponentProps<typeof IonButton>> = ({
                 className="llm-button"
                 {...props}
             >
-                <IonIcon icon={LLM_ICON} slot="start" />
+                <IonIcon src={LLM_ICON_SRC} slot="start" />
                 {children}
             </IonButton>
 
