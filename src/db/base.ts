@@ -261,7 +261,7 @@ export abstract class BaseDatabase implements Database {
             store_id: storeId,
             store_item_id: milk.id,
             qty: 1,
-            unit_id: "gal",
+            unit_id: "gallon",
             notes: null,
             is_sample: 1,
         });

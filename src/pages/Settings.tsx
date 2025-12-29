@@ -2,6 +2,7 @@ import {
     IonButton,
     IonContent,
     IonHeader,
+    IonIcon,
     IonList,
     IonListHeader,
     IonPage,
@@ -14,6 +15,7 @@ import { FormPasswordInput } from "../components/form/FormPasswordInput";
 import { useResetDatabase } from "../db/hooks";
 import { useToast } from "../hooks/useToast";
 import { useSettingsForm } from "../settings/useSettingsForm";
+import { LLM_ICON_SRC } from "../llm/shared";
 
 const Settings: React.FC = () => {
     const { showSuccess } = useToast();
@@ -42,7 +44,9 @@ const Settings: React.FC = () => {
                     {/* API Settings Section */}
                     <IonList>
                         <IonListHeader>
-                            <h2>API Configuration</h2>
+                            <h2>
+                                <IonIcon src={LLM_ICON_SRC} /> API Configuration
+                            </h2>
                         </IonListHeader>
 
                         {isLoading ? (

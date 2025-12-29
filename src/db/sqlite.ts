@@ -6,7 +6,6 @@ import {
 import { AppSetting } from "../models/AppSetting";
 import {
     getInitializedStore,
-    QUANTITY_UNITS,
     QuantityUnit,
     ShoppingListItem,
     ShoppingListItemOptionalId,
@@ -17,9 +16,9 @@ import {
     StoreItemWithDetails,
     StoreSection,
 } from "../models/Store";
+import { normalizeItemName } from "../utils/stringUtils";
 import { BaseDatabase } from "./base";
 import { DEFAULT_TABLES_TO_PERSIST } from "./types";
-import { normalizeItemName } from "../utils/stringUtils";
 
 const DB_NAME = "shopping_assistant";
 const DB_VERSION = 1;
@@ -45,6 +44,7 @@ const migrations: Array<{ version: number; up: string[] }> = [
        );`,
 
             // Insert initial quantity units
+            // TODO: Rework to use QUANTITY_UNITS, but watch out for injection
             `INSERT INTO quantity_unit (id, name, abbreviation, sort_order, category) VALUES
             ('gram', 'Gram', 'g', 10, 'weight'),
             ('kilogram', 'Kilogram', 'kg', 11, 'weight'),
@@ -204,23 +204,6 @@ export class SQLiteDatabase extends BaseDatabase {
         throw new Error("Database not initialized. Call initialize() first.");
     }
 
-    // Insert initial quantity units after table creation
-    // This must be run after DB init, so add to initializeStorage
-    private insertInitialQuantityUnits = async (conn: SQLiteDBConnection) => {
-        for (const quantityUnit of QUANTITY_UNITS) {
-            await conn.run(
-                `INSERT OR IGNORE INTO quantity_unit (id, name, abbreviation, sort_order, category) VALUES (?, ?, ?, ?, ?)`,
-                [
-                    quantityUnit.id,
-                    quantityUnit.name,
-                    quantityUnit.abbreviation,
-                    quantityUnit.sort_order,
-                    quantityUnit.category,
-                ]
-            );
-        }
-    };
-
     protected async initializeStorage(): Promise<void> {
         if (this.connection) {
             return; // Already initialized
@@ -242,7 +225,7 @@ export class SQLiteDatabase extends BaseDatabase {
                 );
                 await conn.open();
                 await this.runMigrations(conn);
-                await this.insertInitialQuantityUnits(conn);
+                //await this.insertInitialQuantityUnits(conn);
 
                 this.connection = conn;
             } catch (err) {
