@@ -6,10 +6,11 @@ import {
     IonReorder,
 } from "@ionic/react";
 import { create } from "ionicons/icons";
+import { StoreSection } from "../../models/Store";
 import { useStoreManagement } from "./StoreManagementContext";
 
 interface SectionItemProps {
-    section: { id: string; name: string; aisle_id: string };
+    section: StoreSection;
     showReorderHandle?: boolean;
 }
 

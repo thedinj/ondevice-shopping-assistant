@@ -625,7 +625,7 @@ export class SQLiteDatabase extends BaseDatabase {
         const res = await conn.query(
             `SELECT 
                 si.id, si.store_id, si.name, si.name_norm, 
-                si.aisle_id, si.section_id, 
+                COALESCE(ss.aisle_id, si.aisle_id) as aisle_id, si.section_id, 
                 si.usage_count, si.last_used_at, si.is_hidden, si.is_favorite,
                 si.created_at, si.updated_at,
                 ss.name as section_name, ss.sort_order as section_sort_order,
@@ -640,7 +640,21 @@ export class SQLiteDatabase extends BaseDatabase {
                 si.name_norm ASC`,
             [storeId]
         );
-        return res.values || [];
+        // Convert sort_order values from strings to numbers (SQLite returns them as strings)
+        const items = (res.values || []).map((item) => ({
+            ...item,
+            aisle_sort_order:
+                item.aisle_sort_order !== null &&
+                item.aisle_sort_order !== undefined
+                    ? Number(item.aisle_sort_order)
+                    : null,
+            section_sort_order:
+                item.section_sort_order !== null &&
+                item.section_sort_order !== undefined
+                    ? Number(item.section_sort_order)
+                    : null,
+        }));
+        return items;
     }
 
     async getItemById(id: string): Promise<StoreItem | null> {

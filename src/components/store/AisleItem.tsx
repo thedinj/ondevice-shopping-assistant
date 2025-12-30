@@ -1,3 +1,4 @@
+import { ItemReorderEventDetail } from "@ionic/core";
 import {
     IonButton,
     IonIcon,
@@ -7,13 +8,13 @@ import {
     IonReorderGroup,
 } from "@ionic/react";
 import { create } from "ionicons/icons";
-import { useStoreManagement } from "./StoreManagementContext";
+import { StoreAisle, StoreSection } from "../../models/Store";
 import { SectionItem } from "./SectionItem";
-import { ItemReorderEventDetail } from "@ionic/core";
+import { useStoreManagement } from "./StoreManagementContext";
 
 interface AisleItemProps {
-    aisle: { id: string; name: string };
-    sections: Array<{ id: string; name: string; aisle_id: string }>;
+    aisle: StoreAisle;
+    sections: Array<StoreSection>;
     onSectionReorder: (
         event: CustomEvent<ItemReorderEventDetail>,
         aisleId: string
