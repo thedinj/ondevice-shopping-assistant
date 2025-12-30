@@ -2,14 +2,12 @@
 
 -   Renaming store broken--doesn't update other tabs :(
 
--   Sort aisles: Aisle 1, ... Aisle 9, Aisle 10, ... (not 1, 10, 11, ... 2)
--   Alphabetize the sections imported from the LLM within the aisles
 -   Fab spacer should be below all of the lists (both store items and shopping list items, and wherever else we use fabs). Ensure background matches app background, not ionitem background.
 -   Always allow text and images in LLM modal
+-   If entering text on the LLM modal and immediately clicking Submit button, hit validation error
 
 -   Are we losing details when auto-relocating?
 -   On Reorder Aisles page don't allow section entry
--   Remembering last store ID not working?
 -   When importing stores, only add produce _if grocery store_ (for ex), and if aisle is confusing add it as-is.
 -   Add functionality to move an item from one shopping list to another.
 -   Closing the photos app on the phone shouldn't result in error: "camera plugin not available"

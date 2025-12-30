@@ -1,10 +1,11 @@
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import { useDeleteShoppingListItem, useStores } from "../../db/hooks";
+import { useLastShoppingListStore } from "../../hooks/useLastShoppingListStore";
+import { ShoppingListItemWithDetails } from "../../models/Store";
 import {
     ShoppingListContext,
     ShoppingListContextValue,
 } from "./ShoppingListContext";
-import { ShoppingListItemWithDetails } from "../../models/Store";
-import { useDeleteShoppingListItem, useStores } from "../../db/hooks";
 
 interface ShoppingListProviderProps {
     children: ReactNode;
@@ -27,6 +28,21 @@ export const ShoppingListProvider = ({
 
     const deleteItemMutation = useDeleteShoppingListItem();
     const { data: stores } = useStores();
+    const { lastShoppingListStoreId, saveLastShoppingListStore } =
+        useLastShoppingListStore();
+
+    // Restore last selected store on mount
+    useEffect(() => {
+        if (lastShoppingListStoreId && stores) {
+            const exists = stores.some((s) => s.id === lastShoppingListStoreId);
+            if (exists) {
+                setSelectedStoreId(lastShoppingListStoreId);
+            } else {
+                // Last store was deleted, clear preference
+                saveLastShoppingListStore(null);
+            }
+        }
+    }, [lastShoppingListStoreId, stores, saveLastShoppingListStore]);
 
     // Auto-select store if exactly one exists
     useEffect(() => {
@@ -76,9 +92,15 @@ export const ShoppingListProvider = ({
         }, 2000);
     };
 
+    // Wrap setSelectedStoreId to also save preference
+    const handleSetSelectedStoreId = (storeId: string | null) => {
+        setSelectedStoreId(storeId);
+        saveLastShoppingListStore(storeId);
+    };
+
     const value: ShoppingListContextValue = {
         selectedStoreId,
-        setSelectedStoreId,
+        setSelectedStoreId: handleSetSelectedStoreId,
         isItemModalOpen,
         editingItem,
         openCreateModal,
