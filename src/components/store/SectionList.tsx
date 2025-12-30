@@ -343,6 +343,7 @@ const SectionList = forwardRef<ListHandle, SectionListProps>(
                                             onIonInput={(e) =>
                                                 field.onChange(e.detail.value)
                                             }
+                                            autoCapitalize="sentences"
                                         />
                                     </IonItem>
                                 )}

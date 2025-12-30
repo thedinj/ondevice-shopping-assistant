@@ -344,6 +344,7 @@ export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
                                     onIonInput={(e) =>
                                         field.onChange(e.detail.value)
                                     }
+                                    autoCapitalize="sentences"
                                 />
                             </IonItem>
                         )}

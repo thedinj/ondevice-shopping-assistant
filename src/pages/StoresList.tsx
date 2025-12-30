@@ -193,9 +193,11 @@ const StoresList: React.FC = () => {
                                         <IonInput
                                             {...field}
                                             placeholder="Enter store name"
+                                            autocapitalize="sentences"
                                             onIonInput={(e) =>
                                                 field.onChange(e.detail.value)
                                             }
+                                            autoCapitalize="sentences"
                                         />
                                     </IonItem>
                                 )}

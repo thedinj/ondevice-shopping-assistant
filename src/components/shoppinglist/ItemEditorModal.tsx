@@ -13,7 +13,7 @@ import {
     IonToolbar,
 } from "@ionic/react";
 import { UseMutationResult } from "@tanstack/react-query";
-import { cartOutline, closeOutline, sparklesOutline } from "ionicons/icons";
+import { cartOutline, closeOutline, bulbOutline } from "ionicons/icons";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -233,7 +233,7 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                                 opacity: isIdea ? 1 : 0.6,
                             }}
                         >
-                            <IonIcon icon={sparklesOutline} />
+                            <IonIcon icon={bulbOutline} />
                             <IonLabel>Idea</IonLabel>
                         </IonChip>
                     </div>

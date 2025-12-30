@@ -74,6 +74,7 @@ export const NameAutocomplete: React.FC = () => {
                             onIonFocus={() =>
                                 setShowAutocomplete(searchTerm.length >= 2)
                             }
+                            autoCapitalize="sentences"
                         />
                     </IonItem>
                     {errors.name && (

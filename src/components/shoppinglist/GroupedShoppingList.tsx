@@ -1,5 +1,5 @@
 import { IonButton, IonIcon } from "@ionic/react";
-import { checkmarkDone } from "ionicons/icons";
+import { bulbOutline, checkmarkDone } from "ionicons/icons";
 import { useMemo } from "react";
 import { ShoppingListItemWithDetails } from "../../models/Store";
 import { GroupedItemList } from "../shared/GroupedItemList";
@@ -67,7 +67,11 @@ export const GroupedShoppingList = ({
                     id: "ideas",
                     items: ideas,
                     header: {
-                        label: "Ideas",
+                        label: (
+                            <>
+                                <IonIcon icon={bulbOutline} /> Ideas
+                            </>
+                        ),
                         color: "light",
                         sticky: true,
                         labelStyle: {
