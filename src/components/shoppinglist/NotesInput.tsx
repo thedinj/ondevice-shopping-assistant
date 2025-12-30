@@ -1,4 +1,4 @@
-import { IonItem, IonLabel, IonTextarea } from "@ionic/react";
+import { IonInput, IonItem, IonLabel } from "@ionic/react";
 import { Controller } from "react-hook-form";
 import { useItemEditorContext } from "./useItemEditorContext";
 
@@ -12,10 +12,9 @@ export const NotesInput = () => {
             render={({ field }) => (
                 <IonItem>
                     <IonLabel position="stacked">Notes</IonLabel>
-                    <IonTextarea
+                    <IonInput
                         value={field.value || ""}
                         placeholder="Enter any notes"
-                        rows={3}
                         onIonInput={(e) =>
                             field.onChange(e.detail.value || null)
                         }

@@ -1,7 +1,5 @@
 # TO DO
 
--   Renaming store broken--doesn't update other tabs :(
-
 -   Fab spacer should be below all of the lists (both store items and shopping list items, and wherever else we use fabs). Ensure background matches app background, not ionitem background.
 -   Always allow text and images in LLM modal
 -   If entering text on the LLM modal and immediately clicking Submit button, hit validation error
