@@ -21,6 +21,9 @@ export const ShoppingListProvider = ({
         id: string;
         name: string;
     } | null>(null);
+    const [newlyImportedItemIds, setNewlyImportedItemIds] = useState<
+        Set<string>
+    >(new Set());
 
     const deleteItemMutation = useDeleteShoppingListItem();
     const { data: stores } = useStores();
@@ -65,6 +68,14 @@ export const ShoppingListProvider = ({
         }
     };
 
+    const markAsNewlyImported = (itemIds: string[]) => {
+        setNewlyImportedItemIds(new Set(itemIds));
+        // Clear the set after animation completes (2 seconds)
+        setTimeout(() => {
+            setNewlyImportedItemIds(new Set());
+        }, 2000);
+    };
+
     const value: ShoppingListContextValue = {
         selectedStoreId,
         setSelectedStoreId,
@@ -77,6 +88,8 @@ export const ShoppingListProvider = ({
         confirmDelete,
         cancelDelete,
         executeDelete,
+        newlyImportedItemIds,
+        markAsNewlyImported,
     };
 
     return (

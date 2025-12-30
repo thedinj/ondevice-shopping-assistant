@@ -1,128 +1,52 @@
-import { IonItemDivider, IonLabel, IonList } from "@ionic/react";
+import { IonIcon, IonItemDivider, IonLabel, IonList } from "@ionic/react";
 import { ReactNode, useMemo } from "react";
+import { ItemGroup } from "./grouping.types";
 
-export interface GroupedDisplayItem {
-    id: number | string;
-    aisle_id: number | string | null;
-    section_id: number | string | null;
-    aisle_name?: string | null;
-    section_name?: string | null;
-    aisle_sort_order?: number | null;
-    section_sort_order?: number | null;
-}
+interface GroupedItemListProps<T> {
+    /**
+     * Array of groups to display, each with its own items and configuration
+     */
+    groups: ItemGroup<T>[];
 
-interface AisleGroup {
-    aisle_id: number | string | null;
-    aisle_name: string;
-    aisle_sort_order: number;
-    sections: SectionGroup[];
-}
+    /**
+     * Render function for individual items
+     */
+    renderItem: (item: T, groupId: string) => ReactNode;
 
-interface SectionGroup {
-    section_id: number | string | null;
-    section_name: string;
-    section_sort_order: number;
-    items: GroupedDisplayItem[];
-}
-
-function groupItemsByAisleAndSection(
-    items: GroupedDisplayItem[]
-): AisleGroup[] {
-    const aisleMap = new Map<number | string | null, AisleGroup>();
-
-    for (const item of items) {
-        const aisleId = item.aisle_id;
-        const sectionId = item.section_id;
-        const aisleName = item.aisle_name || "Uncategorized";
-        const sectionName = item.section_name || "Uncategorized";
-        // Use -1 for null aisle to ensure uncategorized items sort first
-        // Also treat null sort_order as 0 (sort early)
-        const aisleSortOrder =
-            aisleId === null ? -1 : item.aisle_sort_order ?? 0;
-        const sectionSortOrder =
-            sectionId === null ? -1 : item.section_sort_order ?? 0;
-
-        let aisleGroup = aisleMap.get(aisleId);
-        if (!aisleGroup) {
-            aisleGroup = {
-                aisle_id: aisleId,
-                aisle_name: aisleName,
-                aisle_sort_order: aisleSortOrder,
-                sections: [],
-            };
-            aisleMap.set(aisleId, aisleGroup);
-        }
-
-        let sectionGroup = aisleGroup.sections.find(
-            (s) => s.section_id === sectionId
-        );
-        if (!sectionGroup) {
-            sectionGroup = {
-                section_id: sectionId,
-                section_name: sectionName,
-                section_sort_order: sectionSortOrder,
-                items: [],
-            };
-            aisleGroup.sections.push(sectionGroup);
-        }
-
-        sectionGroup.items.push(item);
-    }
-
-    const aisleGroups = Array.from(aisleMap.values()).sort((a, b) => {
-        // Put uncategorized items first (null aisle_id or no sort order)
-        const aIsUncategorized = a.aisle_id === null;
-        const bIsUncategorized = b.aisle_id === null;
-
-        if (aIsUncategorized && !bIsUncategorized) return -1;
-        if (!aIsUncategorized && bIsUncategorized) return 1;
-
-        // Both categorized or both uncategorized - sort by order
-        return a.aisle_sort_order - b.aisle_sort_order;
-    });
-
-    for (const aisleGroup of aisleGroups) {
-        aisleGroup.sections.sort((a, b) => {
-            // Put uncategorized sections first within each aisle
-            const aIsUncategorized = a.section_id === null;
-            const bIsUncategorized = b.section_id === null;
-
-            if (aIsUncategorized && !bIsUncategorized) return -1;
-            if (!aIsUncategorized && bIsUncategorized) return 1;
-
-            // Both categorized or both uncategorized - sort by order
-            return a.section_sort_order - b.section_sort_order;
-        });
-    }
-
-    return aisleGroups;
-}
-
-interface GroupedItemListProps<T extends GroupedDisplayItem> {
-    items: T[];
-    renderItem: (item: T) => ReactNode;
-    showAisleHeaders?: boolean;
-    showSectionHeaders?: boolean;
-    headerSlot?: ReactNode;
-    footerSlot?: ReactNode;
+    /**
+     * Optional empty state message (shown when no groups or all groups empty)
+     */
     emptyMessage?: string;
 }
 
-export function GroupedItemList<T extends GroupedDisplayItem>({
-    items,
+/**
+ * Generic list component that displays items organized into groups with headers.
+ * Supports nested groups (e.g., sections within aisles) and fully customizable headers.
+ */
+export function GroupedItemList<T>({
+    groups,
     renderItem,
-    showAisleHeaders = true,
-    showSectionHeaders = true,
-    headerSlot,
-    footerSlot,
     emptyMessage = "No items",
 }: GroupedItemListProps<T>) {
-    const aisleGroups = useMemo(
-        () => groupItemsByAisleAndSection(items),
-        [items]
+    // Sort groups by sortOrder
+    const sortedGroups = useMemo(
+        () => [...groups].sort((a, b) => a.sortOrder - b.sortOrder),
+        [groups]
     );
 
-    if (items.length === 0) {
+    // Check if we have any items across all groups (including nested)
+    const hasItems = useMemo(() => {
+        const checkGroup = (group: ItemGroup<T>): boolean => {
+            if (group.items.length > 0) return true;
+            if (group.children && group.children.length > 0) {
+                return group.children.some((child) => checkGroup(child));
+            }
+            return false;
+        };
+        return sortedGroups.some((group) => checkGroup(group));
+    }, [sortedGroups]);
+
+    if (!hasItems) {
         return (
             <IonList>
                 <IonItemDivider>
@@ -132,59 +56,41 @@ export function GroupedItemList<T extends GroupedDisplayItem>({
         );
     }
 
-    return (
-        <IonList>
-            {headerSlot}
-            {aisleGroups.map((aisleGroup) => {
-                return (
-                    <div key={`aisle-${aisleGroup.aisle_id}`}>
-                        {showAisleHeaders && (
-                            <IonItemDivider sticky color="light">
-                                <IonLabel
-                                    color="dark"
-                                    style={{
-                                        fontSize: "0.9rem",
-                                        fontWeight: "600",
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.5px",
-                                    }}
-                                >
-                                    {aisleGroup.aisle_name}
-                                </IonLabel>
-                            </IonItemDivider>
+    const renderGroup = (group: ItemGroup<T>) => {
+        const hasContent =
+            group.items.length > 0 ||
+            (group.children && group.children.length > 0);
+        if (!hasContent) return null;
+
+        return (
+            <div key={group.id}>
+                {group.header && (
+                    <IonItemDivider
+                        sticky={group.header.sticky}
+                        color={group.header.color}
+                        style={group.header.style}
+                    >
+                        {group.header.icon && (
+                            <IonIcon icon={group.header.icon} slot="start" />
                         )}
-                        {aisleGroup.sections.map((sectionGroup) => {
-                            return (
-                                <div
-                                    key={`section-${sectionGroup.section_id}`}
-                                    style={{
-                                        paddingLeft: "16px",
-                                    }}
-                                >
-                                    {showSectionHeaders &&
-                                        sectionGroup.section_id !== null && (
-                                            <IonItemDivider color="light">
-                                                <IonLabel
-                                                    style={{
-                                                        fontSize: "0.85rem",
-                                                        fontWeight: "500",
-                                                        opacity: 0.9,
-                                                    }}
-                                                >
-                                                    {sectionGroup.section_name}
-                                                </IonLabel>
-                                            </IonItemDivider>
-                                        )}
-                                    {sectionGroup.items.map((item) =>
-                                        renderItem(item as T)
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                );
-            })}
-            {footerSlot}
-        </IonList>
-    );
+                        <IonLabel style={group.header.labelStyle}>
+                            {group.header.label}
+                        </IonLabel>
+                        {group.header.actionSlot && (
+                            <div slot="end">{group.header.actionSlot}</div>
+                        )}
+                    </IonItemDivider>
+                )}
+                <div style={{ paddingLeft: group.indentLevel || 0 }}>
+                    {group.items.map((item) => renderItem(item, group.id))}
+                    {group.children &&
+                        group.children
+                            .sort((a, b) => a.sortOrder - b.sortOrder)
+                            .map((child) => renderGroup(child))}
+                </div>
+            </div>
+        );
+    };
+
+    return <IonList>{sortedGroups.map((group) => renderGroup(group))}</IonList>;
 }

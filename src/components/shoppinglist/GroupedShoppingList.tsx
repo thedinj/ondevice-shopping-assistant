@@ -1,9 +1,11 @@
-import { IonButton, IonIcon, IonLabel, IonListHeader } from "@ionic/react";
+import { IonButton, IonIcon } from "@ionic/react";
 import { checkmarkDone } from "ionicons/icons";
+import { useMemo } from "react";
 import { ShoppingListItemWithDetails } from "../../models/Store";
-import { ShoppingListItem } from "./ShoppingListItem";
 import { GroupedItemList } from "../shared/GroupedItemList";
-import { FabSpacer } from "../shared/FabSpacer";
+import { ItemGroup } from "../shared/grouping.types";
+import { createAisleSectionGroups } from "../shared/grouping.utils";
+import { ShoppingListItem } from "./ShoppingListItem";
 
 interface GroupedShoppingListProps {
     items: ShoppingListItemWithDetails[];
@@ -18,32 +20,88 @@ export const GroupedShoppingList = ({
     onClearChecked,
     isClearing,
 }: GroupedShoppingListProps) => {
+    const groups = useMemo(() => {
+        const itemGroups: ItemGroup<ShoppingListItemWithDetails>[] = [];
+
+        if (isChecked) {
+            // CHECKED ITEMS: Header group + flat list of all items
+            const headerGroup: ItemGroup<ShoppingListItemWithDetails> = {
+                id: "checked-items",
+                items: items,
+                header: {
+                    label: "Checked Items",
+                    color: "light",
+                    sticky: true,
+                    labelStyle: {
+                        // TODO: share this label style constant with grouping.utils.ts
+                        fontSize: "0.9rem",
+                        fontWeight: "600",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                    },
+                    actionSlot: onClearChecked && (
+                        <IonButton
+                            fill="clear"
+                            size="small"
+                            onClick={onClearChecked}
+                            disabled={isClearing}
+                        >
+                            <IonIcon slot="start" icon={checkmarkDone} />
+                            Obliterate
+                        </IonButton>
+                    ),
+                },
+                sortOrder: 0,
+                indentLevel: 16, // TODO: This too
+            };
+
+            itemGroups.push(headerGroup);
+        } else {
+            // UNCHECKED ITEMS: Ideas + Categorized items
+            const ideas = items.filter((item) => item.is_idea === 1);
+            const regularItems = items.filter((item) => item.is_idea !== 1);
+
+            // Group 1: Ideas (if any)
+            if (ideas.length > 0) {
+                itemGroups.push({
+                    id: "ideas",
+                    items: ideas,
+                    header: {
+                        label: "Ideas",
+                        color: "light",
+                        sticky: true,
+                        labelStyle: {
+                            fontSize: "0.9rem",
+                            fontWeight: "600",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                        },
+                    },
+                    sortOrder: 0,
+                    indentLevel: 16,
+                });
+            }
+
+            // Groups 2+: Regular items organized by aisle/section
+            const aisleGroups = createAisleSectionGroups(regularItems, {
+                showAisleHeaders: true,
+                showSectionHeaders: true,
+                sortOrderOffset: 100, // Sort after ideas
+            });
+
+            itemGroups.push(...aisleGroups);
+        }
+
+        return itemGroups;
+    }, [items, isChecked, onClearChecked, isClearing]);
+
     if (items.length === 0) {
         return null;
     }
 
-    const headerSlot = isChecked ? (
-        <IonListHeader>
-            <IonLabel>
-                <h2>Checked Items</h2>
-            </IonLabel>
-            {onClearChecked && (
-                <IonButton
-                    fill="clear"
-                    size="small"
-                    onClick={onClearChecked}
-                    disabled={isClearing}
-                >
-                    <IonIcon slot="start" icon={checkmarkDone} />
-                    Obliterate
-                </IonButton>
-            )}
-        </IonListHeader>
-    ) : undefined;
-
     return (
         <GroupedItemList<ShoppingListItemWithDetails>
-            items={items}
+            groups={groups}
             renderItem={(item) => (
                 <ShoppingListItem
                     key={item.id}
@@ -51,10 +109,6 @@ export const GroupedShoppingList = ({
                     isChecked={isChecked}
                 />
             )}
-            showAisleHeaders={!isChecked}
-            showSectionHeaders={!isChecked}
-            headerSlot={headerSlot}
-            footerSlot={<FabSpacer />}
         />
     );
 };

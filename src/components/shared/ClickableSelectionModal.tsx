@@ -38,6 +38,8 @@ interface ClickableSelectionModalProps {
     searchPlaceholder?: string;
     /** Whether to show the search bar (default: true) */
     showSearch?: boolean;
+    /** Size of the modal (default: 'default') */
+    size?: "default" | "small";
 }
 
 /**
@@ -59,6 +61,7 @@ export const ClickableSelectionModal: React.FC<
     title,
     searchPlaceholder = "Search...",
     showSearch = true,
+    size = "default",
 }) => {
     const [searchText, setSearchText] = useState("");
 
@@ -85,7 +88,13 @@ export const ClickableSelectionModal: React.FC<
     };
 
     return (
-        <IonModal isOpen={isOpen} onDidDismiss={handleDismiss}>
+        <IonModal
+            isOpen={isOpen}
+            onDidDismiss={handleDismiss}
+            breakpoints={size === "small" ? [0, 0.5] : undefined}
+            initialBreakpoint={size === "small" ? 0.5 : undefined}
+            className={size === "small" ? "small-modal" : undefined}
+        >
             <IonHeader>
                 <IonToolbar>
                     <IonTitle>{title}</IonTitle>

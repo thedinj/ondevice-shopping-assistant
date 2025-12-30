@@ -143,7 +143,101 @@ src/
 
 ## Code Conventions & Patterns
 
-### 1. Three-File Context Pattern
+### 1. Preferences & User Settings: Use Capacitor Preferences with useSuspenseQuery
+
+For user preferences and settings that need to persist across app launches (last selected store, theme, user flags), use the **Capacitor Preferences API** with **useSuspenseQuery** to avoid isLoading patterns.
+
+**Generic Preference Hook Pattern:**
+
+```typescript
+// src/hooks/usePreference.ts
+import { Preferences } from "@capacitor/preferences";
+import {
+    useMutation,
+    useSuspenseQuery,
+    useQueryClient,
+} from "@tanstack/react-query";
+
+export const usePreference = (key: string) => {
+    const queryClient = useQueryClient();
+
+    // Load preference with Suspense - no isLoading needed
+    const { data: value } = useSuspenseQuery({
+        queryKey: ["preference", key],
+        queryFn: async () => {
+            const { value } = await Preferences.get({ key });
+            return value;
+        },
+    });
+
+    // Save preference mutation
+    const { mutateAsync: savePreference } = useMutation({
+        mutationFn: async (newValue: string | null) => {
+            if (newValue !== null) {
+                await Preferences.set({ key, value: newValue });
+            } else {
+                await Preferences.remove({ key });
+            }
+            return newValue;
+        },
+        onSuccess: (newValue) => {
+            queryClient.setQueryData(["preference", key], newValue);
+        },
+    });
+
+    return { value, savePreference };
+};
+```
+
+**Feature-Specific Wrapper (Type-Safe):**
+
+```typescript
+// src/hooks/useLastSelectedStore.ts
+import { usePreference } from "./usePreference";
+
+const LAST_STORE_KEY = "lastSelectedStoreId";
+
+export const useLastSelectedStore = () => {
+    const { value: lastStoreId, savePreference } =
+        usePreference(LAST_STORE_KEY);
+
+    return {
+        lastStoreId,
+        saveLastStore: savePreference,
+    };
+};
+```
+
+**Usage in Components:**
+
+```typescript
+const MyComponent = () => {
+    const { lastStoreId, saveLastStore } = useLastSelectedStore();
+    // No isLoading check - component suspends until loaded
+
+    const handleStoreSelect = (storeId: string) => {
+        saveLastStore(storeId);
+    };
+
+    // Use lastStoreId directly (guaranteed to be defined)
+    return <div>Last store: {lastStoreId}</div>;
+};
+```
+
+**Why this pattern:**
+
+-   Uses platform-native storage (iOS NSUserDefaults, Android SharedPreferences)
+-   Works seamlessly in web (localStorage) and native
+-   Eliminates isLoading patterns with useSuspenseQuery
+-   Doesn't pollute database with ephemeral UI state
+-   Generic hook enables creating new preferences easily
+
+**When to use Preferences vs Database:**
+
+-   **Preferences**: User settings, last selections, UI flags (ephemeral state)
+-   **Database**: Structured app data that needs querying, relationships, or backup (stores, items, lists)
+
+### 2. Three-File Context Pattern
 
 For complex features requiring shared state, use this consistent pattern:
 
@@ -214,7 +308,7 @@ export const useFeatureContext = () => {
 -   Prevents common context mistakes (missing provider, undefined values)
 -   Makes testing easier (mock provider independently)
 
-### 2. Database Operations: Always Through React Query Hooks
+### 3. Database Operations: Always Through React Query Hooks
 
 **Never call the database directly from components.** All database operations must go through React Query hooks defined in `src/db/hooks.ts`.
 
@@ -233,6 +327,38 @@ export const useStores = () => {
 // In component
 const { data: stores, isLoading, error } = useStores();
 ```
+
+**Prefer useSuspenseQuery when possible:**
+
+For data that should always be available when a component renders (like preferences, settings, or page-level data), use `useSuspenseQuery` to eliminate the need for loading states:
+
+```typescript
+// In src/db/hooks.ts
+export const useStores = () => {
+    const db = useDatabase();
+    return useSuspenseQuery({
+        queryKey: ["stores"],
+        queryFn: () => db.getStores(),
+    });
+};
+
+// In component - no isLoading check needed
+const { data: stores } = useStores();
+// `stores` is guaranteed to be defined (component suspends until loaded)
+```
+
+**When to use useSuspenseQuery:**
+
+-   Page-level data that should suspend rendering until loaded
+-   Preferences and settings (using Capacitor Preferences)
+-   Data that's always needed for the component to function
+-   When you want to avoid repetitive `if (isLoading)` checks
+
+**When to use useQuery:**
+
+-   Optional/conditional data fetching (`enabled` option)
+-   Background refetching where you want to show stale data
+-   When you need fine-grained loading state control
 
 **Mutations (Write Operations):**
 
@@ -264,7 +390,7 @@ const handleCreate = async () => {
 -   Optimistic updates and retry logic built-in
 -   Database changes trigger UI updates automatically via change listeners
 
-### 3. Form Handling: Zod + React Hook Form
+### 4. Form Handling: Zod + React Hook Form
 
 All forms follow this strict pattern for type safety and validation:
 
@@ -340,7 +466,7 @@ const ItemEditorModal = () => {
 -   Automatic error message display
 -   Consistent validation logic across features
 
-### 4. LLM Feature Development
+### 5. LLM Feature Development
 
 The app has a reusable LLM infrastructure. **Always use this system** for new AI features—never create custom OpenAI integration code.
 
@@ -499,7 +625,7 @@ const MyComponent = () => {
 5. **Test with and without API key**
 6. **Handle errors with toast notifications** (automatic in modal, manual for direct calls)
 
-### 5. Modal State Management
+### 6. Modal State Management
 
 Modals follow a consistent pattern across the app:
 
@@ -532,7 +658,7 @@ const FeatureModal = () => {
 -   Current editing item stored in context (not component state)
 -   Form submission closes modal after success
 
-### 6. Component Structure
+### 7. Component Structure
 
 **Standard component file structure:**
 
@@ -586,7 +712,7 @@ export const MyComponent: React.FC<MyComponentProps> = ({
 -   Early returns for loading/error states
 -   Use Ionic components (never raw HTML like `<div>`, `<button>`)
 
-### 7. TypeScript Conventions
+### 8. TypeScript Conventions
 
 -   **Strict mode enabled** - No implicit any, strict null checks
 -   **ALWAYS use existing types** - Import types from `src/db/types.ts` or `src/models/` instead of creating ad hoc interface declarations inline
@@ -628,7 +754,7 @@ export const MyComponent: React.FC<MyComponentProps> = ({
     };
     ```
 
-### 8. Error Handling
+### 9. Error Handling
 
 **User-facing errors: Use toast notifications**
 
@@ -652,10 +778,22 @@ const MyComponent = () => {
 
 **Async Data Loading: Use React Query Hooks**
 
-For async data (e.g., secure storage, LLM API keys, database queries), **always use React Query hooks** which provide proper caching, loading states, and error handling:
+For async data (e.g., secure storage, LLM API keys, database queries), **always use React Query hooks** which provide proper caching, loading states, and error handling.
+
+**Prefer useSuspenseQuery to eliminate isLoading patterns:**
 
 ```typescript
-// Use the React Query hook wrapper
+// ✅ GOOD - useSuspenseQuery
+const { data: apiKey } = useSecureApiKey();
+// No isLoading check needed - component suspends until loaded
+
+// Use apiKey directly (guaranteed to be defined when component renders)
+```
+
+**Use regular useQuery when you need loading state control:**
+
+```typescript
+// Use when you need explicit loading/error handling
 const { data: apiKey, isLoading, error } = useSecureApiKey();
 
 if (isLoading) {
@@ -696,7 +834,7 @@ const { data: apiKey } = useSecureApiKey();
 const db = await initializeDatabase(); // If this fails, app should crash gracefully
 ```
 
-### 9. Import Organization
+### 10. Import Organization
 
 **Order imports consistently:**
 
@@ -720,7 +858,7 @@ import type { Store, StoreItem } from "@/db/types";
 import "./MyComponent.css";
 ```
 
-### 10. Async/Await Over Promises
+### 11. Async/Await Over Promises
 
 **Prefer async/await syntax and const arrow functions:**
 
@@ -2140,6 +2278,13 @@ When generating code for Basket Bot, remember:
 11. **Test with FakeDatabase** - Fast, deterministic, no native platform needed
 12. **Handle loading and error states** - Every query/mutation should show loading/error UI
 13. **Keep business logic in hooks** - Components should be thin wrappers around hooks
+
+14. **Do Not Stop Until All Problems Are Fixed**
+
+    - After making any code changes, the agent must not stop working until all new "Problems" (compile errors, lint errors, or warnings) in the files it updated—or in any files affected by those changes—are identified and fixed.
+    - This includes cascading issues that arise as a result of the initial change.
+    - The agent should continue iterating until the workspace is free of new Problems caused by its edits.
+    - Only then should the agent consider the task complete.
 
 ---
 

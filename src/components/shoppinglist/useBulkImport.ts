@@ -1,17 +1,18 @@
-import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useState } from "react";
 import {
-    useUpsertShoppingListItem,
-    useStoreItems,
     useGetOrCreateStoreItem,
     useStoreAisles,
+    useStoreItems,
     useStoreSections,
+    useUpsertShoppingListItem,
 } from "../../db/hooks";
-import { useAutoCategorize } from "../../llm/features/useAutoCategorize";
 import { useToast } from "../../hooks/useToast";
 import type { ParsedShoppingItem } from "../../llm/features/bulkImport";
+import { useAutoCategorize } from "../../llm/features/useAutoCategorize";
 import type { ShoppingListItemOptionalId } from "../../models/Store";
 import { normalizeItemName, toSentenceCase } from "../../utils/stringUtils";
+import { useShoppingListContext } from "./useShoppingListContext";
 
 /**
  * Hook to handle bulk import of shopping list items
@@ -28,6 +29,7 @@ export function useBulkImport(storeId: string) {
     const { data: sections } = useStoreSections(storeId);
     const autoCategorize = useAutoCategorize();
     const { showError, showSuccess } = useToast();
+    const { markAsNewlyImported } = useShoppingListContext();
     const queryClient = useQueryClient();
 
     const importItems = useCallback(
@@ -35,9 +37,11 @@ export function useBulkImport(storeId: string) {
             setIsImporting(true);
             let successCount = 0;
             let errorCount = 0;
+            const importedItemIds: string[] = [];
 
             try {
-                for (const parsed of parsedItems) {
+                for (let i = 0; i < parsedItems.length; i++) {
+                    const parsed = parsedItems[i];
                     try {
                         // Find existing store item by normalized name (handles singular/plural)
                         const parsedNameNorm = normalizeItemName(parsed.name);
@@ -107,7 +111,10 @@ export function useBulkImport(storeId: string) {
                             notes: parsed.notes,
                         };
 
-                        await upsertItem.mutateAsync(shoppingListItem);
+                        const result = await upsertItem.mutateAsync(
+                            shoppingListItem
+                        );
+                        importedItemIds.push(result.id);
                         successCount++;
                     } catch (error) {
                         console.error(
@@ -122,6 +129,11 @@ export function useBulkImport(storeId: string) {
                 queryClient.invalidateQueries({
                     queryKey: ["shopping-list-items", storeId],
                 });
+
+                // Mark imported items for shimmer animation
+                if (importedItemIds.length > 0) {
+                    markAsNewlyImported(importedItemIds);
+                }
 
                 if (successCount > 0) {
                     showSuccess(
@@ -149,16 +161,17 @@ export function useBulkImport(storeId: string) {
             }
         },
         [
-            storeId,
-            storeItems,
             aisles,
-            sections,
             autoCategorize,
             getOrCreateStoreItem,
-            upsertItem,
+            markAsNewlyImported,
             queryClient,
+            sections,
             showError,
             showSuccess,
+            storeId,
+            storeItems,
+            upsertItem,
         ]
     );
 

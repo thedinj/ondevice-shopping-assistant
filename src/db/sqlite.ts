@@ -138,6 +138,66 @@ const migrations: Array<{ version: number; up: string[] }> = [
          ON shopping_list_item(store_id, is_checked, updated_at);`,
         ],
     },
+    {
+        version: 3,
+        up: [
+            // SQLite doesn't support ALTER COLUMN, so we need to recreate the table
+            // to make store_item_id nullable and add is_idea
+            `PRAGMA foreign_keys=OFF;`,
+            // Create temporary table with new schema
+            `CREATE TABLE shopping_list_item_temp (
+                id TEXT PRIMARY KEY,
+                store_id TEXT NOT NULL,
+                store_item_id TEXT,
+                qty REAL NOT NULL DEFAULT 1,
+                unit_id TEXT,
+                notes TEXT,
+                is_checked INTEGER NOT NULL DEFAULT 0,
+                checked_at TEXT,
+                is_sample INTEGER,
+                is_idea INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
+                FOREIGN KEY (store_item_id) REFERENCES store_item(id) ON DELETE CASCADE,
+                FOREIGN KEY (unit_id) REFERENCES quantity_unit(id) ON DELETE SET NULL
+            );`,
+            // Copy data from old table to temp, setting is_idea to 0 for existing items
+            `INSERT INTO shopping_list_item_temp 
+                (id, store_id, store_item_id, qty, unit_id, notes, is_checked, checked_at, is_sample, is_idea, created_at, updated_at)
+                SELECT id, store_id, store_item_id, qty, unit_id, notes, is_checked, checked_at, is_sample, 0, created_at, updated_at
+                FROM shopping_list_item;`,
+            // Drop old table
+            `DROP TABLE shopping_list_item;`,
+            // Create new table with correct name and schema
+            `CREATE TABLE shopping_list_item (
+                id TEXT PRIMARY KEY,
+                store_id TEXT NOT NULL,
+                store_item_id TEXT,
+                qty REAL NOT NULL DEFAULT 1,
+                unit_id TEXT,
+                notes TEXT,
+                is_checked INTEGER NOT NULL DEFAULT 0,
+                checked_at TEXT,
+                is_sample INTEGER,
+                is_idea INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
+                FOREIGN KEY (store_item_id) REFERENCES store_item(id) ON DELETE CASCADE,
+                FOREIGN KEY (unit_id) REFERENCES quantity_unit(id) ON DELETE SET NULL
+            );`,
+            // Copy data back from temp to new table
+            `INSERT INTO shopping_list_item 
+                SELECT * FROM shopping_list_item_temp;`,
+            // Drop temp table
+            `DROP TABLE shopping_list_item_temp;`,
+            // Recreate index
+            `CREATE INDEX IF NOT EXISTS ix_list_item_store_checked
+                ON shopping_list_item(store_id, is_checked, updated_at);`,
+            `PRAGMA foreign_keys=ON;`,
+        ],
+    },
 ];
 
 /**
@@ -726,7 +786,7 @@ export class SQLiteDatabase extends BaseDatabase {
             `SELECT 
                 sli.id, sli.store_id, sli.store_item_id,
                 sli.qty, sli.unit_id, sli.notes,
-                sli.is_checked, sli.checked_at, sli.is_sample,
+                sli.is_checked, sli.checked_at, sli.is_sample, sli.is_idea,
                 sli.created_at, sli.updated_at,
                 si.name as item_name,
                 qu.abbreviation as unit_abbreviation,
@@ -735,16 +795,17 @@ export class SQLiteDatabase extends BaseDatabase {
                 ss.name as section_name, ss.sort_order as section_sort_order,
                 sa.name as aisle_name, sa.sort_order as aisle_sort_order
              FROM shopping_list_item sli
-             INNER JOIN store_item si ON sli.store_item_id = si.id
+             LEFT JOIN store_item si ON sli.store_item_id = si.id
              LEFT JOIN quantity_unit qu ON sli.unit_id = qu.id
              LEFT JOIN store_section ss ON si.section_id = ss.id
              LEFT JOIN store_aisle sa ON COALESCE(ss.aisle_id, si.aisle_id) = sa.id
              WHERE sli.store_id = ?
              ORDER BY 
                 sli.is_checked ASC,
+                COALESCE(sli.is_idea, 0) DESC,
                 COALESCE(sa.sort_order, 999999) ASC,
                 COALESCE(ss.sort_order, 999999) ASC,
-                si.name ASC`,
+                COALESCE(si.name, sli.notes, '') ASC`,
             [storeId]
         );
         return res.values || [];
@@ -815,14 +876,15 @@ export class SQLiteDatabase extends BaseDatabase {
             // Update existing shopping list item
             await conn.run(
                 `UPDATE shopping_list_item 
-                 SET store_item_id = ?, qty = ?, unit_id = ?, notes = ?, is_sample = ?, updated_at = ? 
+                 SET store_item_id = ?, qty = ?, unit_id = ?, notes = ?, is_sample = ?, is_idea = ?, updated_at = ? 
                  WHERE id = ?`,
                 [
-                    params.store_item_id,
+                    params.store_item_id || null,
                     params.qty,
                     params.unit_id || null,
                     params.notes,
                     params.is_sample ?? null,
+                    params.is_idea ? 1 : 0,
                     now,
                     params.id,
                 ]
@@ -830,7 +892,7 @@ export class SQLiteDatabase extends BaseDatabase {
 
             const itemRes = await conn.query(
                 `SELECT id, store_id, store_item_id, qty, unit_id, notes,
-                        is_checked, checked_at, is_sample, created_at, updated_at
+                        is_checked, checked_at, is_sample, is_idea, created_at, updated_at
                  FROM shopping_list_item WHERE id = ?`,
                 [params.id]
             );
@@ -843,16 +905,17 @@ export class SQLiteDatabase extends BaseDatabase {
 
             await conn.run(
                 `INSERT INTO shopping_list_item 
-                 (id, store_id, store_item_id, qty, unit_id, notes, is_sample, created_at, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                 (id, store_id, store_item_id, qty, unit_id, notes, is_sample, is_idea, created_at, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     id,
                     params.store_id,
-                    params.store_item_id,
+                    params.store_item_id || null,
                     params.qty,
                     params.unit_id || null,
                     params.notes,
                     params.is_sample ?? null,
+                    params.is_idea ? 1 : 0,
                     now,
                     now,
                 ]
@@ -862,13 +925,14 @@ export class SQLiteDatabase extends BaseDatabase {
             return {
                 id,
                 store_id: params.store_id,
-                store_item_id: params.store_item_id,
+                store_item_id: params.store_item_id || null,
                 qty: params.qty,
                 unit_id: params.unit_id || null,
                 notes: params.notes,
                 is_checked: 0,
                 checked_at: null,
                 is_sample: params.is_sample ?? null,
+                is_idea: params.is_idea ? 1 : 0,
                 created_at: now,
                 updated_at: now,
             };

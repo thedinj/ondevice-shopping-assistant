@@ -29,6 +29,8 @@ import { useCallback, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useDebounce } from "use-debounce";
 import { GroupedItemList } from "../components/shared/GroupedItemList";
+import { ItemGroup } from "../components/shared/grouping.types";
+import { createAisleSectionGroups } from "../components/shared/grouping.utils";
 import { StoreItemEditorModal } from "../components/storeitem/StoreItemEditorModal";
 import {
     useDeleteShoppingListItem,
@@ -68,15 +70,18 @@ const StoreItemsPage: React.FC = () => {
         const map = new Map<string, string>();
         if (shoppingListItems) {
             for (const item of shoppingListItems) {
-                map.set(item.store_item_id, item.id);
+                // Skip ideas (they have null store_item_id)
+                if (item.store_item_id) {
+                    map.set(item.store_item_id, item.id);
+                }
             }
         }
         return map;
     }, [shoppingListItems]);
 
-    // Filter and split items into favorites and regular
-    const { favoriteItems, regularItems } = useMemo(() => {
-        if (!items) return { favoriteItems: [], regularItems: [] };
+    // Filter and split items into favorites and regular, then create groups
+    const { favoriteGroups, regularGroups } = useMemo(() => {
+        if (!items) return { favoriteGroups: [], regularGroups: [] };
 
         let filtered = items;
         if (debouncedSearchTerm.trim()) {
@@ -89,7 +94,29 @@ const StoreItemsPage: React.FC = () => {
         const favorites = filtered.filter((item) => item.is_favorite === 1);
         const regular = filtered.filter((item) => item.is_favorite === 0);
 
-        return { favoriteItems: favorites, regularItems: regular };
+        // Favorites groups organized by aisle/section
+        const favoriteGroups: ItemGroup<StoreItemWithDetails>[] =
+            favorites.length > 0
+                ? createAisleSectionGroups(favorites, {
+                      showAisleHeaders: true,
+                      showSectionHeaders: true,
+                      sortOrderOffset: 0,
+                      sectionIndentLevel: 16,
+                  })
+                : [];
+
+        // Regular items organized by aisle/section
+        const regularGroups: ItemGroup<StoreItemWithDetails>[] =
+            regular.length > 0
+                ? createAisleSectionGroups(regular, {
+                      showAisleHeaders: true,
+                      showSectionHeaders: true,
+                      sortOrderOffset: 0,
+                      sectionIndentLevel: 16,
+                  })
+                : [];
+
+        return { favoriteGroups, regularGroups };
     }, [items, debouncedSearchTerm]);
 
     const openCreateModal = () => {
@@ -171,16 +198,18 @@ const StoreItemsPage: React.FC = () => {
 
         return (
             <IonItem key={item.id}>
-                <IonButton
+                <div
                     slot="start"
-                    fill="clear"
+                    style={{
+                        cursor: "pointer",
+                    }}
                     onClick={() => handleToggleFavorite(item)}
                 >
                     <IonIcon
                         icon={isFavorite ? star : starOutline}
                         color={isFavorite ? "warning" : "medium"}
                     />
-                </IonButton>
+                </div>
                 <IonLabel>{item.name}</IonLabel>
                 <IonButton
                     slot="end"
@@ -229,7 +258,8 @@ const StoreItemsPage: React.FC = () => {
                     <div style={{ padding: "20px", textAlign: "center" }}>
                         <IonText color="medium">Loading items...</IonText>
                     </div>
-                ) : favoriteItems.length === 0 && regularItems.length === 0 ? (
+                ) : favoriteGroups.length === 0 &&
+                  regularGroups.length === 0 ? (
                     <div style={{ padding: "20px", textAlign: "center" }}>
                         <IonText color="medium">
                             {items?.length === 0 ? (
@@ -244,34 +274,37 @@ const StoreItemsPage: React.FC = () => {
                     </div>
                 ) : (
                     <>
-                        {favoriteItems.length > 0 && (
-                            <GroupedItemList<(typeof favoriteItems)[number]>
-                                items={favoriteItems}
-                                renderItem={renderItem}
-                                headerSlot={
-                                    <IonItemDivider sticky>
-                                        <IonLabel>
-                                            <strong>Favorites</strong>
-                                        </IonLabel>
-                                    </IonItemDivider>
-                                }
-                                emptyMessage="No favorite items"
-                            />
-                        )}
-                        {favoriteItems.length > 0 &&
-                            regularItems.length > 0 && (
-                                <IonItemDivider>
+                        {favoriteGroups.length > 0 && (
+                            <>
+                                <IonItemDivider sticky>
                                     <IonLabel>
-                                        <strong>Other Store Items</strong>
+                                        <strong>Favorites</strong>
                                     </IonLabel>
                                 </IonItemDivider>
-                            )}
-                        {regularItems.length > 0 && (
-                            <GroupedItemList<(typeof regularItems)[number]>
-                                items={regularItems}
-                                renderItem={renderItem}
-                                emptyMessage="No items"
-                            />
+                                <GroupedItemList<StoreItemWithDetails>
+                                    groups={favoriteGroups}
+                                    renderItem={renderItem}
+                                />
+                            </>
+                        )}
+
+                        {regularGroups.length > 0 && (
+                            <>
+                                {favoriteGroups.length > 0 && (
+                                    <>
+                                        <div style={{ height: "16px" }} />
+                                        <IonItemDivider sticky>
+                                            <IonLabel>
+                                                <strong>Other Items</strong>
+                                            </IonLabel>
+                                        </IonItemDivider>
+                                    </>
+                                )}
+                                <GroupedItemList<StoreItemWithDetails>
+                                    groups={regularGroups}
+                                    renderItem={renderItem}
+                                />
+                            </>
                         )}
                     </>
                 )}
@@ -292,8 +325,12 @@ const StoreItemsPage: React.FC = () => {
                 <IonAlert
                     isOpen={!!removeFromListAlert}
                     onDidDismiss={() => setRemoveFromListAlert(null)}
-                    header="Remove from Shopping List"
-                    message={`Remove "${removeFromListAlert?.itemName}" from your shopping list?`}
+                    header="Remove from Shopping List?"
+                    message={
+                        removeFromListAlert
+                            ? `Remove "${removeFromListAlert.itemName}" from your shopping list?`
+                            : ""
+                    }
                     buttons={[
                         {
                             text: "Cancel",

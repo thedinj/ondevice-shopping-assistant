@@ -10,6 +10,8 @@ import { useToggleItemChecked } from "../../db/hooks";
 import { ShoppingListItemWithDetails } from "../../models/Store";
 import { useShoppingListContext } from "./useShoppingListContext";
 
+import "./ShoppingListItem.css";
+
 interface ShoppingListItemProps {
     item: ShoppingListItemWithDetails;
     isChecked: boolean;
@@ -19,8 +21,10 @@ export const ShoppingListItem = ({
     item,
     isChecked,
 }: ShoppingListItemProps) => {
-    const { openEditModal } = useShoppingListContext();
+    const { openEditModal, newlyImportedItemIds } = useShoppingListContext();
     const toggleChecked = useToggleItemChecked();
+
+    const isNewlyImported = newlyImportedItemIds.has(item.id);
 
     const handleCheckboxChange = (checked: boolean) => {
         toggleChecked.mutate({
@@ -42,6 +46,9 @@ export const ShoppingListItem = ({
               opacity: 0.6,
           }
         : {};
+
+    const titleToUse = item.is_idea ? item.notes : item.item_name;
+    const notesToUse = item.is_idea ? "" : item.notes;
 
     return (
         <IonItem style={itemStyle} button={false}>
@@ -68,30 +75,32 @@ export const ShoppingListItem = ({
                 />
             </div>
             <IonLabel style={{ cursor: "default" }}>
-                <h2>
-                    {item.item_name}{" "}
-                    {(item.qty > 1 || item.unit_abbreviation) && (
-                        <span>
-                            ({item.qty || 1}
-                            {item.unit_abbreviation &&
-                                ` ${item.unit_abbreviation}`}
-                            )
-                        </span>
-                    )}{" "}
-                    {item.is_sample === 1 ? (
-                        <span
-                            style={{
-                                fontSize: "0.6em",
-                                textTransform: "uppercase",
-                            }}
-                        >
-                            [sample]
-                        </span>
-                    ) : null}
-                </h2>
-                {item.notes && (
-                    <p style={{ fontStyle: "italic" }}>{item.notes}</p>
-                )}
+                <>
+                    <h2 className={isNewlyImported ? "shimmer-text" : ""}>
+                        {titleToUse}{" "}
+                        {(item.qty > 1 || item.unit_abbreviation) && (
+                            <span>
+                                ({item.qty || 1}
+                                {item.unit_abbreviation &&
+                                    ` ${item.unit_abbreviation}`}
+                                )
+                            </span>
+                        )}{" "}
+                        {item.is_sample === 1 ? (
+                            <span
+                                style={{
+                                    fontSize: "0.6em",
+                                    textTransform: "uppercase",
+                                }}
+                            >
+                                [sample]
+                            </span>
+                        ) : null}
+                    </h2>
+                    {notesToUse && (
+                        <p style={{ fontStyle: "italic" }}>{notesToUse}</p>
+                    )}
+                </>
             </IonLabel>
             <IonButton
                 slot="end"

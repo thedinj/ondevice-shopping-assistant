@@ -18,6 +18,10 @@ export interface ShoppingListContextValue {
     confirmDelete: (id: string, name: string) => void;
     cancelDelete: () => void;
     executeDelete: () => void;
+
+    // Newly imported items (for shimmer animation)
+    newlyImportedItemIds: Set<string>;
+    markAsNewlyImported: (itemIds: string[]) => void;
 }
 
 export const ShoppingListContext = createContext<

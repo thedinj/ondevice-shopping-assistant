@@ -478,33 +478,31 @@ export class FakeDatabase extends BaseDatabase {
         const items = Array.from(this.shoppingListItems.values())
             .filter((item) => item.store_id === storeId)
             .map((item) => {
-                // Join with store_item
-                const storeItem = this.items.get(item.store_item_id);
-                if (!storeItem) {
-                    throw new Error(
-                        `Store item ${item.store_item_id} not found for shopping list item ${item.id}`
-                    );
-                }
+                // For ideas, store_item_id is null
+                const storeItem = item.store_item_id
+                    ? this.items.get(item.store_item_id)
+                    : null;
 
                 // Join with quantity_unit
                 const unit = item.unit_id
                     ? this.quantityUnits.get(item.unit_id)
                     : null;
 
-                // Join with section and aisle from store_item
-                const section = storeItem.section_id
-                    ? this.sections.get(storeItem.section_id)
-                    : null;
+                // Join with section and aisle from store_item (if exists)
+                const section =
+                    storeItem && storeItem.section_id
+                        ? this.sections.get(storeItem.section_id)
+                        : null;
                 // Prefer section's aisle_id over item's direct aisle_id
                 const calculatedAisleId =
-                    section?.aisle_id ?? storeItem.aisle_id ?? null;
+                    section?.aisle_id ?? storeItem?.aisle_id ?? null;
                 const aisle = calculatedAisleId
                     ? this.aisles.get(calculatedAisleId)
                     : null;
 
                 return {
                     ...item,
-                    item_name: storeItem.name,
+                    item_name: storeItem?.name ?? "",
                     unit_abbreviation: unit?.abbreviation ?? null,
                     section_id: section?.id ?? null,
                     aisle_id: calculatedAisleId,
@@ -515,9 +513,15 @@ export class FakeDatabase extends BaseDatabase {
                 } as ShoppingListItemWithDetails;
             })
             .sort((a, b) => {
-                // Sort by: is_checked, aisle, section, item name
+                // Sort by: is_checked, is_idea (DESC), aisle, section, item name/notes
                 if (a.is_checked !== b.is_checked) {
                     return a.is_checked - b.is_checked;
+                }
+                // Ideas first (1 before 0)
+                const aIsIdea = a.is_idea ?? 0;
+                const bIsIdea = b.is_idea ?? 0;
+                if (aIsIdea !== bIsIdea) {
+                    return bIsIdea - aIsIdea;
                 }
                 const aAisleOrder = a.aisle_sort_order ?? 999999;
                 const bAisleOrder = b.aisle_sort_order ?? 999999;
@@ -529,7 +533,10 @@ export class FakeDatabase extends BaseDatabase {
                 if (aSectionOrder !== bSectionOrder) {
                     return aSectionOrder - bSectionOrder;
                 }
-                return a.item_name.localeCompare(b.item_name);
+                // Use notes for ideas, item_name for regular items
+                const aName = a.item_name || a.notes || "";
+                const bName = b.item_name || b.notes || "";
+                return aName.localeCompare(bName);
             });
 
         return items;
@@ -587,11 +594,12 @@ export class FakeDatabase extends BaseDatabase {
 
             const updated: ShoppingListItem = {
                 ...existing,
-                store_item_id: params.store_item_id,
+                store_item_id: params.store_item_id || null,
                 qty: params.qty,
                 unit_id: params.unit_id || null,
                 notes: params.notes,
                 is_sample: params.is_sample ?? null,
+                is_idea: params.is_idea ? 1 : 0,
                 updated_at: now,
             };
             this.shoppingListItems.set(params.id, updated);
@@ -604,13 +612,14 @@ export class FakeDatabase extends BaseDatabase {
             const newItem: ShoppingListItem = {
                 id,
                 store_id: params.store_id,
-                store_item_id: params.store_item_id,
+                store_item_id: params.store_item_id || null,
                 qty: params.qty,
                 unit_id: params.unit_id || null,
                 notes: params.notes,
                 is_checked: 0,
                 checked_at: null,
                 is_sample: params.is_sample ?? null,
+                is_idea: params.is_idea ? 1 : 0,
                 created_at: now,
                 updated_at: now,
             };

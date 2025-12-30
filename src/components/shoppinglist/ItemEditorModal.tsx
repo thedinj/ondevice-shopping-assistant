@@ -3,15 +3,17 @@ import {
     IonAlert,
     IonButton,
     IonButtons,
-    IonIcon,
+    IonChip,
     IonContent,
     IonHeader,
+    IonIcon,
+    IonLabel,
     IonModal,
     IonTitle,
     IonToolbar,
 } from "@ionic/react";
-import { closeOutline } from "ionicons/icons";
 import { UseMutationResult } from "@tanstack/react-query";
+import { cartOutline, closeOutline, sparklesOutline } from "ionicons/icons";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -62,19 +64,26 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
             notes: null,
             aisleId: null,
             sectionId: null,
+            isIdea: false,
         },
     });
+
+    // Watch form values
+    const currentNotes = watch("notes");
+    const currentName = watch("name");
+    const isIdea = watch("isIdea");
 
     // Reset form when modal opens/closes or editing item changes
     useEffect(() => {
         if (isItemModalOpen && editingItem) {
             reset({
-                name: editingItem.item_name,
+                name: editingItem.item_name || "",
                 qty: editingItem.qty,
                 unitId: editingItem.unit_id,
                 notes: editingItem.notes,
                 aisleId: editingItem.aisle_id,
                 sectionId: editingItem.section_id,
+                isIdea: editingItem.is_idea === 1,
             });
         } else if (isItemModalOpen) {
             reset({
@@ -84,43 +93,78 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                 notes: null,
                 aisleId: null,
                 sectionId: null,
+                isIdea: false,
             });
         }
     }, [isItemModalOpen, editingItem, reset]);
 
-    const onSubmit = async (data: ItemFormData) => {
-        let storeItemId: string;
+    // Handle mode toggle - transfer notes between modes
+    const handleModeToggle = (newMode: boolean) => {
+        setValue("isIdea", newMode);
 
-        if (editingItem) {
-            // Update existing store item
-            await updateItem.mutateAsync({
-                id: editingItem.store_item_id,
-                name: data.name,
-                aisleId: data.aisleId || null,
-                sectionId: data.sectionId || null,
-                storeId,
-            });
-            storeItemId = editingItem.store_item_id;
+        if (newMode) {
+            // Switching to Idea mode: transfer name to notes
+            if (currentName && !currentNotes) {
+                setValue("notes", currentName);
+                setValue("name", "");
+            }
         } else {
-            // Get or create store item
-            const storeItem = await getOrCreateStoreItem.mutateAsync({
-                storeId,
-                name: data.name,
-                aisleId: data.aisleId || null,
-                sectionId: data.sectionId || null,
-            });
-            storeItemId = storeItem.id;
+            // Switching to Item mode: transfer notes to name if name is empty
+            if (currentNotes && !currentName) {
+                setValue("name", currentNotes);
+                setValue("notes", null);
+            }
         }
+    };
 
-        // Update or create shopping list item
-        await upsertItem.mutateAsync({
-            id: editingItem?.id,
-            store_id: storeId,
-            store_item_id: storeItemId,
-            qty: data.qty,
-            unit_id: data.unitId || null,
-            notes: data.notes || null,
-        });
+    const onSubmit = async (data: ItemFormData) => {
+        if (isIdea) {
+            // Idea - no store item needed
+            await upsertItem.mutateAsync({
+                id: editingItem?.id,
+                store_id: storeId,
+                store_item_id: null,
+                qty: 1, // Default qty for ideas
+                unit_id: null,
+                notes: data.notes || null,
+                is_idea: 1,
+            });
+        } else {
+            // Regular item - need store item
+            let storeItemId: string;
+
+            if (editingItem) {
+                // Update existing store item
+                await updateItem.mutateAsync({
+                    id: editingItem.store_item_id!,
+                    name: data.name,
+                    aisleId: data.aisleId || null,
+                    sectionId: data.sectionId || null,
+                    storeId,
+                });
+                storeItemId = editingItem.store_item_id!;
+            } else {
+                // Get or create store item
+                const storeItem = await getOrCreateStoreItem.mutateAsync({
+                    storeId,
+                    name: data.name,
+                    aisleId: data.aisleId || null,
+                    sectionId: data.sectionId || null,
+                });
+                storeItemId = storeItem.id;
+            }
+
+            // Update or create shopping list item
+            await upsertItem.mutateAsync({
+                id: editingItem?.id,
+                store_id: storeId,
+                store_item_id: storeItemId,
+                qty: data.qty,
+                unit_id: data.unitId || null,
+                notes: data.notes || null,
+                is_idea: 0,
+            });
+        }
         closeItemModal();
     };
 
@@ -144,7 +188,13 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
             <IonHeader>
                 <IonToolbar>
                     <IonTitle>
-                        {editingItem ? "Edit Item" : "Add Item"}
+                        {editingItem
+                            ? isIdea
+                                ? "Edit Idea"
+                                : "Edit Item"
+                            : isIdea
+                            ? "Add Idea"
+                            : "Add Item"}
                     </IonTitle>
                     <IonButtons slot="end">
                         <IonButton onClick={closeItemModal}>
@@ -154,6 +204,41 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                 </IonToolbar>
             </IonHeader>
             <IonContent className="ion-padding">
+                {/* Mode Toggle - only show for new items */}
+                {!editingItem && (
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: "8px",
+                            marginBottom: "16px",
+                            justifyContent: "center",
+                        }}
+                    >
+                        <IonChip
+                            onClick={() => handleModeToggle(false)}
+                            color={!isIdea ? "primary" : "medium"}
+                            style={{
+                                cursor: "pointer",
+                                opacity: !isIdea ? 1 : 0.6,
+                            }}
+                        >
+                            <IonIcon icon={cartOutline} />
+                            <IonLabel>Item</IonLabel>
+                        </IonChip>
+                        <IonChip
+                            onClick={() => handleModeToggle(true)}
+                            color={isIdea ? "primary" : "medium"}
+                            style={{
+                                cursor: "pointer",
+                                opacity: isIdea ? 1 : 0.6,
+                            }}
+                        >
+                            <IonIcon icon={sparklesOutline} />
+                            <IonLabel>Idea</IonLabel>
+                        </IonChip>
+                    </div>
+                )}
+
                 <ItemEditorProvider
                     storeId={storeId}
                     control={control}
@@ -162,16 +247,25 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                     watch={watch}
                 >
                     <form onSubmit={handleSubmit(onSubmit)}>
-                        <NameAutocomplete />
-                        <QuantityInput />
-                        <UnitSelector />
-                        <LocationSelectors />
-                        <NotesInput />
+                        {isIdea ? (
+                            // Idea mode - only notes
+                            <NotesInput />
+                        ) : (
+                            // Regular Item mode - all fields
+                            <>
+                                <NameAutocomplete />
+                                <QuantityInput />
+                                <UnitSelector />
+                                <LocationSelectors />
+                                <NotesInput />
+                            </>
+                        )}
 
                         <SaveButton
                             isValid={isValid}
                             upsertItem={upsertItem}
                             editingItem={editingItem}
+                            isIdea={isIdea}
                         />
 
                         {editingItem && (
@@ -183,7 +277,7 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                                 disabled={deleteItem.isPending}
                                 style={{ marginTop: "10px" }}
                             >
-                                Delete Item
+                                Delete {isIdea ? "Idea" : "Item"}
                             </IonButton>
                         )}
                     </form>
@@ -192,8 +286,12 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                 <IonAlert
                     isOpen={showDeleteAlert}
                     onDidDismiss={() => setShowDeleteAlert(false)}
-                    header="Remove from List"
-                    message={`Remove "${editingItem?.item_name}" from your shopping list?`}
+                    header={`Remove ${isIdea ? "Idea" : "Item"}`}
+                    message={
+                        isIdea
+                            ? "Remove this idea from your list?"
+                            : `Remove "${editingItem?.item_name}" from your shopping list?`
+                    }
                     buttons={[
                         {
                             text: "Cancel",
@@ -219,7 +317,8 @@ const SaveButton: React.FC<{
         ShoppingListItemOptionalId
     >;
     editingItem: ShoppingListItem | null;
-}> = ({ isValid, upsertItem, editingItem }) => {
+    isIdea: boolean | undefined;
+}> = ({ isValid, upsertItem, editingItem, isIdea }) => {
     return (
         <IonButton
             expand="block"
@@ -228,6 +327,7 @@ const SaveButton: React.FC<{
             style={{ marginTop: "20px" }}
         >
             {editingItem ? "Update" : "Add"}
+            {isIdea ? " Idea" : " Item"}
         </IonButton>
     );
 };

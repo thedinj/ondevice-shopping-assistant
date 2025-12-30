@@ -1,18 +1,38 @@
 import { z } from "zod";
 import type { StoreAisle, StoreItem, StoreSection } from "../../models/Store";
 
-export const itemFormSchema = z.object({
-    name: z
-        .string()
-        .min(1, "Name is required")
-        .transform((val) => val.trim()),
-    qty: z.number().min(0.01, "Quantity must be greater than 0"),
-    unitId: z.string().nullable().optional(),
-    notes: z.string().nullable().optional(),
-    aisleId: z.string().nullable().optional(),
-    sectionId: z.string().nullable().optional(),
-    isSample: z.boolean().nullable().optional(),
-});
+export const itemFormSchema = z
+    .object({
+        name: z.string().transform((val) => val.trim()),
+        qty: z.number().min(0.01, "Quantity must be greater than 0"),
+        unitId: z.string().nullable().optional(),
+        notes: z.string().nullable().optional(),
+        aisleId: z.string().nullable().optional(),
+        sectionId: z.string().nullable().optional(),
+        isSample: z.boolean().nullable().optional(),
+        isIdea: z.boolean().optional(),
+    })
+    .superRefine((data, ctx) => {
+        if (data.isIdea) {
+            // Idea requires notes
+            if (!data.notes || data.notes.trim().length === 0) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Note is required for an Idea.",
+                    path: ["notes"],
+                });
+            }
+        } else {
+            // Regular item requires name
+            if (!data.name || data.name.trim().length === 0) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Name is required.",
+                    path: ["name"],
+                });
+            }
+        }
+    });
 
 export type ItemFormData = z.infer<typeof itemFormSchema>;
 
