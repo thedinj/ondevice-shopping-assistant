@@ -53,6 +53,7 @@ export const StoreSelector = () => {
                 onDismiss={() => setIsModalOpen(false)}
                 title="Select Store"
                 showSearch={false}
+                allowClear={storeItems.length > 1}
             />
         </>
     );

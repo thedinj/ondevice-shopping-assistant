@@ -69,7 +69,8 @@ export const GroupedShoppingList = ({
                     header: {
                         label: (
                             <>
-                                <IonIcon icon={bulbOutline} /> Ideas
+                                <IonIcon icon={bulbOutline} color="warning" />{" "}
+                                Ideas
                             </>
                         ),
                         color: "light",
