@@ -164,7 +164,7 @@ export abstract class BaseDatabase implements Database {
 
     /**
      * Inserts realistic test data into a store for development/testing purposes.
-     * Creates a grocery store structure with aisles, sections, store items, and a shopping list.
+     * Creates a store structure with aisles, sections, store items, and a shopping list.
      */
     protected async insertInitialData(): Promise<void> {
         // Initial store

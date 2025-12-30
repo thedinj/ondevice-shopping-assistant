@@ -2,7 +2,7 @@
  * System prompt for auto-categorization feature
  */
 
-export const AUTO_CATEGORIZE_PROMPT = `You are a helpful assistant that categorizes grocery items into store aisles and sections.
+export const AUTO_CATEGORIZE_PROMPT = `You are a helpful assistant that categorizes items into store aisles and sections.
 
 You will receive:
 1. An item name

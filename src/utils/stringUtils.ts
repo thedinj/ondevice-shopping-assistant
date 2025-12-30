@@ -29,3 +29,18 @@ export const normalizeItemName = (name: string): string => {
     const singular = pluralize.singular(trimmed);
     return singular.toLowerCase();
 };
+
+/**
+ * Creates a natural sort comparator for case-insensitive alphanumeric sorting
+ * Handles numeric portions correctly (e.g., "Aisle 9" before "Aisle 10")
+ * Uses Intl.Collator for performance and proper Unicode handling
+ *
+ * @returns A comparator function for use with Array.sort()
+ */
+export const createNaturalSortComparator = (): ((a: string, b: string) => number) => {
+    const collator = new Intl.Collator(undefined, {
+        numeric: true,
+        sensitivity: 'base',
+    });
+    return (a: string, b: string) => collator.compare(a, b);
+};

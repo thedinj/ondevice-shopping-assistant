@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Basket Bot** is an on-device shopping assistant built as a mobile-first application using Ionic and Capacitor. The app helps users organize their grocery shopping by managing stores with customizable layouts (aisles and sections), creating smart shopping lists, and leveraging AI-powered features for list management.
+**Basket Bot** is an on-device shopping assistant built as a mobile-first application using Ionic and Capacitor. The app helps users organize their store shopping (usually grocery) by managing stores with customizable layouts (aisles and sections), creating smart shopping lists, and leveraging AI-powered features for list management.
 
 ### Core Purpose
 
