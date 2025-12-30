@@ -3,6 +3,7 @@ import {
     IonButtons,
     IonCheckbox,
     IonContent,
+    IonFooter,
     IonHeader,
     IonIcon,
     IonItem,
@@ -27,7 +28,7 @@ interface ClickableSelectionModalProps {
     /** Currently selected item ID */
     value?: string;
     /** Callback when an item is selected */
-    onSelect: (itemId: string) => void;
+    onSelect: (itemId: string | null) => void;
     /** Whether the modal is open */
     isOpen: boolean;
     /** Callback to dismiss the modal without selection */
@@ -40,6 +41,8 @@ interface ClickableSelectionModalProps {
     showSearch?: boolean;
     /** Size of the modal (default: 'default') */
     size?: "default" | "small";
+    /** Whether to allow clearing the selection (default: true) */
+    allowClear?: boolean;
 }
 
 /**
@@ -48,6 +51,7 @@ interface ClickableSelectionModalProps {
  * - Click an item to select it and automatically close the modal
  * - Optional search/filter functionality
  * - Checkbox indicator for currently selected item
+ * - Optional clear button to set value back to null
  * - Clean, simple UX replacing IonSelect + OK/Cancel patterns
  */
 export const ClickableSelectionModal: React.FC<
@@ -62,6 +66,7 @@ export const ClickableSelectionModal: React.FC<
     searchPlaceholder = "Search...",
     showSearch = true,
     size = "default",
+    allowClear = true,
 }) => {
     const [searchText, setSearchText] = useState("");
 
@@ -84,6 +89,12 @@ export const ClickableSelectionModal: React.FC<
 
     const handleDismiss = () => {
         setSearchText(""); // Reset search when dismissed
+        onDismiss();
+    };
+
+    const handleClear = () => {
+        onSelect(null);
+        setSearchText(""); // Reset search for next time
         onDismiss();
     };
 
@@ -144,6 +155,20 @@ export const ClickableSelectionModal: React.FC<
                     )}
                 </IonList>
             </IonContent>
+            {allowClear && value && (
+                <IonFooter>
+                    <IonToolbar>
+                        <IonButton
+                            expand="block"
+                            fill="clear"
+                            color="medium"
+                            onClick={handleClear}
+                        >
+                            Clear Selection
+                        </IonButton>
+                    </IonToolbar>
+                </IonFooter>
+            )}
         </IonModal>
     );
 };

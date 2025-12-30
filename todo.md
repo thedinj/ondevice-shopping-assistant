@@ -1,5 +1,6 @@
 # TO DO
 
+-   Remembering last store ID not working?
 -   When selecting an aisle in a store item, allow selection of none (even though it's required)
 -   Sort aisles: Aisle 1, ... Aisle 9, Aisle 10, ... (not 1, 10, 11, ... 2)
 -   When importing stores, only add produce _if grocery store_ (for ex), and if aisle is confusing add it as-is.
