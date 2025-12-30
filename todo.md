@@ -1,6 +1,17 @@
 # TO DO
 
--   After updating the phone, revert the table name and consolidate the tables again
+-   When selecting an aisle in a store item, allow selection of none (even though it's required)
+-   Sort aisles: Aisle 1, ... Aisle 9, Aisle 10, ... (not 1, 10, 11, ... 2)
+-   When importing stores, only add produce _if grocery store_ (for ex), and if aisle is confusing add it as-is.
+-   Alphabetize the sections imported from the LLM within the aisles
+-   On Reorder Aisles page don't allow section entry
+-   Fab spacer should be below all of the lists (both store items and shopping list items, and wherever else we use fabs). Ensure background matches app background, not ionitem background.
+-   Add functionality to move an item from one shopping list to another.
+-   Closing the photos app on the phone shouldn't result in error: "camera plugin not available"
+-   When using robot head for an icon next to text (in Settings) bump it down a couple pixels.
+-   Allow marking a store item as a favorite in the store item / shopping list editor
+-   Always allow text and images in LLM modal
+-   LLM import/export workflows for transfering stores, etc. from one phone to another.
 -   Are we losing details when auto-relocating?
 -   Remove "Grocery" terminology--shopping lists and stores can be of many types. Only auto-add sections to stores if it detects a grocery store.
 -   Deleting a shopping list item should also delete the store item

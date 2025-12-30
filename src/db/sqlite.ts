@@ -120,13 +120,14 @@ const migrations: Array<{ version: number; up: string[] }> = [
             `CREATE TABLE IF NOT EXISTS shopping_list_item (
          id TEXT PRIMARY KEY,
          store_id TEXT NOT NULL,
-         store_item_id TEXT NOT NULL,
+         store_item_id TEXT,
          qty REAL NOT NULL DEFAULT 1,
          unit_id TEXT,
          notes TEXT,
          is_checked INTEGER NOT NULL DEFAULT 0,
          checked_at TEXT,
          is_sample INTEGER,
+         is_idea INTEGER NOT NULL DEFAULT 0,
          created_at TEXT NOT NULL DEFAULT (datetime('now')),
          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
          FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
@@ -136,66 +137,6 @@ const migrations: Array<{ version: number; up: string[] }> = [
 
             `CREATE INDEX IF NOT EXISTS ix_list_item_store_checked
          ON shopping_list_item(store_id, is_checked, updated_at);`,
-        ],
-    },
-    {
-        version: 3,
-        up: [
-            // SQLite doesn't support ALTER COLUMN, so we need to recreate the table
-            // to make store_item_id nullable and add is_idea
-            `PRAGMA foreign_keys=OFF;`,
-            // Create temporary table with new schema
-            `CREATE TABLE shopping_list_item_temp (
-                id TEXT PRIMARY KEY,
-                store_id TEXT NOT NULL,
-                store_item_id TEXT,
-                qty REAL NOT NULL DEFAULT 1,
-                unit_id TEXT,
-                notes TEXT,
-                is_checked INTEGER NOT NULL DEFAULT 0,
-                checked_at TEXT,
-                is_sample INTEGER,
-                is_idea INTEGER NOT NULL DEFAULT 0,
-                created_at TEXT NOT NULL DEFAULT (datetime('now')),
-                updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-                FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
-                FOREIGN KEY (store_item_id) REFERENCES store_item(id) ON DELETE CASCADE,
-                FOREIGN KEY (unit_id) REFERENCES quantity_unit(id) ON DELETE SET NULL
-            );`,
-            // Copy data from old table to temp, setting is_idea to 0 for existing items
-            `INSERT INTO shopping_list_item_temp 
-                (id, store_id, store_item_id, qty, unit_id, notes, is_checked, checked_at, is_sample, is_idea, created_at, updated_at)
-                SELECT id, store_id, store_item_id, qty, unit_id, notes, is_checked, checked_at, is_sample, 0, created_at, updated_at
-                FROM shopping_list_item;`,
-            // Drop old table
-            `DROP TABLE shopping_list_item;`,
-            // Create new table with correct name and schema
-            `CREATE TABLE shopping_list_item (
-                id TEXT PRIMARY KEY,
-                store_id TEXT NOT NULL,
-                store_item_id TEXT,
-                qty REAL NOT NULL DEFAULT 1,
-                unit_id TEXT,
-                notes TEXT,
-                is_checked INTEGER NOT NULL DEFAULT 0,
-                checked_at TEXT,
-                is_sample INTEGER,
-                is_idea INTEGER NOT NULL DEFAULT 0,
-                created_at TEXT NOT NULL DEFAULT (datetime('now')),
-                updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-                FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
-                FOREIGN KEY (store_item_id) REFERENCES store_item(id) ON DELETE CASCADE,
-                FOREIGN KEY (unit_id) REFERENCES quantity_unit(id) ON DELETE SET NULL
-            );`,
-            // Copy data back from temp to new table
-            `INSERT INTO shopping_list_item 
-                SELECT * FROM shopping_list_item_temp;`,
-            // Drop temp table
-            `DROP TABLE shopping_list_item_temp;`,
-            // Recreate index
-            `CREATE INDEX IF NOT EXISTS ix_list_item_store_checked
-                ON shopping_list_item(store_id, is_checked, updated_at);`,
-            `PRAGMA foreign_keys=ON;`,
         ],
     },
 ];
