@@ -28,6 +28,7 @@ import {
 import { useCallback, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useDebounce } from "use-debounce";
+import { FabSpacer } from "../components/shared/FabSpacer";
 import { GroupedItemList } from "../components/shared/GroupedItemList";
 import { ItemGroup } from "../components/shared/grouping.types";
 import { createAisleSectionGroups } from "../components/shared/grouping.utils";
@@ -308,6 +309,8 @@ const StoreItemsPage: React.FC = () => {
                         )}
                     </>
                 )}
+
+                <FabSpacer />
 
                 <IonFab slot="fixed" vertical="bottom" horizontal="end">
                     <IonFabButton onClick={openCreateModal}>

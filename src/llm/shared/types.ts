@@ -51,10 +51,6 @@ export interface LLMModalConfig<T = unknown> {
     userInstructions?: string;
     /** The model to use (e.g., "gpt-4o-mini") */
     model?: string;
-    /** Whether to allow file attachments */
-    allowAttachments?: boolean;
-    /** Whether to allow text input from user */
-    allowTextInput?: boolean;
     /** Custom render function for the LLM output */
     renderOutput: (response: LLMResponse<T>) => React.ReactNode;
     /** Callback when user accepts the result */

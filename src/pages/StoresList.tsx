@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useHistory } from "react-router-dom";
 import { z } from "zod";
+import { FabSpacer } from "../components/shared/FabSpacer";
 import { useCreateStore, useStores, useUpdateStore } from "../db/hooks";
 import { useLastSelectedStore } from "../hooks/useLastSelectedStore";
 
@@ -159,6 +160,7 @@ const StoresList: React.FC = () => {
                         ))}
                     </IonList>
                 )}
+                <FabSpacer />
 
                 <IonFab slot="fixed" vertical="bottom" horizontal="end">
                     <IonFabButton onClick={openCreateModal}>

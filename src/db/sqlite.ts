@@ -914,7 +914,21 @@ export class SQLiteDatabase extends BaseDatabase {
     async deleteShoppingListItem(id: string): Promise<void> {
         const conn = await this.getConnection();
 
+        // First, get the shopping list item to find the store_item_id
+        const itemRes = await conn.query(
+            "SELECT store_item_id FROM shopping_list_item WHERE id = ?",
+            [id]
+        );
+        const storeItemId = itemRes.values?.[0]?.store_item_id;
+
+        // Delete the shopping list item
         await conn.run("DELETE FROM shopping_list_item WHERE id = ?", [id]);
+
+        // If there was an associated store item, delete it too (cascade)
+        if (storeItemId) {
+            await this.deleteItem(storeItemId);
+        }
+
         this.notifyChange();
     }
 

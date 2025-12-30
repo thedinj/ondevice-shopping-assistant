@@ -649,7 +649,14 @@ export class FakeDatabase extends BaseDatabase {
     async deleteShoppingListItem(id: string): Promise<void> {
         const item = this.shoppingListItems.get(id);
         if (item) {
+            // Delete the shopping list item
             this.shoppingListItems.delete(id);
+
+            // If there was an associated store item, delete it too (cascade)
+            if (item.store_item_id) {
+                this.items.delete(item.store_item_id);
+            }
+
             this.notifyChange();
         }
     }

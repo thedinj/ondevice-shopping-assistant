@@ -14,6 +14,8 @@ import {
     IonToolbar,
 } from "@ionic/react";
 import { add } from "ionicons/icons";
+import { useCallback, useState } from "react";
+import { FabSpacer } from "../components/shared/FabSpacer";
 import { useBulkImportModal } from "../components/shoppinglist/BulkImportModal";
 import { CheckedItems } from "../components/shoppinglist/CheckedItems";
 import { ItemEditorModal } from "../components/shoppinglist/ItemEditorModal";
@@ -21,12 +23,8 @@ import { ShoppingListProvider } from "../components/shoppinglist/ShoppingListPro
 import { StoreSelector } from "../components/shoppinglist/StoreSelector";
 import { UncheckedItems } from "../components/shoppinglist/UncheckedItems";
 import { useShoppingListContext } from "../components/shoppinglist/useShoppingListContext";
-import {
-    useClearCheckedItems,
-    useShoppingListItems,
-} from "../db/hooks";
+import { useClearCheckedItems, useShoppingListItems } from "../db/hooks";
 import { LLMFabButton } from "../llm/shared";
-import { useCallback, useState } from "react";
 
 const ShoppingListContent: React.FC = () => {
     const {
@@ -131,6 +129,7 @@ const ShoppingListContent: React.FC = () => {
                             onClearChecked={handleClearChecked}
                             isClearing={clearChecked.isPending}
                         />
+                        <FabSpacer />
                     </>
                 )}
 

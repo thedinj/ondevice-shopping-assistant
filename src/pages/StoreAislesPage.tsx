@@ -11,11 +11,12 @@ import {
     IonToolbar,
 } from "@ionic/react";
 import { add } from "ionicons/icons";
-import { useParams } from "react-router-dom";
 import { useRef } from "react";
-import { useStore } from "../db/hooks";
+import { useParams } from "react-router-dom";
+import { FabSpacer } from "../components/shared/FabSpacer";
 import AisleSectionList from "../components/store/AisleSectionList";
 import { ListHandle } from "../components/store/types";
+import { useStore } from "../db/hooks";
 
 const StoreAislesPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -36,6 +37,7 @@ const StoreAislesPage: React.FC = () => {
             </IonHeader>
             <IonContent fullscreen>
                 <AisleSectionList storeId={id} ref={listRef} />
+                <FabSpacer />
                 <IonFab slot="fixed" vertical="bottom" horizontal="end">
                     <IonFabButton
                         onClick={() => listRef.current?.openCreateModal()}

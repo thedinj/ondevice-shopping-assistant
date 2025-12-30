@@ -277,7 +277,7 @@ export interface EntityDatabase {
     ): Promise<void>;
 
     /**
-     * Soft delete a shopping list item
+     * Delete a shopping list item
      */
     deleteShoppingListItem(id: string): Promise<void>;
 

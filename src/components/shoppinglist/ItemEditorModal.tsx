@@ -268,7 +268,7 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                             isIdea={isIdea}
                         />
 
-                        {editingItem && (
+                        {editingItem && !isIdea && (
                             <IonButton
                                 expand="block"
                                 color="danger"
@@ -287,11 +287,7 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                     isOpen={showDeleteAlert}
                     onDidDismiss={() => setShowDeleteAlert(false)}
                     header={`Remove ${isIdea ? "Idea" : "Item"}`}
-                    message={
-                        isIdea
-                            ? "Remove this idea from your list?"
-                            : `Remove "${editingItem?.item_name}" from your shopping list?`
-                    }
+                    message={`Permanently remove "${editingItem?.item_name}" from your store and shopping list?`}
                     buttons={[
                         {
                             text: "Cancel",

@@ -22,8 +22,6 @@ export function useBulkImportModal(storeId: string) {
             title: "Import Shopping List",
             prompt: BULK_IMPORT_PROMPT,
             model: "gpt-4o",
-            allowTextInput: true,
-            allowAttachments: true,
             userInstructions:
                 "Paste your shopping list as text or upload a photo of a handwritten/printed list.",
             buttonText: "Scan List",

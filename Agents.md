@@ -495,9 +495,6 @@ const MyComponent = () => {
 
             model: "gpt-4o", // or "gpt-4o-mini"
 
-            allowTextInput: true, // Enable text area
-            allowAttachments: true, // Enable camera/file picker
-
             // Custom result rendering
             renderOutput: (response) => {
                 const items = JSON.parse(response.choices[0].message.content);

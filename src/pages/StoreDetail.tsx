@@ -103,8 +103,6 @@ const StoreDetail: React.FC = () => {
             userInstructions:
                 "Take a photo of the store directory showing aisle numbers and their sections/categories.",
             model: "gpt-5.2",
-            allowAttachments: true,
-            allowTextInput: false,
             buttonText: "Scan Aisles & Sections",
             showPatienceMessage: true,
             validateResponse: (response) => {

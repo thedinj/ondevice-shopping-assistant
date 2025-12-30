@@ -87,11 +87,8 @@ export const LLMModal: React.FC = () => {
                     };
                     setAttachments((prev) => [...prev, attachment]);
                 }
-            } catch (err) {
-                // Camera plugin not available
-                showError(
-                    `Camera plugin not available on this platform: ${err}`
-                );
+            } catch {
+                // The user might have just cancelled the photo taking, so don't show an error in that case
             }
         } catch (error: unknown) {
             if (
@@ -266,94 +263,88 @@ export const LLMModal: React.FC = () => {
                     )}
 
                     {/* Text Input Section */}
-                    {config.allowTextInput && (
-                        <div style={{ marginTop: "16px" }}>
-                            <IonItem>
-                                <IonLabel position="stacked">
-                                    <h3>Text Input</h3>
-                                </IonLabel>
-                                <IonTextarea
-                                    value={userText}
-                                    onIonChange={(e) =>
-                                        setUserText(e.detail.value || "")
-                                    }
-                                    placeholder="Enter your text here..."
-                                    rows={4}
-                                    disabled={isLoading}
-                                />
-                            </IonItem>
-                        </div>
-                    )}
+                    <div style={{ marginTop: "16px" }}>
+                        <IonItem>
+                            <IonLabel position="stacked">
+                                <h3>Text Input</h3>
+                            </IonLabel>
+                            <IonTextarea
+                                value={userText}
+                                onIonInput={(e) =>
+                                    setUserText(e.detail.value || "")
+                                }
+                                placeholder="Enter your text here..."
+                                rows={4}
+                                disabled={isLoading}
+                            />
+                        </IonItem>
+                    </div>
 
                     {/* File Attachments Section */}
-                    {config.allowAttachments && (
-                        <div style={{ marginTop: "16px" }}>
-                            <IonItem lines="none">
-                                <IonLabel>
-                                    <h3>Attachments</h3>
-                                </IonLabel>
-                                {isAllowCamera && (
-                                    <IonButton
-                                        slot="end"
-                                        fill="outline"
-                                        size="small"
-                                        onClick={handleCapture}
-                                        disabled={isLoading}
-                                    >
-                                        <IonIcon icon={camera} slot="start" />
-                                        Capture
-                                    </IonButton>
-                                )}
-                                {!isAllowCamera && (
-                                    <IonButton
-                                        slot="end"
-                                        fill="outline"
-                                        size="small"
-                                        onClick={handleAddAttachment}
-                                        disabled={isLoading}
-                                    >
-                                        <IonIcon icon={attach} slot="start" />
-                                        Add
-                                    </IonButton>
-                                )}
-                            </IonItem>
-
-                            {attachments.length > 0 && (
-                                <div
-                                    style={{
-                                        padding: "0 16px",
-                                        display: "flex",
-                                        flexWrap: "wrap",
-                                        gap: "8px",
-                                    }}
+                    <div style={{ marginTop: "16px" }}>
+                        <IonItem lines="none">
+                            <IonLabel>
+                                <h3>Attachments</h3>
+                            </IonLabel>
+                            {isAllowCamera && (
+                                <IonButton
+                                    slot="end"
+                                    fill="outline"
+                                    size="small"
+                                    onClick={handleCapture}
+                                    disabled={isLoading}
                                 >
-                                    {attachments.map((attachment, index) => (
-                                        <IonChip
-                                            key={index}
-                                            onClick={() =>
-                                                handleRemoveAttachment(index)
-                                            }
-                                        >
-                                            <IonLabel>
-                                                {attachment.name}
-                                            </IonLabel>
-                                            <IonIcon icon={close} />
-                                        </IonChip>
-                                    ))}
-                                </div>
+                                    <IonIcon icon={camera} slot="start" />
+                                    Capture
+                                </IonButton>
                             )}
+                            {!isAllowCamera && (
+                                <IonButton
+                                    slot="end"
+                                    fill="outline"
+                                    size="small"
+                                    onClick={handleAddAttachment}
+                                    disabled={isLoading}
+                                >
+                                    <IonIcon icon={attach} slot="start" />
+                                    Add
+                                </IonButton>
+                            )}
+                        </IonItem>
 
-                            {/* Hidden file input */}
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                multiple
-                                accept="image/*"
-                                style={{ display: "none" }}
-                                onChange={handleFileInputChange}
-                            />
-                        </div>
-                    )}
+                        {attachments.length > 0 && (
+                            <div
+                                style={{
+                                    padding: "0 16px",
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: "8px",
+                                }}
+                            >
+                                {attachments.map((attachment, index) => (
+                                    <IonChip
+                                        key={index}
+                                        onClick={() =>
+                                            handleRemoveAttachment(index)
+                                        }
+                                    >
+                                        <IonLabel>{attachment.name}</IonLabel>
+                                        <IonIcon icon={close} />
+                                    </IonChip>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Hidden file input */}
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            style={{ display: "none" }}
+                            onChange={handleFileInputChange}
+                        />
+                    </div>
 
                     {/* Run Button */}
                     {!response && (
