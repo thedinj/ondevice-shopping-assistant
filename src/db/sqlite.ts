@@ -932,6 +932,15 @@ export class SQLiteDatabase extends BaseDatabase {
         this.notifyChange();
     }
 
+    async removeShoppingListItem(id: string): Promise<void> {
+        const conn = await this.getConnection();
+
+        // Only delete the shopping list item, leave the store item intact
+        await conn.run("DELETE FROM shopping_list_item WHERE id = ?", [id]);
+
+        this.notifyChange();
+    }
+
     async clearCheckedShoppingListItems(storeId: string): Promise<void> {
         const conn = await this.getConnection();
 

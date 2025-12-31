@@ -917,6 +917,29 @@ export function useDeleteShoppingListItem() {
 }
 
 /**
+ * Hook to remove a shopping list item without deleting the store item
+ * Used when moving items between stores
+ */
+export function useRemoveShoppingListItem() {
+    const database = useDatabase();
+    const queryClient = useQueryClient();
+    const { showError } = useToast();
+
+    return useTanstackMutation({
+        mutationFn: (params: { id: string; storeId: string }) =>
+            database.removeShoppingListItem(params.id),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: ["shopping-list-items", variables.storeId],
+            });
+        },
+        onError: (error: Error) => {
+            showError(`Failed to remove item: ${error.message}`);
+        },
+    });
+}
+
+/**
  * Hook to clear all checked items from a shopping list
  */
 export function useClearCheckedItems() {

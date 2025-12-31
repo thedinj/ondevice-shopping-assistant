@@ -218,6 +218,10 @@ export class RemoteDatabase extends BaseDatabase {
         throw new Error("RemoteDatabase not yet implemented");
     }
 
+    async removeShoppingListItem(_id: string): Promise<void> {
+        throw new Error("Remote database not implemented");
+    }
+
     async clearCheckedShoppingListItems(_storeId: string): Promise<void> {
         throw new Error("RemoteDatabase not yet implemented");
     }

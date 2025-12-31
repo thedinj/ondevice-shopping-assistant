@@ -53,15 +53,6 @@ export type StoreItem = {
     updated_at: string;
 };
 
-export type ShoppingList = {
-    id: string;
-    store_id: string;
-    title: string | null;
-    created_at: string;
-    updated_at: string;
-    completed_at: string | null;
-};
-
 export type ShoppingListItem = {
     id: string;
     store_id: string;

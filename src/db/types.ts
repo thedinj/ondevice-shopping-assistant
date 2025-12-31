@@ -282,6 +282,12 @@ export interface EntityDatabase {
     deleteShoppingListItem(id: string): Promise<void>;
 
     /**
+     * Remove a shopping list item without deleting the associated store item
+     * Used when moving items between stores
+     */
+    removeShoppingListItem(id: string): Promise<void>;
+
+    /**
      * Clear all checked items from a shopping list for a store
      */
     clearCheckedShoppingListItems(storeId: string): Promise<void>;

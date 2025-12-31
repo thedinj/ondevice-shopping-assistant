@@ -3,7 +3,6 @@ import {
     getInitializedStore,
     QUANTITY_UNITS,
     QuantityUnit,
-    ShoppingList,
     ShoppingListItem,
     ShoppingListItemOptionalId,
     ShoppingListItemWithDetails,
@@ -13,9 +12,9 @@ import {
     StoreItemWithDetails,
     StoreSection,
 } from "../models/Store";
+import { normalizeItemName } from "../utils/stringUtils";
 import { BaseDatabase } from "./base";
 import { DEFAULT_TABLES_TO_PERSIST } from "./types";
-import { normalizeItemName } from "../utils/stringUtils";
 
 /**
  * In-memory fake database implementation for browser/development
@@ -25,7 +24,6 @@ export class FakeDatabase extends BaseDatabase {
     private aisles: Map<string, StoreAisle> = new Map();
     private sections: Map<string, StoreSection> = new Map();
     private items: Map<string, StoreItem> = new Map();
-    private shoppingLists: Map<string, ShoppingList> = new Map();
     private shoppingListItems: Map<string, ShoppingListItem> = new Map();
     private appSettings: Map<string, AppSetting> = new Map();
     private quantityUnits: Map<string, QuantityUnit> = new Map();
@@ -659,6 +657,12 @@ export class FakeDatabase extends BaseDatabase {
 
             this.notifyChange();
         }
+    }
+
+    async removeShoppingListItem(id: string): Promise<void> {
+        // Only remove from shopping list, leave store items intact
+        this.shoppingListItems.delete(id);
+        this.notifyChange();
     }
 
     async clearCheckedShoppingListItems(storeId: string): Promise<void> {
