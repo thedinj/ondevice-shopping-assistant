@@ -14,6 +14,7 @@ import { useToast } from "../../hooks/useToast";
 import { useAutoCategorize } from "../../llm/features/useAutoCategorize";
 import { LLMButton } from "../../llm/shared";
 import { StoreAisle, StoreSection } from "../../models/Store";
+import { naturalSort } from "../../utils/stringUtils";
 import {
     ClickableSelectionModal,
     SelectableItem,
@@ -52,23 +53,21 @@ export function LocationSelectors<T extends FieldValues = FieldValues>({
 
     // Filter and sort sections by selected aisle, then alphabetically
     const filteredSections = useMemo(() => {
+        // Use objectSortFn for natural sorting by section name
+        // Import objectSortFn from utils/stringUtils if not already
         return sections
             ?.filter(
                 (section: StoreSection) =>
                     !currentAisleId || section.aisle_id === currentAisleId
             )
-            .sort((a: StoreSection, b: StoreSection) =>
-                a.name.localeCompare(b.name)
-            );
+            .sort(naturalSort((section: StoreSection) => section.name));
     }, [sections, currentAisleId]);
 
     // Sort aisles alphabetically
     const sortedAisles = useMemo(() => {
         return aisles
             ?.slice()
-            .sort((a: StoreAisle, b: StoreAisle) =>
-                a.name.localeCompare(b.name)
-            );
+            .sort(naturalSort((aisle: StoreAisle) => aisle.name));
     }, [aisles]);
 
     // Convert to SelectableItem format

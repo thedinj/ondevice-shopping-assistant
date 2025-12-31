@@ -2,7 +2,7 @@
  * Store Scan Feature - LLM-powered aisle/section extraction
  */
 
-import { createNaturalSortComparator } from "../../utils/stringUtils";
+import { naturalSort } from "../../utils/stringUtils";
 
 /**
  * LLM response structure for store directory scan
@@ -45,7 +45,6 @@ export function transformStoreScanResult(
     }
 
     // Sort aisles: non-numbered first (alphabetically), then numbered (naturally)
-    const naturalSort = createNaturalSortComparator();
     const sortedAisles = [...result.aisles].sort((a, b) => {
         const aHasNumber = /\d/.test(a.name);
         const bHasNumber = /\d/.test(b.name);
@@ -55,7 +54,10 @@ export function transformStoreScanResult(
         if (aHasNumber && !bHasNumber) return 1;
 
         // Within same group, use natural sort
-        return naturalSort(a.name, b.name);
+        return naturalSort<StoreScanResult["aisles"][number]>((x) => x.name)(
+            a,
+            b
+        );
     });
 
     sortedAisles.forEach((aisle, aisleIndex) => {
@@ -68,7 +70,9 @@ export function transformStoreScanResult(
         // Add sections for this aisle
         if (aisle.sections && aisle.sections.length > 0) {
             // Sort sections naturally (case-insensitive, numeric-aware)
-            const sortedSections = [...aisle.sections].sort(naturalSort);
+            const sortedSections = [...aisle.sections].sort(
+                naturalSort((s) => s)
+            );
 
             sortedSections.forEach((section, sectionIndex) => {
                 transformed.sections.push({

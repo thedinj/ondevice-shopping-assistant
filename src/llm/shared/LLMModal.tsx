@@ -1,3 +1,4 @@
+import { KeepAwake } from "@capacitor-community/keep-awake";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { Capacitor } from "@capacitor/core";
 import {
@@ -19,8 +20,8 @@ import {
 } from "@ionic/react";
 import { attach, camera, close } from "ionicons/icons";
 import React, { use, useRef, useState } from "react";
-import { useToast } from "../../hooks/useToast";
 import { useSecureApiKey } from "../../hooks/useSecureStorage";
+import { useToast } from "../../hooks/useToast";
 import { OpenAIClient } from "./openaiClient";
 import type { LLMAttachment } from "./types";
 import { useLLMModalContext } from "./useLLMModalContext";
@@ -175,6 +176,11 @@ export const LLMModal: React.FC = () => {
         setResponse(null);
 
         try {
+            // Keep screen on during API call to prevent network interruption
+            if (Capacitor.isNativePlatform()) {
+                await KeepAwake.keepAwake();
+            }
+
             const client = new OpenAIClient(apiKeyValue);
             const llmResponse = await client.call({
                 prompt: config.prompt,
@@ -208,6 +214,10 @@ export const LLMModal: React.FC = () => {
                     : "Failed to call LLM API"
             );
         } finally {
+            // Allow screen to sleep again
+            if (Capacitor.isNativePlatform()) {
+                await KeepAwake.allowSleep();
+            }
             setIsLoading(false);
         }
     };

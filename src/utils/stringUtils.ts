@@ -31,16 +31,17 @@ export const normalizeItemName = (name: string): string => {
 };
 
 /**
- * Creates a natural sort comparator for case-insensitive alphanumeric sorting
- * Handles numeric portions correctly (e.g., "Aisle 9" before "Aisle 10")
- * Uses Intl.Collator for performance and proper Unicode handling
+ * Returns a sort function for Array.prototype.sort that sorts objects naturally by a mapped string property.
  *
- * @returns A comparator function for use with Array.sort()
+ * @param mapFn - Function to map an object to a string for comparison
+ * @returns Sort function for use as .sort(objectSortFn(mapFn))
  */
-export const createNaturalSortComparator = (): ((a: string, b: string) => number) => {
+export const naturalSort = <T>(
+    mapFn: (obj: T) => string
+): ((a: T, b: T) => number) => {
     const collator = new Intl.Collator(undefined, {
         numeric: true,
-        sensitivity: 'base',
+        sensitivity: "base",
     });
-    return (a: string, b: string) => collator.compare(a, b);
+    return (a: T, b: T) => collator.compare(mapFn(a), mapFn(b));
 };

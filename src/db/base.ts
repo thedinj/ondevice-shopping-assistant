@@ -176,7 +176,6 @@ export abstract class BaseDatabase implements Database {
         await this.insertAisle(storeId, "Deli");
         const bakeryAisle = await this.insertAisle(storeId, "Bakery");
         const produceAisle = await this.insertAisle(storeId, "Produce");
-        await this.insertAisle(storeId, "Produce");
         const aisle1 = await this.insertAisle(storeId, "Aisle 1");
         await this.insertSection(storeId, "Canned Goods", aisle1.id);
         const pastaSection = await this.insertSection(
