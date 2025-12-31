@@ -188,21 +188,21 @@ export abstract class BaseDatabase implements Database {
         await this.insertAisle(storeId, "Frozen Foods");
         await this.insertAisle(storeId, "Wine, Beer, and Liquor");
 
-        // Create sample items
-        // Add items to the shopping list
+        // Create sample items and collect shopping list entries
+        const shoppingListItems: ShoppingListItemOptionalId[] = [];
+
         const bananas = await this.getOrCreateStoreItemByName(
             storeId,
             "Bananas",
             produceAisle.id,
             null
         );
-        await this.upsertShoppingListItem({
+        shoppingListItems.push({
             store_id: storeId,
             store_item_id: bananas.id,
             qty: 1,
             unit_id: "bunch",
             notes: "Ripe, not green",
-            is_sample: 1,
         });
 
         const frenchBread = await this.getOrCreateStoreItemByName(
@@ -211,13 +211,12 @@ export abstract class BaseDatabase implements Database {
             bakeryAisle.id,
             null
         );
-        await this.upsertShoppingListItem({
+        shoppingListItems.push({
             store_id: storeId,
             store_item_id: frenchBread.id,
             qty: 1,
             unit_id: null,
             notes: null,
-            is_sample: 1,
         });
 
         const pennePasta = await this.getOrCreateStoreItemByName(
@@ -226,13 +225,12 @@ export abstract class BaseDatabase implements Database {
             null,
             pastaSection.id
         );
-        await this.upsertShoppingListItem({
+        shoppingListItems.push({
             store_id: storeId,
             store_item_id: pennePasta.id,
             qty: 1,
             unit_id: null,
             notes: null,
-            is_sample: 1,
         });
 
         const milk = await this.getOrCreateStoreItemByName(
@@ -241,13 +239,17 @@ export abstract class BaseDatabase implements Database {
             dairyAisle.id,
             null
         );
-        await this.upsertShoppingListItem({
+        shoppingListItems.push({
             store_id: storeId,
             store_item_id: milk.id,
             qty: 1,
             unit_id: "gallon",
             notes: null,
-            is_sample: 1,
         });
+
+        // Upsert all shopping list items at the end (and ensure they are marked as samples)
+        for (const item of shoppingListItems) {
+            await this.upsertShoppingListItem({ ...item, is_sample: 1 });
+        }
     }
 }
