@@ -34,7 +34,7 @@ import { ItemGroup } from "../components/shared/grouping.types";
 import { createAisleSectionGroups } from "../components/shared/grouping.utils";
 import { StoreItemEditorModal } from "../components/storeitem/StoreItemEditorModal";
 import {
-    useDeleteShoppingListItem,
+    useRemoveShoppingListItem,
     useShoppingListItems,
     useStore,
     useStoreItemsWithDetails,
@@ -51,7 +51,7 @@ const StoreItemsPage: React.FC = () => {
     const { data: shoppingListItems } = useShoppingListItems(id);
     const toggleFavorite = useToggleFavorite();
     const upsertShoppingListItem = useUpsertShoppingListItem();
-    const deleteShoppingListItem = useDeleteShoppingListItem();
+    const removeShoppingListItem = useRemoveShoppingListItem();
     const { showSuccess, showError } = useToast();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -182,7 +182,7 @@ const StoreItemsPage: React.FC = () => {
         if (!removeFromListAlert) return;
 
         try {
-            await deleteShoppingListItem.mutateAsync({
+            await removeShoppingListItem.mutateAsync({
                 id: removeFromListAlert.shoppingListItemId,
                 storeId: id,
             });

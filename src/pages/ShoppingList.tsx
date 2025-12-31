@@ -30,9 +30,6 @@ const ShoppingListContent: React.FC = () => {
     const {
         selectedStoreId,
         openCreateModal,
-        deleteAlert,
-        cancelDelete,
-        executeDelete,
     } = useShoppingListContext();
 
     const { data: items, isLoading: isLoadingItems } = useShoppingListItems(
@@ -114,7 +111,7 @@ const ShoppingListContent: React.FC = () => {
                         >
                             <IonText color="medium">
                                 <p>
-                                    Your basket is empty. Tap + to add items, if
+                                    Your list is empty. Tap + to add items, if
                                     your memory permits.
                                 </p>
                             </IonText>
@@ -163,24 +160,6 @@ const ShoppingListContent: React.FC = () => {
                     </>
                 )}
             </IonContent>
-
-            <IonAlert
-                isOpen={!!deleteAlert}
-                onDidDismiss={cancelDelete}
-                header="Remove Item"
-                message={`Delete "${deleteAlert?.name}" from your basket?`}
-                buttons={[
-                    {
-                        text: "Cancel",
-                        role: "cancel",
-                    },
-                    {
-                        text: "Delete",
-                        role: "destructive",
-                        handler: executeDelete,
-                    },
-                ]}
-            />
 
             <IonAlert
                 isOpen={showClearCheckedAlert}

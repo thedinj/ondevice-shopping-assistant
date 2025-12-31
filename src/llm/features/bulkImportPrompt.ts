@@ -12,7 +12,7 @@ Respond ONLY with a JSON object in this exact format:
 {
   "items": [
     {
-      "name": "item name (singular if possible)",
+      "name": "item name (use the same singular or plural as in the source; do not force singular or plural)",
       "quantity": number or null,
       "unit": "unit string or null",
       "notes": "any additional details or null"
@@ -20,10 +20,12 @@ Respond ONLY with a JSON object in this exact format:
   ]
 }
 
+
 Rules:
 - Extract EVERY item you can identify - put ALL items in the "items" array
-- Normalize item names (e.g., "apples" → "apple", "MILK" → "milk")
-- Parse quantities and units if present (e.g., "2 lbs bananas" → quantity: 2, unit: "lb", name: "banana")
+- Preserve the original singular or plural form of item names as written in the source (e.g., if the source says "orange", return "orange"; if it says "oranges", return "oranges"). Do not force singular or plural.
+- Normalize item names for capitalization only (e.g., "MILK" → "milk")
+- Parse quantities and units if present (e.g., "2 lbs bananas" → quantity: 2, unit: "lb", name: "bananas")
 - Common units: lb, oz, kg, g, bunch, bag, box, can, bottle, gallon, quart, pint, cup
 - If quantity is implicit ("some milk", "a few apples"), use quantity: 1
 - Put brand names, preferences, or extra info in notes field

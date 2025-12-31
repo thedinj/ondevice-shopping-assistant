@@ -155,18 +155,6 @@ export function LocationSelectors<T extends FieldValues = FieldValues>({
 
     return (
         <>
-            {/* Auto-Categorize Button */}
-            {itemName && sortedAisles && sortedAisles.length > 0 && (
-                <LLMButton
-                    expand="block"
-                    onClick={() => handleAutoCategorize()}
-                    disabled={disabled || isAutoCategorizing}
-                    style={{ margin: 0 }}
-                >
-                    {isAutoCategorizing ? "Locating..." : "Auto-Locate"}
-                </LLMButton>
-            )}
-
             {/* Override Alert */}
             <IonAlert
                 isOpen={showOverrideAlert}
@@ -185,122 +173,175 @@ export function LocationSelectors<T extends FieldValues = FieldValues>({
                 ]}
             />
 
-            {/* Aisle */}
-            <Controller
-                name={"aisleId" as Path<T>}
-                control={control}
-                render={({ field }) => (
-                    <>
-                        <IonItem
-                            button
-                            onClick={() =>
-                                !disabled &&
-                                aisleItems.length > 0 &&
-                                setIsAisleModalOpen(true)
-                            }
-                            disabled={disabled || aisleItems.length === 0}
-                        >
-                            <IonLabel position="stacked">Aisle</IonLabel>
-                            <div
-                                style={{
-                                    color: field.value
-                                        ? "var(--ion-color-dark)"
-                                        : "var(--ion-color-medium)",
-                                }}
-                            >
-                                {field.value ? selectedAisleName : "None"}
-                            </div>
-                        </IonItem>
-
-                        <ClickableSelectionModal
-                            items={aisleItems}
-                            value={field.value || undefined}
-                            onSelect={(aisleId) => {
-                                field.onChange(aisleId);
-                                // Clear section if aisle changed and section doesn't belong to new aisle
-                                if (currentSectionId) {
-                                    const section = sections?.find(
-                                        (s: StoreSection) =>
-                                            s.id === currentSectionId
-                                    );
-                                    if (
-                                        section &&
-                                        section.aisle_id !== aisleId
-                                    ) {
-                                        setValue(
-                                            "sectionId" as Path<T>,
-                                            null as PathValue<T, Path<T>>
-                                        );
+            {/* Aisle & Section Fields with Auto-Locate Button */}
+            <div
+                style={{
+                    display: "flex",
+                    gap: 0,
+                    alignItems: "stretch",
+                }}
+            >
+                {/* Fields Column */}
+                <div
+                    style={{
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                    }}
+                >
+                    {/* Aisle */}
+                    <Controller
+                        name={"aisleId" as Path<T>}
+                        control={control}
+                        render={({ field }) => (
+                            <>
+                                <IonItem
+                                    button
+                                    onClick={() =>
+                                        !disabled &&
+                                        aisleItems.length > 0 &&
+                                        setIsAisleModalOpen(true)
                                     }
-                                }
-                            }}
-                            isOpen={isAisleModalOpen}
-                            onDismiss={() => setIsAisleModalOpen(false)}
-                            title="Select Aisle"
-                            searchPlaceholder="Search aisles..."
-                            showSearch={true}
-                        />
-                    </>
-                )}
-            />
-
-            {/* Section */}
-            <Controller
-                name={"sectionId" as Path<T>}
-                control={control}
-                render={({ field }) => (
-                    <>
-                        <IonItem
-                            button
-                            onClick={() =>
-                                !disabled &&
-                                sectionItems.length > 0 &&
-                                setIsSectionModalOpen(true)
-                            }
-                            disabled={disabled || sectionItems.length === 0}
-                        >
-                            <IonLabel position="stacked">Section</IonLabel>
-                            <div
-                                style={{
-                                    color: field.value
-                                        ? "var(--ion-color-dark)"
-                                        : "var(--ion-color-medium)",
-                                }}
-                            >
-                                {field.value ? selectedSectionName : "None"}
-                            </div>
-                        </IonItem>
-
-                        <ClickableSelectionModal
-                            items={sectionItems}
-                            value={field.value || undefined}
-                            onSelect={(sectionId) => {
-                                field.onChange(sectionId);
-                                // If a section is selected, automatically set its aisle
-                                if (sectionId && sections) {
-                                    const section = sections.find(
-                                        (s: StoreSection) => s.id === sectionId
-                                    );
-                                    if (section) {
-                                        setValue(
-                                            "aisleId" as Path<T>,
-                                            section.aisle_id as PathValue<
-                                                T,
-                                                Path<T>
-                                            >
-                                        );
+                                    disabled={
+                                        disabled || aisleItems.length === 0
                                     }
-                                }
-                            }}
-                            isOpen={isSectionModalOpen}
-                            onDismiss={() => setIsSectionModalOpen(false)}
-                            title="Select Section"
-                            searchPlaceholder="Search sections..."
-                            showSearch={true}
-                        />
-                    </>
-                )}
-            />
+                                    lines="none"
+                                >
+                                    <IonLabel position="stacked">
+                                        Aisle
+                                    </IonLabel>
+                                    <div
+                                        style={{
+                                            color: field.value
+                                                ? "var(--ion-color-dark)"
+                                                : "var(--ion-color-medium)",
+                                        }}
+                                    >
+                                        {field.value
+                                            ? selectedAisleName
+                                            : "None"}
+                                    </div>
+                                </IonItem>
+
+                                <ClickableSelectionModal
+                                    items={aisleItems}
+                                    value={field.value || undefined}
+                                    onSelect={(aisleId) => {
+                                        field.onChange(aisleId);
+                                        // Clear section if aisle changed and section doesn't belong to new aisle
+                                        if (currentSectionId) {
+                                            const section = sections?.find(
+                                                (s: StoreSection) =>
+                                                    s.id === currentSectionId
+                                            );
+                                            if (
+                                                section &&
+                                                section.aisle_id !== aisleId
+                                            ) {
+                                                setValue(
+                                                    "sectionId" as Path<T>,
+                                                    null as PathValue<
+                                                        T,
+                                                        Path<T>
+                                                    >
+                                                );
+                                            }
+                                        }
+                                    }}
+                                    isOpen={isAisleModalOpen}
+                                    onDismiss={() => setIsAisleModalOpen(false)}
+                                    title="Select Aisle"
+                                    searchPlaceholder="Search aisles..."
+                                    showSearch={true}
+                                />
+                            </>
+                        )}
+                    />
+
+                    {/* Section */}
+                    <Controller
+                        name={"sectionId" as Path<T>}
+                        control={control}
+                        render={({ field }) => (
+                            <>
+                                <IonItem
+                                    button
+                                    onClick={() =>
+                                        !disabled &&
+                                        sectionItems.length > 0 &&
+                                        setIsSectionModalOpen(true)
+                                    }
+                                    disabled={
+                                        disabled || sectionItems.length === 0
+                                    }
+                                >
+                                    <IonLabel position="stacked">
+                                        Section
+                                    </IonLabel>
+                                    <div
+                                        style={{
+                                            color: field.value
+                                                ? "var(--ion-color-dark)"
+                                                : "var(--ion-color-medium)",
+                                        }}
+                                    >
+                                        {field.value
+                                            ? selectedSectionName
+                                            : "None"}
+                                    </div>
+                                </IonItem>
+
+                                <ClickableSelectionModal
+                                    items={sectionItems}
+                                    value={field.value || undefined}
+                                    onSelect={(sectionId) => {
+                                        field.onChange(sectionId);
+                                        // If a section is selected, automatically set its aisle
+                                        if (sectionId && sections) {
+                                            const section = sections.find(
+                                                (s: StoreSection) =>
+                                                    s.id === sectionId
+                                            );
+                                            if (section) {
+                                                setValue(
+                                                    "aisleId" as Path<T>,
+                                                    section.aisle_id as PathValue<
+                                                        T,
+                                                        Path<T>
+                                                    >
+                                                );
+                                            }
+                                        }
+                                    }}
+                                    isOpen={isSectionModalOpen}
+                                    onDismiss={() =>
+                                        setIsSectionModalOpen(false)
+                                    }
+                                    title="Select Section"
+                                    searchPlaceholder="Search sections..."
+                                    showSearch={true}
+                                />
+                            </>
+                        )}
+                    />
+                </div>
+
+                {/* Auto-Locate Icon Button */}
+                <div style={{ display: "flex", alignItems: "stretch" }}>
+                    <LLMButton
+                        iconOnly
+                        onClick={() => handleAutoCategorize()}
+                        disabled={
+                            disabled ||
+                            isAutoCategorizing ||
+                            !itemName ||
+                            !sortedAisles ||
+                            sortedAisles.length === 0
+                        }
+                        title="Auto-Locate"
+                    />
+                </div>
+            </div>
         </>
     );
 }

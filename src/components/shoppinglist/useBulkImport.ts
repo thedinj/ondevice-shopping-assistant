@@ -139,7 +139,7 @@ export function useBulkImport(storeId: string) {
                     showSuccess(
                         `Added ${successCount} item${
                             successCount > 1 ? "s" : ""
-                        } to your basket`
+                        } to your cart`
                     );
                 }
 
