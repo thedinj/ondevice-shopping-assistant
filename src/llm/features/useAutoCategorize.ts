@@ -57,7 +57,7 @@ export function useAutoCategorize() {
                 apiKey: apiKeyValue,
                 prompt: AUTO_CATEGORIZE_PROMPT,
                 userText: JSON.stringify(input),
-                model: "gpt-4o-mini",
+                model: "gpt-4o",
             });
 
             if (!validateAutoCategorizeResult(response.data)) {

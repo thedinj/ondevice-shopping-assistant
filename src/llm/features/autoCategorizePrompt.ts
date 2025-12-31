@@ -19,7 +19,7 @@ Respond ONLY with a JSON object in this exact format:
 }
 
 Rules:
-- Use the EXACT aisle and section names from the provided list (case-insensitive matching is OK)
+- Use the EXACT aisle and section names from the provided list
 - If the item could fit in multiple places, choose the most common location
 - If you're unsure, provide a lower confidence score
 - If no section is a good match, set section_name to null
