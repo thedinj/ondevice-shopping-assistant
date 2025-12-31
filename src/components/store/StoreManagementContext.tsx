@@ -15,11 +15,14 @@ export interface DeleteEntity {
     type: EntityType;
 }
 
+export type ReorderMode = "aisles" | "sections";
+
 export interface StoreManagementContextType {
     // Modal state
     isModalOpen: boolean;
     editingEntity: EditingEntity | null;
-    openCreateModal: () => void;
+    forcedType: EntityType | null;
+    openCreateModal: (forceType?: EntityType) => void;
     openEditAisleModal: (aisle: { id: string; name: string }) => void;
     openEditSectionModal: (section: {
         id: string;
@@ -33,6 +36,10 @@ export interface StoreManagementContextType {
     confirmDeleteAisle: (aisle: { id: string; name: string }) => void;
     confirmDeleteSection: (section: { id: string; name: string }) => void;
     closeDeleteAlert: () => void;
+
+    // Mode state
+    mode: ReorderMode;
+    setMode: (mode: ReorderMode) => void;
 }
 
 export const StoreManagementContext = createContext<

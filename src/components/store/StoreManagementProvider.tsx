@@ -1,8 +1,10 @@
 import { ReactNode, useState } from "react";
 import {
-    StoreManagementContext,
-    EditingEntity,
     DeleteEntity,
+    EditingEntity,
+    EntityType,
+    ReorderMode,
+    StoreManagementContext,
     StoreManagementContextType,
 } from "./StoreManagementContext";
 
@@ -17,10 +19,13 @@ export const StoreManagementProvider = ({
     const [editingEntity, setEditingEntity] = useState<EditingEntity | null>(
         null
     );
+    const [forcedType, setForcedType] = useState<EntityType | null>(null);
     const [deleteAlert, setDeleteAlert] = useState<DeleteEntity | null>(null);
+    const [mode, setMode] = useState<ReorderMode>("sections");
 
-    const openCreateModal = () => {
+    const openCreateModal = (forceType?: EntityType) => {
         setEditingEntity(null);
+        setForcedType(forceType || null);
         setIsModalOpen(true);
     };
 
@@ -41,6 +46,7 @@ export const StoreManagementProvider = ({
     const closeModal = () => {
         setIsModalOpen(false);
         setEditingEntity(null);
+        setForcedType(null);
     };
 
     const confirmDeleteAisle = (aisle: { id: string; name: string }) => {
@@ -58,6 +64,7 @@ export const StoreManagementProvider = ({
     const value: StoreManagementContextType = {
         isModalOpen,
         editingEntity,
+        forcedType,
         openCreateModal,
         openEditAisleModal,
         openEditSectionModal,
@@ -66,6 +73,8 @@ export const StoreManagementProvider = ({
         confirmDeleteAisle,
         confirmDeleteSection,
         closeDeleteAlert,
+        mode,
+        setMode,
     };
 
     return (

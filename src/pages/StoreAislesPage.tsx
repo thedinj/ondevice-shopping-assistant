@@ -11,24 +11,33 @@ import {
     IonToolbar,
 } from "@ionic/react";
 import { add } from "ionicons/icons";
-import { useRef } from "react";
 import { useParams } from "react-router-dom";
 import { FabSpacer } from "../components/shared/FabSpacer";
 import AisleSectionList from "../components/store/AisleSectionList";
-import { ListHandle } from "../components/store/types";
+import { useStoreManagement } from "../components/store/StoreManagementContext";
+import { StoreManagementProvider } from "../components/store/StoreManagementProvider";
 import { useStore } from "../db/hooks";
 
-const StoreAislesPage: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
-    const { data: store } = useStore(id);
-    const listRef = useRef<ListHandle>(null);
+const StoreAislesPageContent: React.FC<{ storeId: string }> = ({
+    storeId,
+}) => {
+    const { data: store } = useStore(storeId);
+    const { openCreateModal, mode } = useStoreManagement();
+
+    const handleFabClick = () => {
+        if (mode === "aisles") {
+            openCreateModal("aisle");
+        } else {
+            openCreateModal();
+        }
+    };
 
     return (
         <IonPage>
             <IonHeader>
                 <IonToolbar>
                     <IonButtons slot="start">
-                        <IonBackButton defaultHref={`/stores/${id}`} />
+                        <IonBackButton defaultHref={`/stores/${storeId}`} />
                     </IonButtons>
                     <IonTitle>
                         {store?.name || "Store"} Aisles & Sections
@@ -36,17 +45,25 @@ const StoreAislesPage: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>
-                <AisleSectionList storeId={id} ref={listRef} />
+                <AisleSectionList storeId={storeId} />
                 <FabSpacer />
                 <IonFab slot="fixed" vertical="bottom" horizontal="end">
-                    <IonFabButton
-                        onClick={() => listRef.current?.openCreateModal()}
-                    >
+                    <IonFabButton onClick={handleFabClick}>
                         <IonIcon icon={add} />
                     </IonFabButton>
                 </IonFab>
             </IonContent>
         </IonPage>
+    );
+};
+
+const StoreAislesPage: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
+
+    return (
+        <StoreManagementProvider>
+            <StoreAislesPageContent storeId={id} />
+        </StoreManagementProvider>
     );
 };
 

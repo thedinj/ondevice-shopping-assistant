@@ -62,7 +62,8 @@ interface EntityFormModalProps {
 }
 
 export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
-    const { isModalOpen, editingEntity, closeModal } = useStoreManagement();
+    const { isModalOpen, editingEntity, forcedType, closeModal } =
+        useStoreManagement();
     const createAisle = useCreateAisle();
     const updateAisle = useUpdateAisle();
     const createSection = useCreateSection();
@@ -111,9 +112,10 @@ export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
                         : undefined,
             });
         } else if (isModalOpen && !editingEntity) {
-            reset({ name: "", type: "aisle", aisle_id: undefined });
+            const initialType = forcedType || "aisle";
+            reset({ name: "", type: initialType, aisle_id: undefined });
         }
-    }, [isModalOpen, editingEntity, reset]);
+    }, [isModalOpen, editingEntity, forcedType, reset]);
 
     const onSubmit = async (data: EntityFormData) => {
         if (data.type === "aisle") {
@@ -176,12 +178,19 @@ export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
                 editingEntity.type === "aisle" ? "Aisle" : "Section"
             }`;
         }
+        if (forcedType === "aisle") {
+            return "New Aisle";
+        }
+        if (forcedType === "section") {
+            return "New Section";
+        }
         return aisles && aisles.length > 0
             ? "New Aisle or Section"
             : "New Aisle";
     };
 
-    const showTypeSelector = !editingEntity && aisles && aisles.length > 0;
+    const showTypeSelector =
+        !editingEntity && !forcedType && aisles && aisles.length > 0;
 
     return (
         <IonModal isOpen={isModalOpen} onDidDismiss={closeModal}>
