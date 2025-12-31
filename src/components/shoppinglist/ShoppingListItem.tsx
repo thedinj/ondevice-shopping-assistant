@@ -1,13 +1,27 @@
 import {
+    IonAlert,
     IonButton,
+    IonButtons,
     IonCheckbox,
+    IonContent,
+    IonHeader,
     IonIcon,
     IonItem,
     IonLabel,
+    IonModal,
+    IonTitle,
+    IonToolbar,
 } from "@ionic/react";
-import { create } from "ionicons/icons";
-import { useToggleItemChecked } from "../../db/hooks";
-import { ShoppingListItemWithDetails } from "../../models/Store";
+import { closeOutline, create, swapHorizontalOutline } from "ionicons/icons";
+import { useState } from "react";
+import {
+    useMoveItemToStore,
+    useStores,
+    useToggleItemChecked,
+} from "../../db/hooks";
+import { useToast } from "../../hooks/useToast";
+import { ShoppingListItemWithDetails, Store } from "../../models/Store";
+import { GenericStoreSelector } from "../shared/GenericStoreSelector";
 import { useShoppingListContext } from "./useShoppingListContext";
 
 import "./ShoppingListItem.css";
@@ -21,10 +35,53 @@ export const ShoppingListItem = ({
     item,
     isChecked,
 }: ShoppingListItemProps) => {
+    const toast = useToast();
     const { openEditModal, newlyImportedItemIds } = useShoppingListContext();
+    const [showMoveModal, setShowMoveModal] = useState(false);
+    const [pendingMove, setPendingMove] = useState<Store | null>(null);
     const toggleChecked = useToggleItemChecked();
+    const moveItemToStore = useMoveItemToStore();
+    const { data: stores } = useStores();
 
     const isNewlyImported = newlyImportedItemIds.has(item.id);
+
+    const handleStoreSelected = (storeId: string | null) => {
+        if (storeId && stores) {
+            const storeObj = stores.find((s) => s.id === storeId);
+            if (storeObj) {
+                setPendingMove(storeObj);
+                setShowMoveModal(false);
+            }
+        }
+    };
+
+    const handleMoveToStore = async () => {
+        if (!pendingMove) return;
+
+        try {
+            const result = await moveItemToStore.mutateAsync({
+                item: {
+                    id: item.id,
+                    item_name: item.item_name,
+                    notes: item.notes,
+                    qty: item.qty,
+                    unit_id: item.unit_id,
+                    is_idea: item.is_idea,
+                },
+                sourceStoreId: item.store_id,
+                targetStoreId: pendingMove.id,
+                targetStoreName: pendingMove.name,
+            });
+
+            toast.showSuccess(
+                `Moved "${result.itemName}" to ${result.targetStoreName}. Obviously.`
+            );
+            setPendingMove(null);
+        } catch (error) {
+            toast.showError("Failed to move item. Perhaps try again?");
+            console.error("Error moving item to store:", error);
+        }
+    };
 
     const handleCheckboxChange = (checked: boolean) => {
         toggleChecked.mutate({
@@ -102,6 +159,17 @@ export const ShoppingListItem = ({
                     )}
                 </>
             </IonLabel>
+
+            {stores && stores.length > 1 && (
+                <IonButton
+                    slot="end"
+                    fill="clear"
+                    onClick={() => setShowMoveModal(true)}
+                >
+                    <IonIcon icon={swapHorizontalOutline} color="medium" />
+                </IonButton>
+            )}
+
             <IonButton
                 slot="end"
                 fill="clear"
@@ -111,6 +179,58 @@ export const ShoppingListItem = ({
             >
                 <IonIcon icon={create} color="medium" />
             </IonButton>
+
+            <IonAlert
+                isOpen={!!pendingMove}
+                onDidDismiss={() => setPendingMove(null)}
+                header="Move to Store"
+                message={`Move this item  to ${
+                    pendingMove?.name ?? "the other store"
+                }? The item will be removed from the current store and added to the selected store.`}
+                buttons={[
+                    {
+                        text: "Cancel",
+                        role: "cancel",
+                        handler: () => setPendingMove(null),
+                    },
+                    {
+                        text: "Move",
+                        handler: handleMoveToStore,
+                    },
+                ]}
+            />
+
+            {/* Move to Store Modal */}
+            <IonModal
+                isOpen={showMoveModal}
+                onDidDismiss={() => setShowMoveModal(false)}
+            >
+                <IonHeader>
+                    <IonToolbar>
+                        <IonTitle>Move to Store</IonTitle>
+                        <IonButtons slot="end">
+                            <IonButton
+                                onClick={() => {
+                                    setShowMoveModal(false);
+                                    setPendingMove(null);
+                                }}
+                            >
+                                <IonIcon icon={closeOutline} />
+                            </IonButton>
+                        </IonButtons>
+                    </IonToolbar>
+                </IonHeader>
+                <IonContent>
+                    <GenericStoreSelector
+                        selectedStoreId={null}
+                        onStoreSelect={handleStoreSelected}
+                        modalTitle="Select Destination Store"
+                        placeholderText="Select destination store"
+                        excludeStoreIds={[item.store_id]}
+                        allowClear={false}
+                    />
+                </IonContent>
+            </IonModal>
         </IonItem>
     );
 };

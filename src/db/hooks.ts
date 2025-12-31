@@ -960,3 +960,77 @@ export function useClearCheckedItems() {
         },
     });
 }
+
+/**
+ * Hook to move a shopping list item from one store to another
+ * Handles both regular items and ideas
+ */
+export function useMoveItemToStore() {
+    const database = useDatabase();
+    const queryClient = useQueryClient();
+
+    return useTanstackMutation({
+        mutationFn: async (params: {
+            item: {
+                id: string;
+                item_name: string;
+                notes: string | null;
+                qty: number;
+                unit_id: string | null;
+                is_idea: number;
+            };
+            sourceStoreId: string;
+            targetStoreId: string;
+            targetStoreName: string;
+        }) => {
+            const { item, targetStoreId, targetStoreName } = params;
+            const itemName = item.is_idea ? item.notes || "" : item.item_name;
+
+            if (item.is_idea) {
+                // Move idea - just notes, no store item needed
+                await database.upsertShoppingListItem({
+                    store_id: targetStoreId,
+                    store_item_id: null,
+                    qty: 1,
+                    unit_id: null,
+                    notes: item.notes,
+                    is_idea: 1,
+                });
+            } else {
+                // Move regular item - get or create store item at target store
+                // This will match by normalized_name if item exists at target store
+                const targetStoreItem =
+                    await database.getOrCreateStoreItemByName(
+                        targetStoreId,
+                        item.item_name,
+                        null, // Will use existing location if item found by normalized_name
+                        null
+                    );
+
+                // Create shopping list item at target store
+                await database.upsertShoppingListItem({
+                    store_id: targetStoreId,
+                    store_item_id: targetStoreItem.id,
+                    qty: item.qty,
+                    unit_id: item.unit_id,
+                    notes: item.notes,
+                    is_idea: 0,
+                });
+            }
+
+            // Remove from current store (without removing the store item)
+            await database.removeShoppingListItem(item.id);
+
+            return { itemName, targetStoreName };
+        },
+        onSuccess: (_, variables) => {
+            // Invalidate both source and target store queries
+            queryClient.invalidateQueries({
+                queryKey: ["shopping-list-items", variables.sourceStoreId],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["shopping-list-items", variables.targetStoreId],
+            });
+        },
+    });
+}

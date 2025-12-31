@@ -13,29 +13,19 @@ import {
     IonToolbar,
 } from "@ionic/react";
 import { UseMutationResult } from "@tanstack/react-query";
-import {
-    bulbOutline,
-    cartOutline,
-    closeOutline,
-    swapHorizontalOutline,
-} from "ionicons/icons";
+import { bulbOutline, cartOutline, closeOutline } from "ionicons/icons";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
     useDeleteShoppingListItem,
     useGetOrCreateStoreItem,
-    useRemoveShoppingListItem,
-    useStores,
     useUpdateItem,
     useUpsertShoppingListItem,
 } from "../../db/hooks";
-import { useToast } from "../../hooks/useToast";
 import {
     ShoppingListItem,
     ShoppingListItemOptionalId,
-    Store,
 } from "../../models/Store";
-import { GenericStoreSelector } from "../shared/GenericStoreSelector";
 import { ItemEditorProvider } from "./ItemEditorContext";
 import { ItemFormData, itemFormSchema } from "./itemEditorSchema";
 import { LocationSelectors } from "./LocationSelectors";
@@ -56,13 +46,7 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
     const getOrCreateStoreItem = useGetOrCreateStoreItem();
     const updateItem = useUpdateItem();
     const deleteItem = useDeleteShoppingListItem();
-    const removeItem = useRemoveShoppingListItem();
-    const { data: stores } = useStores();
-    const toast = useToast();
     const [showDeleteAlert, setShowDeleteAlert] = useState(false);
-    const [showMoveModal, setShowMoveModal] = useState(false);
-    const [pendingMove, setPendingMove] = useState<Store | null>(null);
-    const [isMoving, setIsMoving] = useState(false);
 
     const {
         control,
@@ -199,75 +183,6 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
         }
     };
 
-    const handleMoveToStore = async () => {
-        if (!editingItem || !pendingMove) return;
-
-        setIsMoving(true);
-        try {
-            const itemName = isIdea
-                ? editingItem.notes || ""
-                : editingItem.item_name;
-
-            if (isIdea) {
-                // Move idea - just notes, no store item needed
-                await upsertItem.mutateAsync({
-                    store_id: pendingMove.id,
-                    store_item_id: null,
-                    qty: 1,
-                    unit_id: null,
-                    notes: editingItem.notes,
-                    is_idea: 1,
-                });
-            } else {
-                // Move regular item - get or create store item at target store
-                // This will match by normalized_name if item exists at target store
-                const targetStoreItem = await getOrCreateStoreItem.mutateAsync({
-                    storeId: pendingMove.id,
-                    name: editingItem.item_name,
-                    aisleId: null, // Will use existing location if item found by normalized_name
-                    sectionId: null,
-                });
-
-                // Create shopping list item at target store
-                await upsertItem.mutateAsync({
-                    store_id: pendingMove.id,
-                    store_item_id: targetStoreItem.id,
-                    qty: editingItem.qty,
-                    unit_id: editingItem.unit_id,
-                    notes: editingItem.notes,
-                    is_idea: 0,
-                });
-            }
-
-            // Delete from current store (without removing the store item)
-            await removeItem.mutateAsync({
-                id: editingItem.id,
-                storeId: storeId,
-            });
-
-            toast.showSuccess(
-                `Moved "${itemName}" to ${pendingMove.name}. Obviously.`
-            );
-            setPendingMove(null);
-            closeItemModal();
-        } catch (error) {
-            console.error("Error moving item to store:", error);
-            toast.showError("Failed to move item. Perhaps try again?");
-        } finally {
-            setIsMoving(false);
-        }
-    };
-
-    const handleStoreSelected = (storeId: string | null) => {
-        if (storeId && stores) {
-            const storeObj = stores.find((s) => s.id === storeId);
-            if (storeObj) {
-                setPendingMove(storeObj);
-                setShowMoveModal(false);
-            }
-        }
-    };
-
     return (
         <IonModal isOpen={isItemModalOpen} onDidDismiss={closeItemModal}>
             <IonHeader>
@@ -353,27 +268,6 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                             isIdea={isIdea}
                         />
 
-                        {editingItem &&
-                            !isIdea &&
-                            editingItem.is_checked === 0 &&
-                            stores &&
-                            stores.length > 1 && (
-                                <IonButton
-                                    expand="block"
-                                    color="primary"
-                                    fill="outline"
-                                    onClick={() => setShowMoveModal(true)}
-                                    disabled={isMoving}
-                                    style={{ marginTop: "10px" }}
-                                >
-                                    <IonIcon
-                                        icon={swapHorizontalOutline}
-                                        slot="start"
-                                    />
-                                    Move to Another Store
-                                </IonButton>
-                            )}
-
                         {editingItem && !isIdea && (
                             <IonButton
                                 expand="block"
@@ -406,63 +300,7 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                         },
                     ]}
                 />
-
-                <IonAlert
-                    isOpen={!!pendingMove}
-                    onDidDismiss={() => setPendingMove(null)}
-                    header="Move to Store"
-                    message={`Move "${
-                        isIdea
-                            ? editingItem?.notes || "Idea"
-                            : editingItem?.item_name
-                    }" to ${
-                        pendingMove?.name ?? "the other store"
-                    }? The item will be removed from the current store and added to the selected store.`}
-                    buttons={[
-                        {
-                            text: "Cancel",
-                            role: "cancel",
-                            handler: () => setPendingMove(null),
-                        },
-                        {
-                            text: "Move",
-                            handler: handleMoveToStore,
-                        },
-                    ]}
-                />
             </IonContent>
-
-            {/* Move to Store Modal */}
-            <IonModal
-                isOpen={showMoveModal}
-                onDidDismiss={() => setShowMoveModal(false)}
-            >
-                <IonHeader>
-                    <IonToolbar>
-                        <IonTitle>Move to Store</IonTitle>
-                        <IonButtons slot="end">
-                            <IonButton
-                                onClick={() => {
-                                    setShowMoveModal(false);
-                                    setPendingMove(null);
-                                }}
-                            >
-                                <IonIcon icon={closeOutline} />
-                            </IonButton>
-                        </IonButtons>
-                    </IonToolbar>
-                </IonHeader>
-                <IonContent>
-                    <GenericStoreSelector
-                        selectedStoreId={null}
-                        onStoreSelect={handleStoreSelected}
-                        modalTitle="Select Destination Store"
-                        placeholderText="Select destination store"
-                        excludeStoreIds={[storeId]}
-                        allowClear={false}
-                    />
-                </IonContent>
-            </IonModal>
         </IonModal>
     );
 };
