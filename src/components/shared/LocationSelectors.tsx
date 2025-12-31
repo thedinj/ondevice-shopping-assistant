@@ -120,9 +120,8 @@ export function LocationSelectors<T extends FieldValues = FieldValues>({
                         id: aisle.id,
                         name: aisle.name,
                         sections:
-                            sections
-                                ?.filter((s) => s.aisle_id === aisle.id)
-                                .map((s) => ({ id: s.id, name: s.name })) || [],
+                            sections?.filter((s) => s.aisle_id === aisle.id) ||
+                            [],
                     })) || [],
             });
 

@@ -575,16 +575,7 @@ const MyComponent = () => {
     - `gpt-4o-mini`: Fast, cheap, good for simple tasks (categorization, parsing short text)
     - `gpt-4o`: More capable, vision support, complex reasoning (image processing, multi-step logic)
 
-3. **Handle missing API keys gracefully:**
-
-    ```typescript
-    const apiKey = useOpenAIApiKey();
-
-    // LLMButton automatically disables when apiKey is null
-    <LLMButton disabled={!apiKey} onClick={handleAction}>
-        AI Feature
-    </LLMButton>;
-    ```
+3. **Check the API key only in the core hooks.**
 
 4. **Structure prompts clearly:**
 

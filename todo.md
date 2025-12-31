@@ -1,6 +1,5 @@
 # Next
 
--   Are we losing details when auto-relocating?
 -   On Reorder Aisles page don't allow section entry
 
 # To Do

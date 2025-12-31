@@ -129,12 +129,13 @@ const ShoppingListContent: React.FC = () => {
                             onClearChecked={handleClearChecked}
                             isClearing={clearChecked.isPending}
                         />
-                        <FabSpacer />
                     </>
                 )}
 
                 {selectedStoreId && items && (
                     <>
+                        <FabSpacer />
+
                         {/* Add Item FAB */}
                         <IonFab vertical="bottom" horizontal="end" slot="fixed">
                             <IonFabButton
@@ -150,7 +151,7 @@ const ShoppingListContent: React.FC = () => {
                             vertical="bottom"
                             horizontal="end"
                             slot="fixed"
-                            style={{ marginRight: "72px" }}
+                            style={{ marginRight: "70px" }}
                         >
                             <LLMFabButton
                                 onClick={openBulkImport}

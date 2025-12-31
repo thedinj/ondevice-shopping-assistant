@@ -160,6 +160,7 @@ const StoresList: React.FC = () => {
                         ))}
                     </IonList>
                 )}
+
                 <FabSpacer />
 
                 <IonFab slot="fixed" vertical="bottom" horizontal="end">
