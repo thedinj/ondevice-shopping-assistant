@@ -16,10 +16,13 @@ import {
 } from "@ionic/react";
 import { closeOutline } from "ionicons/icons";
 import React, { useMemo, useState } from "react";
+import { normalizeItemName } from "../../utils/stringUtils";
 
 export interface SelectableItem {
     id: string;
     label: string;
+    /** Optional additional search terms (not displayed in UI) */
+    searchTerms?: string[];
 }
 
 interface ClickableSelectionModalProps {
@@ -70,15 +73,60 @@ export const ClickableSelectionModal: React.FC<
 }) => {
     const [searchText, setSearchText] = useState("");
 
-    // Filter items based on search text
+    // Filter and tier items based on search text
     const filteredItems = useMemo(() => {
         if (!searchText.trim()) {
             return items;
         }
-        const lowerSearch = searchText.toLowerCase();
-        return items.filter((item) =>
-            item.label.toLowerCase().includes(lowerSearch)
-        );
+        const lowerSearch = normalizeItemName(searchText);
+
+        // Tier items based on match quality
+        const tieredItems: Array<{ item: SelectableItem; tier: number }> = [];
+
+        items.forEach((item) => {
+            const lowerLabel = item.label.toLowerCase();
+
+            // Tier 1: Label starts with search string
+            if (lowerLabel.startsWith(lowerSearch)) {
+                tieredItems.push({ item, tier: 1 });
+                return;
+            }
+
+            // Tier 2: Search terms start with search string
+            if (
+                item.searchTerms?.some((term) =>
+                    term.toLowerCase().startsWith(lowerSearch)
+                )
+            ) {
+                tieredItems.push({ item, tier: 2 });
+                return;
+            }
+
+            // Tier 3: Label contains search string
+            if (lowerLabel.includes(lowerSearch)) {
+                tieredItems.push({ item, tier: 3 });
+                return;
+            }
+
+            // Tier 4: Search terms contain search string
+            if (
+                item.searchTerms?.some((term) =>
+                    term.toLowerCase().includes(lowerSearch)
+                )
+            ) {
+                tieredItems.push({ item, tier: 4 });
+            }
+        });
+
+        // Sort by tier, then by label within each tier
+        return tieredItems
+            .sort((a, b) => {
+                if (a.tier !== b.tier) {
+                    return a.tier - b.tier;
+                }
+                return a.item.label.localeCompare(b.item.label);
+            })
+            .map((tiered) => tiered.item);
     }, [items, searchText]);
 
     const handleItemClick = (itemId: string) => {

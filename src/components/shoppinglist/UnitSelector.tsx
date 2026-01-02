@@ -14,12 +14,15 @@ export const UnitSelector = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const unitItems: SelectableItem[] = useMemo(() => {
-        return units
-            ?.sort((a, b) => a.abbreviation.localeCompare(b.abbreviation))
-            .map((unit) => ({
-                id: unit.id,
-                label: unit.abbreviation,
-            })) || [];
+        return (
+            units
+                ?.sort((a, b) => a.abbreviation.localeCompare(b.abbreviation))
+                .map((unit) => ({
+                    id: unit.id,
+                    label: unit.abbreviation,
+                    searchTerms: [unit.name],
+                })) || []
+        );
     }, [units]);
 
     if (isLoading) {
@@ -32,16 +35,24 @@ export const UnitSelector = () => {
             control={control}
             render={({ field: { onChange, value } }) => {
                 const selectedUnit = units?.find((u) => u.id === value);
-                
+
                 return (
                     <>
-                        <IonItem 
-                            button 
-                            onClick={() => unitItems.length > 0 && setIsModalOpen(true)}
+                        <IonItem
+                            button
+                            onClick={() =>
+                                unitItems.length > 0 && setIsModalOpen(true)
+                            }
                             disabled={unitItems.length === 0}
                         >
                             <IonLabel position="stacked">Unit</IonLabel>
-                            <div style={{ color: value ? "var(--ion-color-dark)" : "var(--ion-color-medium)" }}>
+                            <div
+                                style={{
+                                    color: value
+                                        ? "var(--ion-color-dark)"
+                                        : "var(--ion-color-medium)",
+                                }}
+                            >
                                 {value ? selectedUnit?.abbreviation : "No unit"}
                             </div>
                         </IonItem>
@@ -58,7 +69,13 @@ export const UnitSelector = () => {
                         />
 
                         {errors.unitId && (
-                            <div style={{ color: "red", fontSize: "12px", marginLeft: "16px" }}>
+                            <div
+                                style={{
+                                    color: "red",
+                                    fontSize: "12px",
+                                    marginLeft: "16px",
+                                }}
+                            >
                                 {errors.unitId.message}
                             </div>
                         )}
