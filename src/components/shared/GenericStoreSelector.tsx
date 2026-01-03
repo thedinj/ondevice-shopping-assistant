@@ -1,10 +1,7 @@
-import { IonItem } from "@ionic/react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useStores } from "../../db/hooks";
-import {
-    ClickableSelectionModal,
-    SelectableItem,
-} from "./ClickableSelectionModal";
+import { ClickableSelectionField } from "./ClickableSelectionField";
+import type { SelectableItem } from "./ClickableSelectionModal";
 
 interface GenericStoreSelectorProps {
     selectedStoreId: string | null;
@@ -30,7 +27,6 @@ export const GenericStoreSelector: React.FC<GenericStoreSelectorProps> = ({
     excludeStoreIds = [],
 }) => {
     const { data: stores, isLoading } = useStores();
-    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const filteredStores = useMemo(() => {
         if (!stores) return [];
@@ -46,11 +42,6 @@ export const GenericStoreSelector: React.FC<GenericStoreSelectorProps> = ({
 
     const selectedStore = stores?.find((s) => s.id === selectedStoreId);
 
-    const handleSelect = (storeId: string | null) => {
-        onStoreSelect(storeId);
-        setIsModalOpen(false);
-    };
-
     if (isLoading) {
         return null;
     }
@@ -62,33 +53,16 @@ export const GenericStoreSelector: React.FC<GenericStoreSelectorProps> = ({
         : placeholderText;
 
     return (
-        <>
-            <IonItem
-                button
-                onClick={() => storeItems.length > 0 && setIsModalOpen(true)}
-                disabled={disabled || storeItems.length === 0}
-            >
-                <div
-                    style={{
-                        color: selectedStoreId
-                            ? "var(--ion-color-dark)"
-                            : "var(--ion-color-medium)",
-                    }}
-                >
-                    {displayText}
-                </div>
-            </IonItem>
-
-            <ClickableSelectionModal
-                items={storeItems}
-                value={selectedStoreId || undefined}
-                onSelect={handleSelect}
-                isOpen={isModalOpen}
-                onDismiss={() => setIsModalOpen(false)}
-                title={modalTitle}
-                showSearch={showSearch}
-                allowClear={allowClear && storeItems.length > 1}
-            />
-        </>
+        <ClickableSelectionField
+            items={storeItems}
+            value={selectedStoreId}
+            onSelect={onStoreSelect}
+            placeholder={placeholderText}
+            displayText={displayText}
+            modalTitle={modalTitle}
+            showSearch={showSearch}
+            allowClear={allowClear && storeItems.length > 1}
+            disabled={disabled}
+        />
     );
 };

@@ -274,7 +274,7 @@ const StoreDetail: React.FC = () => {
                                             onIonInput={(e) =>
                                                 field.onChange(e.detail.value)
                                             }
-                                            autoCapitalize="sentences"
+                                            autocapitalize="sentences"
                                         />
                                     </IonItem>
                                 )}

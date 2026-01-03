@@ -200,7 +200,6 @@ const StoresList: React.FC = () => {
                                             onIonInput={(e) =>
                                                 field.onChange(e.detail.value)
                                             }
-                                            autoCapitalize="sentences"
                                         />
                                     </IonItem>
                                 )}

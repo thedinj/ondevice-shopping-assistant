@@ -34,10 +34,8 @@ import {
     useStoreSections,
     useUpdateSection,
 } from "../../db/hooks";
-import {
-    ClickableSelectionModal,
-    SelectableItem,
-} from "../shared/ClickableSelectionModal";
+import { ClickableSelectionField } from "../shared/ClickableSelectionField";
+import type { SelectableItem } from "../shared/ClickableSelectionModal";
 import { ListHandle } from "./types";
 
 const sectionFormSchema = z.object({
@@ -54,61 +52,6 @@ interface SectionListProps {
     storeId: string;
 }
 
-interface AisleSelectorProps {
-    value: string | null | undefined;
-    onChange: (value: string | null) => void;
-    aisles: Array<{ id: string; name: string }> | undefined;
-}
-
-const AisleSelector = ({ value, onChange, aisles }: AisleSelectorProps) => {
-    const [isAisleModalOpen, setIsAisleModalOpen] = useState(false);
-
-    const aisleItems: SelectableItem[] = useMemo(() => {
-        return (
-            aisles?.map((aisle) => ({
-                id: aisle.id,
-                label: aisle.name,
-            })) || []
-        );
-    }, [aisles]);
-
-    const selectedAisle = aisles?.find((a) => a.id === value);
-
-    return (
-        <>
-            <IonItem
-                button
-                onClick={() =>
-                    aisleItems.length > 0 && setIsAisleModalOpen(true)
-                }
-                disabled={aisleItems.length === 0}
-            >
-                <IonLabel position="stacked">Aisle</IonLabel>
-                <div
-                    style={{
-                        color: value
-                            ? "var(--ion-color-dark)"
-                            : "var(--ion-color-medium)",
-                    }}
-                >
-                    {value ? selectedAisle?.name : "None"}
-                </div>
-            </IonItem>
-
-            <ClickableSelectionModal
-                items={aisleItems}
-                value={value || undefined}
-                onSelect={(aisleId) => onChange(aisleId)}
-                isOpen={isAisleModalOpen}
-                onDismiss={() => setIsAisleModalOpen(false)}
-                title="Select Aisle"
-                searchPlaceholder="Search aisles..."
-                showSearch={true}
-            />
-        </>
-    );
-};
-
 const SectionList = forwardRef<ListHandle, SectionListProps>(
     ({ storeId }, ref) => {
         const { data: sections, isLoading } = useStoreSections(storeId);
@@ -117,6 +60,15 @@ const SectionList = forwardRef<ListHandle, SectionListProps>(
         const updateSection = useUpdateSection();
         const deleteSection = useDeleteSection();
         const reorderSections = useReorderSections();
+
+        const aisleItems: SelectableItem[] = useMemo(() => {
+            return (
+                aisles?.map((aisle) => ({
+                    id: aisle.id,
+                    label: aisle.name,
+                })) || []
+            );
+        }, [aisles]);
 
         const [isModalOpen, setIsModalOpen] = useState(false);
         const [editingSection, setEditingSection] = useState<{
@@ -343,7 +295,7 @@ const SectionList = forwardRef<ListHandle, SectionListProps>(
                                             onIonInput={(e) =>
                                                 field.onChange(e.detail.value)
                                             }
-                                            autoCapitalize="sentences"
+                                            autocapitalize="sentences"
                                         />
                                     </IonItem>
                                 )}
@@ -365,10 +317,15 @@ const SectionList = forwardRef<ListHandle, SectionListProps>(
                                 name="aisle_id"
                                 control={control}
                                 render={({ field }) => (
-                                    <AisleSelector
+                                    <ClickableSelectionField
+                                        items={aisleItems}
                                         value={field.value}
-                                        onChange={field.onChange}
-                                        aisles={aisles}
+                                        onSelect={field.onChange}
+                                        label="Aisle"
+                                        placeholder="None"
+                                        modalTitle="Select Aisle"
+                                        showSearch={true}
+                                        searchPlaceholder="Search aisles..."
                                     />
                                 )}
                             />

@@ -15,10 +15,8 @@ import {
 } from "@ionic/react";
 import { closeOutline } from "ionicons/icons";
 import { Controller, useForm } from "react-hook-form";
-import {
-    ClickableSelectionModal,
-    SelectableItem,
-} from "../shared/ClickableSelectionModal";
+import { ClickableSelectionField } from "../shared/ClickableSelectionField";
+import type { SelectableItem } from "../shared/ClickableSelectionModal";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState, useEffect, useMemo } from "react";
@@ -71,7 +69,6 @@ export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
     const deleteAisle = useDeleteAisle();
     const deleteSection = useDeleteSection();
     const [showDeleteAlert, setShowDeleteAlert] = useState(false);
-    const [isAisleModalOpen, setIsAisleModalOpen] = useState(false);
 
     const {
         control,
@@ -267,74 +264,23 @@ export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
                     )}
 
                     {entityType === "section" && (
-                        <>
-                            <Controller
-                                name="aisle_id"
-                                control={control}
-                                render={({ field }) => {
-                                    const selectedAisle = aisles?.find(
-                                        (a) => a.id === field.value
-                                    );
-
-                                    return (
-                                        <>
-                                            <IonItem
-                                                button
-                                                onClick={() =>
-                                                    aisleItems.length > 0 &&
-                                                    setIsAisleModalOpen(true)
-                                                }
-                                                disabled={
-                                                    aisleItems.length === 0
-                                                }
-                                            >
-                                                <IonLabel position="stacked">
-                                                    Aisle
-                                                </IonLabel>
-                                                <div
-                                                    style={{
-                                                        color: field.value
-                                                            ? "var(--ion-color-dark)"
-                                                            : "var(--ion-color-medium)",
-                                                    }}
-                                                >
-                                                    {field.value
-                                                        ? selectedAisle?.name
-                                                        : "Select an aisle"}
-                                                </div>
-                                            </IonItem>
-
-                                            <ClickableSelectionModal
-                                                items={aisleItems}
-                                                value={field.value || undefined}
-                                                onSelect={(aisleId) =>
-                                                    field.onChange(aisleId)
-                                                }
-                                                isOpen={isAisleModalOpen}
-                                                onDismiss={() =>
-                                                    setIsAisleModalOpen(false)
-                                                }
-                                                title="Select Aisle"
-                                                searchPlaceholder="Search aisles..."
-                                                showSearch={true}
-                                            />
-                                        </>
-                                    );
-                                }}
-                            />
-                            {errors.aisle_id && (
-                                <IonText color="danger">
-                                    <p
-                                        style={{
-                                            fontSize: "12px",
-                                            marginLeft: "16px",
-                                        }}
-                                    >
-                                        {errors.aisle_id.message}
-                                    </p>
-                                </IonText>
+                        <Controller
+                            name="aisle_id"
+                            control={control}
+                            render={({ field }) => (
+                                <ClickableSelectionField
+                                    items={aisleItems}
+                                    value={field.value}
+                                    onSelect={field.onChange}
+                                    label="Aisle"
+                                    placeholder="Select an aisle"
+                                    modalTitle="Select Aisle"
+                                    showSearch={true}
+                                    searchPlaceholder="Search aisles..."
+                                    errorMessage={errors.aisle_id?.message}
+                                />
                             )}
-                        </>
+                        />
                     )}
 
                     <Controller
@@ -353,7 +299,7 @@ export const EntityFormModal = ({ storeId, aisles }: EntityFormModalProps) => {
                                     onIonInput={(e) =>
                                         field.onChange(e.detail.value)
                                     }
-                                    autoCapitalize="sentences"
+                                    autocapitalize="sentences"
                                 />
                             </IonItem>
                         )}
