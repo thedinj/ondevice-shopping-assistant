@@ -19,14 +19,12 @@ import {
     IonToolbar,
 } from "@ionic/react";
 import { add, closeOutline, storefrontOutline } from "ionicons/icons";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { useHistory } from "react-router-dom";
 import { z } from "zod";
 import { AppHeader } from "../components/layout/AppHeader";
 import { FabSpacer } from "../components/shared/FabSpacer";
 import { useCreateStore, useStores, useUpdateStore } from "../db/hooks";
-import { useLastSelectedStore } from "../hooks/useLastSelectedStore";
 
 const storeFormSchema = z.object({
     name: z
@@ -41,8 +39,6 @@ const StoresList: React.FC = () => {
     const { data: stores, isLoading } = useStores();
     const createStore = useCreateStore();
     const updateStore = useUpdateStore();
-    const { lastStoreId, saveLastStore } = useLastSelectedStore();
-    const history = useHistory();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStore, setEditingStore] = useState<{
@@ -84,20 +80,6 @@ const StoresList: React.FC = () => {
         closeModal();
     };
 
-    // Auto-navigate to last selected store on mount
-    useEffect(() => {
-        if (!isLoading && lastStoreId && stores) {
-            const exists = stores.some((s) => s.id === lastStoreId);
-            if (exists) {
-                // Replace history entry so back button works correctly
-                history.replace(`/stores/${encodeURIComponent(lastStoreId)}`);
-            } else {
-                // Last store was deleted, clear preference
-                saveLastStore(null);
-            }
-        }
-    }, [isLoading, lastStoreId, stores, history, saveLastStore]);
-
     return (
         <IonPage>
             <AppHeader title="Stores" />
@@ -138,7 +120,6 @@ const StoresList: React.FC = () => {
                                 routerLink={`/stores/${store.id}`}
                                 button
                                 detail
-                                onClick={() => saveLastStore(store.id)}
                             >
                                 <IonIcon
                                     icon={storefrontOutline}
