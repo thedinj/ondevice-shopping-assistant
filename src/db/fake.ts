@@ -593,11 +593,12 @@ export class FakeDatabase extends BaseDatabase {
             const updated: ShoppingListItem = {
                 ...existing,
                 store_item_id: params.store_item_id || null,
-                qty: params.qty,
+                qty: params.qty ?? null,
                 unit_id: params.unit_id || null,
                 notes: params.notes,
                 is_sample: params.is_sample ?? null,
                 is_idea: params.is_idea ? 1 : 0,
+                snoozed_until: params.snoozed_until || null,
                 updated_at: now,
             };
             this.shoppingListItems.set(params.id, updated);
@@ -611,13 +612,14 @@ export class FakeDatabase extends BaseDatabase {
                 id,
                 store_id: params.store_id,
                 store_item_id: params.store_item_id || null,
-                qty: params.qty,
+                qty: params.qty ?? null,
                 unit_id: params.unit_id || null,
                 notes: params.notes,
                 is_checked: 0,
                 checked_at: null,
                 is_sample: params.is_sample ?? null,
                 is_idea: params.is_idea ? 1 : 0,
+                snoozed_until: params.snoozed_until || null,
                 created_at: now,
                 updated_at: now,
             };

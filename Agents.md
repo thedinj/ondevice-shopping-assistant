@@ -64,6 +64,19 @@
     -   `FakeDatabase` - In-memory implementation for web development and testing
     -   `RemoteDatabase` - Stub for future cloud sync functionality
 
+#### Updating Existing Tables
+
+When modifying an existing SQLite table (adding columns, changing types, etc.), use the following migration strategy to preserve data:
+
+1. **Create a new migration** in the `migrations` array in `src/db/sqlite.ts` with an incremented version number
+2. **Dump the current table into a temporary table** using `CREATE TABLE temp_table AS SELECT * FROM original_table`
+3. **Delete the old table** with `DROP TABLE original_table`
+4. **Create a new table with the same name** as the old table, including the modifications/additions
+5. **Copy the data from the temp table into the new table** using `INSERT INTO original_table SELECT ... FROM temp_table` (mapping columns as needed)
+6. **Delete the temp table** with `DROP TABLE temp_table`
+
+This approach ensures data integrity and allows for complex schema changes while maintaining backward compatibility.
+
 ### LLM Integration
 
 -   **OpenAI API** - gpt-4o-mini (fast/cheap), gpt-4o (vision/complex tasks)

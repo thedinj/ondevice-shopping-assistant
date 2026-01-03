@@ -20,6 +20,17 @@ export const GroupedShoppingList = ({
     onClearChecked,
     isClearing,
 }: GroupedShoppingListProps) => {
+    // Filter out snoozed items
+    const activeItems = useMemo(() => {
+        return items.filter((item) => {
+            if (!item.snoozed_until) return true;
+            const snoozeDate = new Date(item.snoozed_until);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return snoozeDate < today;
+        });
+    }, [items]);
+
     const groups = useMemo(() => {
         const itemGroups: ItemGroup<ShoppingListItemWithDetails>[] = [];
 
@@ -27,7 +38,7 @@ export const GroupedShoppingList = ({
             // CHECKED ITEMS: Header group + flat list of all items
             const headerGroup: ItemGroup<ShoppingListItemWithDetails> = {
                 id: "checked-items",
-                items: items,
+                items: activeItems,
                 header: {
                     label: "Checked Items",
                     color: "light",
@@ -58,8 +69,10 @@ export const GroupedShoppingList = ({
             itemGroups.push(headerGroup);
         } else {
             // UNCHECKED ITEMS: Ideas + Categorized items
-            const ideas = items.filter((item) => item.is_idea === 1);
-            const regularItems = items.filter((item) => item.is_idea !== 1);
+            const ideas = activeItems.filter((item) => item.is_idea === 1);
+            const regularItems = activeItems.filter(
+                (item) => item.is_idea !== 1
+            );
 
             // Group 1: Ideas (if any)
             if (ideas.length > 0) {
@@ -98,7 +111,7 @@ export const GroupedShoppingList = ({
         }
 
         return itemGroups;
-    }, [items, isChecked, onClearChecked, isClearing]);
+    }, [activeItems, isChecked, onClearChecked, isClearing]);
 
     if (items.length === 0) {
         return null;

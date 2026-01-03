@@ -4,13 +4,14 @@ import type { StoreAisle, StoreItem, StoreSection } from "../../models/Store";
 export const itemFormSchema = z
     .object({
         name: z.string().transform((val) => val.trim()),
-        qty: z.number().min(0.01, "Quantity must be greater than 0"),
+        qty: z.number().min(0.01, "Quantity must be greater than 0").nullable().optional(),
         unitId: z.string().nullable().optional(),
         notes: z.string().nullable().optional(),
         aisleId: z.string().nullable().optional(),
         sectionId: z.string().nullable().optional(),
         isSample: z.boolean().nullable().optional(),
         isIdea: z.boolean().optional(),
+        snoozedUntil: z.string().nullable().optional(),
     })
     .superRefine((data, ctx) => {
         if (data.isIdea) {

@@ -139,6 +139,51 @@ const migrations: Array<{ version: number; up: string[] }> = [
          ON shopping_list_item(store_id, is_checked, updated_at);`,
         ],
     },
+    {
+        version: 3,
+        up: [
+            `PRAGMA foreign_keys = ON;`,
+
+            // Add snoozed_until column and make qty nullable
+            `CREATE TABLE shopping_list_item_temp AS SELECT * FROM shopping_list_item;`,
+
+            `DROP TABLE shopping_list_item;`,
+
+            `CREATE TABLE IF NOT EXISTS shopping_list_item (
+         id TEXT PRIMARY KEY,
+         store_id TEXT NOT NULL,
+         store_item_id TEXT,
+         qty REAL,
+         unit_id TEXT,
+         notes TEXT,
+         is_checked INTEGER NOT NULL DEFAULT 0,
+         checked_at TEXT,
+         is_sample INTEGER,
+         is_idea INTEGER NOT NULL DEFAULT 0,
+         snoozed_until TEXT,
+         created_at TEXT NOT NULL DEFAULT (datetime('now')),
+         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+         FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
+         FOREIGN KEY (store_item_id) REFERENCES store_item(id) ON DELETE CASCADE,
+         FOREIGN KEY (unit_id) REFERENCES quantity_unit(id) ON DELETE SET NULL
+       );`,
+
+            `INSERT INTO shopping_list_item 
+            (id, store_id, store_item_id, qty, unit_id, notes, 
+             is_checked, checked_at, is_sample, is_idea, 
+             created_at, updated_at)
+         SELECT 
+            id, store_id, store_item_id, qty, unit_id, notes,
+            is_checked, checked_at, is_sample, is_idea,
+            created_at, updated_at
+         FROM shopping_list_item_temp;`,
+
+            `DROP TABLE shopping_list_item_temp;`,
+
+            `CREATE INDEX IF NOT EXISTS ix_list_item_store_checked
+         ON shopping_list_item(store_id, is_checked, updated_at);`,
+        ],
+    },
 ];
 
 /**
@@ -742,6 +787,7 @@ export class SQLiteDatabase extends BaseDatabase {
                 sli.id, sli.store_id, sli.store_item_id,
                 sli.qty, sli.unit_id, sli.notes,
                 sli.is_checked, sli.checked_at, sli.is_sample, sli.is_idea,
+                sli.snoozed_until,
                 sli.created_at, sli.updated_at,
                 si.name as item_name,
                 qu.abbreviation as unit_abbreviation,
@@ -831,22 +877,23 @@ export class SQLiteDatabase extends BaseDatabase {
             // Update existing shopping list item
             await conn.run(
                 `UPDATE shopping_list_item 
-                 SET store_item_id = ?, qty = ?, unit_id = ?, notes = ?, is_sample = ?, is_idea = ?, updated_at = ? 
+                 SET store_item_id = ?, qty = ?, unit_id = ?, notes = ?, is_sample = ?, is_idea = ?, snoozed_until = ?, updated_at = ? 
                  WHERE id = ?`,
                 [
                     params.store_item_id || null,
-                    params.qty,
+                    params.qty ?? null,
                     params.unit_id || null,
                     params.notes,
                     params.is_sample ?? null,
                     params.is_idea ? 1 : 0,
+                    params.snoozed_until || null,
                     now,
                     params.id,
                 ]
             );
 
             const itemRes = await conn.query(
-                `SELECT id, store_id, store_item_id, qty, unit_id, notes,
+                `SELECT id, store_id, store_item_id, qty, unit_id, nsnoozed_until, otes,
                         is_checked, checked_at, is_sample, is_idea, created_at, updated_at
                  FROM shopping_list_item WHERE id = ?`,
                 [params.id]
@@ -860,17 +907,18 @@ export class SQLiteDatabase extends BaseDatabase {
 
             await conn.run(
                 `INSERT INTO shopping_list_item 
-                 (id, store_id, store_item_id, qty, unit_id, notes, is_sample, is_idea, created_at, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                 (id, store_id, store_item_id, qty, unit_id, notes, is_sample, is_idea, snoozed_until, created_at, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     id,
                     params.store_id,
                     params.store_item_id || null,
-                    params.qty,
+                    params.qty ?? null,
                     params.unit_id || null,
                     params.notes,
                     params.is_sample ?? null,
                     params.is_idea ? 1 : 0,
+                    params.snoozed_until || null,
                     now,
                     now,
                 ]
@@ -881,13 +929,14 @@ export class SQLiteDatabase extends BaseDatabase {
                 id,
                 store_id: params.store_id,
                 store_item_id: params.store_item_id || null,
-                qty: params.qty,
+                qty: params.qty ?? null,
                 unit_id: params.unit_id || null,
                 notes: params.notes,
                 is_checked: 0,
                 checked_at: null,
                 is_sample: params.is_sample ?? null,
                 is_idea: params.is_idea ? 1 : 0,
+                snoozed_until: params.snoozed_until || null,
                 created_at: now,
                 updated_at: now,
             };

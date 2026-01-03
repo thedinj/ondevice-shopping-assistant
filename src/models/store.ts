@@ -57,13 +57,14 @@ export type ShoppingListItem = {
     id: string;
     store_id: string;
     store_item_id: string | null; // Nullable for ideas
-    qty: number;
+    qty: number | null;
     unit_id: string | null;
     notes: string | null;
     is_checked: number;
     checked_at: string | null;
     is_sample: number | null;
     is_idea: number; // 0 = regular item, 1 = idea
+    snoozed_until: string | null;
     created_at: string;
     updated_at: string;
 };
@@ -74,7 +75,12 @@ export type ShoppingListItem = {
  */
 export type ShoppingListItemOptionalId = PartialPick<ShoppingListItem, "id"> &
     Pick<ShoppingListItem, "store_id" | "qty" | "unit_id" | "notes"> &
-    Partial<Pick<ShoppingListItem, "store_item_id" | "is_sample" | "is_idea">>;
+    Partial<
+        Pick<
+            ShoppingListItem,
+            "store_item_id" | "is_sample" | "is_idea" | "snoozed_until"
+        >
+    >;
 
 /**
  * Shopping list item with joined store item and location details from the database

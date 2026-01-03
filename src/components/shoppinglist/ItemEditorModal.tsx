@@ -32,6 +32,7 @@ import { LocationSelectors } from "./LocationSelectors";
 import { NameAutocomplete } from "./NameAutocomplete";
 import { NotesInput } from "./NotesInput";
 import { QuantityInput } from "./QuantityInput";
+import { SnoozeDateSelector } from "./SnoozeDateSelector";
 import { UnitSelector } from "./UnitSelector";
 import { useShoppingListContext } from "./useShoppingListContext";
 
@@ -60,11 +61,12 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
         mode: "onChange",
         defaultValues: {
             name: "",
-            qty: 1,
+            qty: null,
             notes: null,
             aisleId: null,
             sectionId: null,
             isIdea: false,
+            snoozedUntil: null,
         },
     });
 
@@ -84,16 +86,18 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                 aisleId: editingItem.aisle_id,
                 sectionId: editingItem.section_id,
                 isIdea: editingItem.is_idea === 1,
+                snoozedUntil: editingItem.snoozed_until,
             });
         } else if (isItemModalOpen) {
             reset({
                 name: "",
-                qty: 1,
+                qty: null,
                 unitId: null,
                 notes: null,
                 aisleId: null,
                 sectionId: null,
                 isIdea: false,
+                snoozedUntil: null,
             });
         }
     }, [isItemModalOpen, editingItem, reset]);
@@ -124,10 +128,11 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                 id: editingItem?.id,
                 store_id: storeId,
                 store_item_id: null,
-                qty: 1, // Default qty for ideas
+                qty: null,
                 unit_id: null,
                 notes: data.notes || null,
                 is_idea: 1,
+                snoozed_until: data.snoozedUntil || null,
             });
         } else {
             // Regular item - need store item
@@ -159,10 +164,11 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                 id: editingItem?.id,
                 store_id: storeId,
                 store_item_id: storeItemId,
-                qty: data.qty,
+                qty: data.qty ?? null,
                 unit_id: data.unitId || null,
                 notes: data.notes || null,
                 is_idea: 0,
+                snoozed_until: data.snoozedUntil || null,
             });
         }
         closeItemModal();
@@ -258,6 +264,7 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                                 <UnitSelector />
                                 <LocationSelectors />
                                 <NotesInput />
+                                <SnoozeDateSelector />
                             </>
                         )}
 

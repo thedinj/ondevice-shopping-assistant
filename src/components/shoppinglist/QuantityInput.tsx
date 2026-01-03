@@ -18,7 +18,7 @@ export const QuantityInput = () => {
                             type="number"
                             min="0"
                             step="1"
-                            placeholder="1"
+                            placeholder="Enter quantity"
                             onIonInput={(e) => {
                                 const val = e.detail.value;
                                 field.onChange(val ? Number(val) : 1);
