@@ -45,7 +45,13 @@ const Settings: React.FC = () => {
                         <IonListHeader>
                             <h2>
                                 <span style={{ color: LLM_COLOR }}>
-                                    <IonIcon src={LLM_ICON_SRC} />
+                                    <IonIcon
+                                        src={LLM_ICON_SRC}
+                                        style={{
+                                            position: "relative",
+                                            top: "3px",
+                                        }}
+                                    />
                                 </span>{" "}
                                 API Configuration
                             </h2>
