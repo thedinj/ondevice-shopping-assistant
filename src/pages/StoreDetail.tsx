@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
     IonAlert,
-    IonBackButton,
     IonButton,
     IonButtons,
     IonContent,
@@ -29,6 +28,7 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useHistory, useParams } from "react-router-dom";
 import { z } from "zod";
+import { AppHeader } from "../components/layout/AppHeader";
 import {
     useBulkReplaceAislesAndSections,
     useDeleteStore,
@@ -168,31 +168,23 @@ const StoreDetail: React.FC = () => {
 
     return (
         <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    <IonButtons slot="start">
-                        <IonBackButton defaultHref="/stores" />
-                    </IonButtons>
-                    <IonTitle>
-                        {isLoading ? (
-                            <IonSkeletonText
-                                animated
-                                style={{ width: "120px" }}
-                            />
-                        ) : (
-                            store?.name || "Store"
-                        )}
-                    </IonTitle>
-                    <IonButtons slot="end">
-                        <IonButton
-                            onClick={openRenameModal}
-                            disabled={isLoading}
-                        >
-                            <IonIcon slot="icon-only" icon={create} />
-                        </IonButton>
-                    </IonButtons>
-                </IonToolbar>
-            </IonHeader>
+            <AppHeader
+                title={
+                    isLoading ? (
+                        <IonSkeletonText animated style={{ width: "120px" }} />
+                    ) : (
+                        store?.name || "Store"
+                    )
+                }
+                showBackButton
+                backButtonHref="/stores"
+            >
+                <IonButtons slot="end">
+                    <IonButton onClick={openRenameModal} disabled={isLoading}>
+                        <IonIcon slot="icon-only" icon={create} />
+                    </IonButton>
+                </IonButtons>
+            </AppHeader>
             <IonContent fullscreen>
                 <IonList>
                     <LLMItem

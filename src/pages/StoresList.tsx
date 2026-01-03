@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useHistory } from "react-router-dom";
 import { z } from "zod";
+import { AppHeader } from "../components/layout/AppHeader";
 import { FabSpacer } from "../components/shared/FabSpacer";
 import { useCreateStore, useStores, useUpdateStore } from "../db/hooks";
 import { useLastSelectedStore } from "../hooks/useLastSelectedStore";
@@ -88,8 +89,8 @@ const StoresList: React.FC = () => {
         if (!isLoading && lastStoreId && stores) {
             const exists = stores.some((s) => s.id === lastStoreId);
             if (exists) {
-                // Navigate to the last selected store
-                history.push(`/stores/${lastStoreId}`);
+                // Replace history entry so back button works correctly
+                history.replace(`/stores/${lastStoreId}`);
             } else {
                 // Last store was deleted, clear preference
                 saveLastStore(null);
@@ -99,18 +100,8 @@ const StoresList: React.FC = () => {
 
     return (
         <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    <IonTitle>Stores</IonTitle>
-                </IonToolbar>
-            </IonHeader>
+            <AppHeader title="Stores" />
             <IonContent fullscreen>
-                <IonHeader collapse="condense">
-                    <IonToolbar>
-                        <IonTitle size="large">Stores</IonTitle>
-                    </IonToolbar>
-                </IonHeader>
-
                 {isLoading ? (
                     <IonList>
                         {[1, 2, 3].map((i) => (

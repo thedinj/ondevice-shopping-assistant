@@ -1,26 +1,20 @@
 import {
-    IonBackButton,
-    IonButtons,
     IonContent,
     IonFab,
     IonFabButton,
-    IonHeader,
     IonIcon,
     IonPage,
-    IonTitle,
-    IonToolbar,
 } from "@ionic/react";
 import { add } from "ionicons/icons";
 import { useParams } from "react-router-dom";
+import { AppHeader } from "../components/layout/AppHeader";
 import { FabSpacer } from "../components/shared/FabSpacer";
 import AisleSectionList from "../components/store/AisleSectionList";
 import { useStoreManagement } from "../components/store/StoreManagementContext";
 import { StoreManagementProvider } from "../components/store/StoreManagementProvider";
 import { useStore } from "../db/hooks";
 
-const StoreAislesPageContent: React.FC<{ storeId: string }> = ({
-    storeId,
-}) => {
+const StoreAislesPageContent: React.FC<{ storeId: string }> = ({ storeId }) => {
     const { data: store } = useStore(storeId);
     const { openCreateModal, mode } = useStoreManagement();
 
@@ -34,16 +28,11 @@ const StoreAislesPageContent: React.FC<{ storeId: string }> = ({
 
     return (
         <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    <IonButtons slot="start">
-                        <IonBackButton defaultHref={`/stores/${storeId}`} />
-                    </IonButtons>
-                    <IonTitle>
-                        {store?.name || "Store"} Aisles & Sections
-                    </IonTitle>
-                </IonToolbar>
-            </IonHeader>
+            <AppHeader
+                title={`${store?.name || "Store"} Aisles & Sections`}
+                showBackButton
+                backButtonHref={`/stores/${storeId}`}
+            />
             <IonContent fullscreen>
                 <AisleSectionList storeId={storeId} />
                 <FabSpacer />

@@ -1,16 +1,19 @@
 import {
     IonButton,
+    IonButtons,
     IonContent,
     IonHeader,
     IonIcon,
     IonList,
     IonListHeader,
-    IonPage,
+    IonModal,
     IonTitle,
     IonToolbar,
 } from "@ionic/react";
-import { useCallback } from "react";
+import { closeOutline } from "ionicons/icons";
+import { useCallback, useEffect } from "react";
 import { FormPasswordInput } from "../components/form/FormPasswordInput";
+import { useAppHeader } from "../components/layout/useAppHeader";
 import { useResetDatabase } from "../db/hooks";
 import { useToast } from "../hooks/useToast";
 import { LLM_COLOR, LLM_ICON_SRC } from "../llm/shared";
@@ -20,6 +23,14 @@ const Settings: React.FC = () => {
     const { showSuccess } = useToast();
     const { mutateAsync: resetDatabase } = useResetDatabase();
     const { form, onSubmit, isSubmitting } = useSettingsForm();
+    const { isSettingsOpen, closeSettings } = useAppHeader();
+
+    // Reset form to original values when modal opens
+    useEffect(() => {
+        if (isSettingsOpen) {
+            form.reset();
+        }
+    }, [isSettingsOpen, form]);
 
     const resetOnClick = useCallback(async () => {
         try {
@@ -31,15 +42,25 @@ const Settings: React.FC = () => {
         }
     }, [resetDatabase, showSuccess]);
 
+    const handleSubmit = form.handleSubmit(async () => {
+        await onSubmit();
+        closeSettings();
+    });
+
     return (
-        <IonPage>
+        <IonModal isOpen={isSettingsOpen} onDidDismiss={closeSettings}>
             <IonHeader>
                 <IonToolbar>
                     <IonTitle>Settings</IonTitle>
+                    <IonButtons slot="end">
+                        <IonButton onClick={closeSettings}>
+                            <IonIcon icon={closeOutline} />
+                        </IonButton>
+                    </IonButtons>
                 </IonToolbar>
             </IonHeader>
-            <IonContent fullscreen>
-                <form onSubmit={onSubmit}>
+            <IonContent className="ion-padding">
+                <form onSubmit={handleSubmit}>
                     {/* API Settings Section */}
                     <IonList>
                         <IonListHeader>
@@ -96,7 +117,7 @@ const Settings: React.FC = () => {
                     )}
                 </form>
             </IonContent>
-        </IonPage>
+        </IonModal>
     );
 };
 

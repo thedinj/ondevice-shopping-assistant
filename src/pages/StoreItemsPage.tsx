@@ -1,12 +1,9 @@
 import {
     IonAlert,
-    IonBackButton,
     IonButton,
-    IonButtons,
     IonContent,
     IonFab,
     IonFabButton,
-    IonHeader,
     IonIcon,
     IonItem,
     IonItemDivider,
@@ -14,8 +11,6 @@ import {
     IonPage,
     IonSearchbar,
     IonText,
-    IonTitle,
-    IonToolbar,
 } from "@ionic/react";
 import {
     add,
@@ -28,6 +23,7 @@ import {
 import { useCallback, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useDebounce } from "use-debounce";
+import { AppHeader } from "../components/layout/AppHeader";
 import { FabSpacer } from "../components/shared/FabSpacer";
 import { GroupedItemList } from "../components/shared/GroupedItemList";
 import { ItemGroup } from "../components/shared/grouping.types";
@@ -239,14 +235,11 @@ const StoreItemsPage: React.FC = () => {
 
     return (
         <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    <IonButtons slot="start">
-                        <IonBackButton defaultHref={`/stores/${id}`} />
-                    </IonButtons>
-                    <IonTitle>{store?.name || "Store"} Items</IonTitle>
-                </IonToolbar>
-            </IonHeader>
+            <AppHeader
+                title={`${store?.name || "Store"} Items`}
+                showBackButton
+                backButtonHref={`/stores/${id}`}
+            />
             <IonContent fullscreen>
                 <IonSearchbar
                     value={searchTerm}

@@ -3,18 +3,17 @@ import {
     IonContent,
     IonFab,
     IonFabButton,
-    IonHeader,
     IonIcon,
     IonItem,
     IonList,
     IonPage,
     IonSkeletonText,
     IonText,
-    IonTitle,
     IonToolbar,
 } from "@ionic/react";
 import { add } from "ionicons/icons";
 import { useCallback, useState } from "react";
+import { AppHeader } from "../components/layout/AppHeader";
 import { FabSpacer } from "../components/shared/FabSpacer";
 import { useBulkImportModal } from "../components/shoppinglist/BulkImportModal";
 import { CheckedItems } from "../components/shoppinglist/CheckedItems";
@@ -27,10 +26,7 @@ import { useClearCheckedItems, useShoppingListItems } from "../db/hooks";
 import { LLMFabButton } from "../llm/shared";
 
 const ShoppingListContent: React.FC = () => {
-    const {
-        selectedStoreId,
-        openCreateModal,
-    } = useShoppingListContext();
+    const { selectedStoreId, openCreateModal } = useShoppingListContext();
 
     const { data: items, isLoading: isLoadingItems } = useShoppingListItems(
         selectedStoreId || ""
@@ -61,12 +57,10 @@ const ShoppingListContent: React.FC = () => {
 
     return (
         <>
-            <IonHeader>
-                <IonToolbar>
-                    <IonTitle>Shopping List</IonTitle>
-                </IonToolbar>
+            <AppHeader title="Shopping List" />
+            <IonToolbar>
                 <StoreSelector />
-            </IonHeader>
+            </IonToolbar>
             <IonContent fullscreen>
                 {!selectedStoreId && (
                     <div

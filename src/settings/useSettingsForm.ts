@@ -48,6 +48,7 @@ export function useSettingsForm() {
 
             // Show success message
             showSuccess("Settings saved successfully");
+            return true;
         } catch (error) {
             // Show error toast
             showError(
@@ -57,6 +58,7 @@ export function useSettingsForm() {
             );
             console.error("Failed to save settings:", error);
         }
+        return false;
     });
 
     return {
