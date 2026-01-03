@@ -12,7 +12,7 @@ import {
     IonToolbar,
 } from "@ionic/react";
 import { add, eyeOffOutline, eyeOutline } from "ionicons/icons";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { AppHeader } from "../components/layout/AppHeader";
 import { FabSpacer } from "../components/shared/FabSpacer";
 import { useBulkImportModal } from "../components/shoppinglist/BulkImportModal";
@@ -28,29 +28,49 @@ import { LLMFabButton } from "../llm/shared";
 
 const ShoppingListContent: React.FC = () => {
     const { selectedStoreId, openCreateModal } = useShoppingListContext();
+
     const { showSnoozed, toggleShowSnoozed } = useShowSnoozedItems();
 
     const { data: items, isLoading: isLoadingItems } = useShoppingListItems(
         selectedStoreId || ""
     );
+
     const clearChecked = useClearCheckedItems();
 
     const { openBulkImport, isImporting } = useBulkImportModal(
         selectedStoreId || ""
     );
 
-    const uncheckedItems = items?.filter((item) => item.is_checked === 0) || [];
-    const checkedItems = items?.filter((item) => item.is_checked === 1) || [];
+    const hasSnoozedItems = useMemo(() => {
+        return items?.some((item) => {
+            if (!item.snoozed_until) return false;
+            const snoozeDate = new Date(item.snoozed_until);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return snoozeDate >= today;
+        });
+    }, [items]);
+
+    const activeItems = useMemo(() => {
+        if (showSnoozed) return items;
+
+        return items?.filter((item) => {
+            if (!item.snoozed_until) return true;
+            const snoozeDate = new Date(item.snoozed_until);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return snoozeDate < today;
+        });
+    }, [items, showSnoozed]);
+
+    const uncheckedItems =
+        activeItems?.filter((item) => item.is_checked === 0) || [];
+    const checkedItems =
+        activeItems?.filter((item) => item.is_checked === 1) || [];
 
     const [showClearCheckedAlert, setShowClearCheckedAlert] = useState(false);
 
     // Check if there are any snoozed items
-    const hasSnoozedItems =
-        items?.some((item) => {
-            if (!item.snoozed_until) return false;
-            return new Date(item.snoozed_until) > new Date();
-        }) || false;
-
     const handleClearChecked = useCallback(() => {
         setShowClearCheckedAlert(true);
     }, []);
@@ -116,8 +136,8 @@ const ShoppingListContent: React.FC = () => {
 
                 {selectedStoreId &&
                     !isLoading &&
-                    items &&
-                    items.length === 0 && (
+                    activeItems &&
+                    activeItems.length === 0 && (
                         <div
                             style={{
                                 textAlign: "center",
@@ -129,27 +149,28 @@ const ShoppingListContent: React.FC = () => {
                                 <p>
                                     Your list is empty. Tap + to add items, if
                                     your memory permits.
+                                    <br />
+                                    <br />
+                                    {hasSnoozedItems
+                                        ? "(Some items are snoozed.)"
+                                        : ""}
                                 </p>
                             </IonText>
                         </div>
                     )}
 
-                {selectedStoreId && !isLoading && items && (
+                {selectedStoreId && !isLoading && activeItems && (
                     <>
-                        <UncheckedItems
-                            items={uncheckedItems}
-                            showSnoozed={showSnoozed}
-                        />
+                        <UncheckedItems items={uncheckedItems} />
                         <CheckedItems
                             items={checkedItems}
                             onClearChecked={handleClearChecked}
                             isClearing={clearChecked.isPending}
-                            showSnoozed={showSnoozed}
                         />
                     </>
                 )}
 
-                {selectedStoreId && items && (
+                {selectedStoreId && activeItems && (
                     <>
                         <FabSpacer />
 

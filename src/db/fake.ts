@@ -126,6 +126,28 @@ export class FakeDatabase extends BaseDatabase {
             return;
         }
 
+        // CASCADE: Delete all related entities
+        // Delete shopping list items for this store
+        Array.from(this.shoppingListItems.values())
+            .filter((item) => item.store_id === id)
+            .forEach((item) => this.shoppingListItems.delete(item.id));
+
+        // Delete store items for this store
+        Array.from(this.items.values())
+            .filter((item) => item.store_id === id)
+            .forEach((item) => this.items.delete(item.id));
+
+        // Delete sections for this store
+        Array.from(this.sections.values())
+            .filter((section) => section.store_id === id)
+            .forEach((section) => this.sections.delete(section.id));
+
+        // Delete aisles for this store
+        Array.from(this.aisles.values())
+            .filter((aisle) => aisle.store_id === id)
+            .forEach((aisle) => this.aisles.delete(aisle.id));
+
+        // Delete the store itself
         this.stores.delete(id);
         this.notifyChange();
     }
@@ -445,7 +467,7 @@ export class FakeDatabase extends BaseDatabase {
         searchTerm: string,
         limit: number = 10
     ): Promise<StoreItem[]> {
-        const searchNorm = searchTerm.toLowerCase().trim();
+        const searchNorm = normalizeItemName(searchTerm);
         return Array.from(this.items.values())
             .filter(
                 (item) =>

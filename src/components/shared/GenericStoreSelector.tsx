@@ -48,8 +48,10 @@ export const GenericStoreSelector: React.FC<GenericStoreSelectorProps> = ({
 
     const displayText = triggerText
         ? triggerText
-        : selectedStoreId
+        : selectedStore
         ? selectedStore?.name
+        : !stores?.length
+        ? "No stores available"
         : placeholderText;
 
     return (

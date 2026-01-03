@@ -830,7 +830,15 @@ export class SQLiteDatabase extends BaseDatabase {
         const now = new Date().toISOString();
 
         if (params.id) {
+            // Get current is_checked status to enforce no-snooze constraint
+            const currentRes = await conn.query(
+                `SELECT is_checked FROM shopping_list_item WHERE id = ?`,
+                [params.id]
+            );
+            const isChecked = currentRes.values?.[0]?.is_checked === 1;
+
             // Update existing shopping list item
+            // Clear snoozed_until if item is checked (checked items cannot be snoozed)
             await conn.run(
                 `UPDATE shopping_list_item 
                  SET store_item_id = ?, qty = ?, unit_id = ?, notes = ?, is_sample = ?, is_idea = ?, snoozed_until = ?, updated_at = ? 
@@ -842,7 +850,7 @@ export class SQLiteDatabase extends BaseDatabase {
                     params.notes,
                     params.is_sample ?? null,
                     params.is_idea ? 1 : 0,
-                    params.snoozed_until || null,
+                    isChecked ? null : params.snoozed_until || null,
                     now,
                     params.id,
                 ]
@@ -906,11 +914,18 @@ export class SQLiteDatabase extends BaseDatabase {
         const conn = await this.getConnection();
         const now = new Date().toISOString();
 
+        // Clear snoozed_until when checking an item (checked items cannot be snoozed)
         await conn.run(
             `UPDATE shopping_list_item 
-             SET is_checked = ?, checked_at = ?, updated_at = ? 
+             SET is_checked = ?, checked_at = ?, snoozed_until = ?, updated_at = ? 
              WHERE id = ?`,
-            [isChecked ? 1 : 0, isChecked ? now : null, now, id]
+            [
+                isChecked ? 1 : 0,
+                isChecked ? now : null,
+                isChecked ? null : undefined,
+                now,
+                id,
+            ]
         );
 
         this.notifyChange();
@@ -962,7 +977,7 @@ export class SQLiteDatabase extends BaseDatabase {
         limit: number = 10
     ): Promise<StoreItem[]> {
         const conn = await this.getConnection();
-        const searchNorm = searchTerm.toLowerCase().trim() + "%";
+        const searchNorm = normalizeItemName(searchTerm) + "%";
 
         const res = await conn.query(
             `SELECT id, store_id, name, name_norm, aisle_id, section_id, usage_count, last_used_at, is_hidden, is_favorite, created_at, updated_at 

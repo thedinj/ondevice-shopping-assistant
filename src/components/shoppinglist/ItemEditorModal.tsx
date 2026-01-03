@@ -86,7 +86,11 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                 aisleId: editingItem.aisle_id,
                 sectionId: editingItem.section_id,
                 isIdea: editingItem.is_idea === 1,
-                snoozedUntil: editingItem.snoozed_until,
+                // Clear snoozedUntil if item is checked (checked items cannot be snoozed)
+                snoozedUntil:
+                    editingItem.is_checked === 1
+                        ? null
+                        : editingItem.snoozed_until,
             });
         } else if (isItemModalOpen) {
             reset({
@@ -122,6 +126,10 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
     };
 
     const onSubmit = async (data: ItemFormData) => {
+        // Defensive check: clear snoozedUntil if item is checked (checked items cannot be snoozed)
+        const snoozedUntil =
+            editingItem?.is_checked === 1 ? null : data.snoozedUntil || null;
+
         if (isIdea) {
             // Idea - no store item needed
             await upsertItem.mutateAsync({
@@ -132,7 +140,7 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                 unit_id: null,
                 notes: data.notes || null,
                 is_idea: 1,
-                snoozed_until: data.snoozedUntil || null,
+                snoozed_until: snoozedUntil,
             });
         } else {
             // Regular item - need store item
@@ -168,7 +176,7 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                 unit_id: data.unitId || null,
                 notes: data.notes || null,
                 is_idea: 0,
-                snoozed_until: data.snoozedUntil || null,
+                snoozed_until: snoozedUntil,
             });
         }
         closeItemModal();
@@ -257,7 +265,10 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                             // Idea mode - only notes and snooze date
                             <>
                                 <NotesInput />
-                                <SnoozeDateSelector />
+                                {/* Hide snooze selector if editing a checked idea */}
+                                {editingItem?.is_checked !== 1 && (
+                                    <SnoozeDateSelector />
+                                )}
                             </>
                         ) : (
                             // Regular Item mode - all fields
@@ -267,7 +278,10 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                                 <UnitSelector />
                                 <LocationSelectors />
                                 <NotesInput />
-                                <SnoozeDateSelector />
+                                {/* Hide snooze selector if editing a checked item */}
+                                {editingItem?.is_checked !== 1 && (
+                                    <SnoozeDateSelector />
+                                )}
                             </>
                         )}
 

@@ -10,6 +10,7 @@ export const StoreSelector = () => {
             onStoreSelect={setSelectedStoreId}
             modalTitle="Select Store"
             showSearch={false}
+            placeholderText="Select a Store"
         />
     );
 };
