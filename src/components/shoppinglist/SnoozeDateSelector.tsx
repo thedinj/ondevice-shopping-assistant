@@ -1,25 +1,20 @@
 import {
     IonButton,
-    IonButtons,
     IonDatetime,
-    IonDatetimeButton,
-    IonHeader,
-    IonIcon,
+    IonInput,
     IonItem,
     IonLabel,
     IonModal,
-    IonTitle,
-    IonToolbar,
 } from "@ionic/react";
-import { closeOutline } from "ionicons/icons";
-import { useRef } from "react";
+import { useState } from "react";
 import { Controller } from "react-hook-form";
+import { formatShortDate } from "../../utils/dateUtils";
 import { useItemEditorContext } from "./useItemEditorContext";
 
 export const SnoozeDateSelector: React.FC = () => {
     const { control, setValue, watch } = useItemEditorContext();
     const snoozedUntil = watch("snoozedUntil");
-    const modalRef = useRef<HTMLIonModalElement>(null);
+    const [showModal, setShowModal] = useState(false);
 
     // Calculate tomorrow's date as minimum
     const tomorrow = new Date();
@@ -30,74 +25,80 @@ export const SnoozeDateSelector: React.FC = () => {
         setValue("snoozedUntil", null);
     };
 
-    const openModal = () => {
-        modalRef.current?.present();
-    };
-
-    const handleModalDismiss = () => {
-        modalRef.current?.dismiss();
-    };
-
     return (
-        <IonItem>
-            <IonLabel position="stacked">Snooze Until</IonLabel>
-            <div
-                style={{
-                    display: "flex",
-                    gap: "8px",
-                    alignItems: "center",
-                    width: "100%",
-                    marginTop: "8px",
-                }}
-            >
-                <Controller
-                    name="snoozedUntil"
-                    control={control}
-                    render={({ field }) => (
-                        <>
-                            {snoozedUntil ? (
-                                <IonDatetimeButton datetime="snooze-datetime" />
-                            ) : (
-                                <IonButton size="default" onClick={openModal}>
-                                    Set Snooze Date
-                                </IonButton>
-                            )}
-                            <IonModal ref={modalRef} keepContentsMounted={true}>
-                                <IonHeader>
-                                    <IonToolbar>
-                                        <IonTitle>Select Snooze Date</IonTitle>
-                                        <IonButtons slot="end">
-                                            <IonButton
-                                                onClick={handleModalDismiss}
-                                            >
-                                                <IonIcon icon={closeOutline} />
-                                            </IonButton>
-                                        </IonButtons>
-                                    </IonToolbar>
-                                </IonHeader>
-                                <IonDatetime
-                                    id="snooze-datetime"
-                                    presentation="date"
-                                    min={minDate}
-                                    value={field.value || undefined}
-                                    onIonChange={(e) => {
-                                        const value = e.detail.value;
-                                        if (typeof value === "string") {
-                                            field.onChange(value);
-                                            modalRef.current?.dismiss();
-                                        }
-                                    }}
-                                />
-                            </IonModal>
-                        </>
-                    )}
-                />
-                {snoozedUntil && (
-                    <IonButton size="small" fill="clear" onClick={clearSnooze}>
-                        Clear
+        <>
+            <IonItem>
+                <IonLabel position="stacked">Snooze Until</IonLabel>
+                {snoozedUntil ? (
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: "8px",
+                            alignItems: "center",
+                            width: "100%",
+                        }}
+                    >
+                        <IonInput
+                            value={formatShortDate(snoozedUntil)}
+                            readonly
+                            style={{ flex: 1 }}
+                        />
+                        <IonButton
+                            size="small"
+                            fill="clear"
+                            onClick={() => setShowModal(true)}
+                        >
+                            Update
+                        </IonButton>
+                        <IonButton
+                            size="small"
+                            fill="clear"
+                            onClick={clearSnooze}
+                        >
+                            Clear
+                        </IonButton>
+                    </div>
+                ) : (
+                    <IonButton
+                        fill="clear"
+                        onClick={() => setShowModal(true)}
+                        style={{
+                            justifyContent: "flex-start",
+                            margin: 0,
+                            padding: "10px 0",
+                            height: "auto",
+                            minHeight: "0",
+                        }}
+                    >
+                        Set Snooze Date
                     </IonButton>
                 )}
-            </div>
-        </IonItem>
+            </IonItem>
+            <Controller
+                name="snoozedUntil"
+                control={control}
+                render={({ field }) => (
+                    <IonModal
+                        isOpen={showModal}
+                        onDidDismiss={() => setShowModal(false)}
+                        initialBreakpoint={0.5}
+                        breakpoints={[0, 0.5, 0.75]}
+                    >
+                        <IonDatetime
+                            presentation="date"
+                            min={minDate}
+                            value={field.value || undefined}
+                            onIonChange={(e) => {
+                                const value = e.detail.value;
+                                if (typeof value === "string") {
+                                    field.onChange(value);
+                                    setShowModal(false);
+                                }
+                            }}
+                        />
+                    </IonModal>
+                )}
+            />
+        </>
     );
 };

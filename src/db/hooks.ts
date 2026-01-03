@@ -975,7 +975,7 @@ export function useMoveItemToStore() {
                 id: string;
                 item_name: string;
                 notes: string | null;
-                qty: number;
+                qty: number | null;
                 unit_id: string | null;
                 is_idea: number;
             };

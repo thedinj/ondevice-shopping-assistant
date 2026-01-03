@@ -12,6 +12,7 @@ interface GroupedShoppingListProps {
     isChecked: boolean;
     onClearChecked?: () => void;
     isClearing?: boolean;
+    showSnoozed?: boolean;
 }
 
 export const GroupedShoppingList = ({
@@ -19,9 +20,12 @@ export const GroupedShoppingList = ({
     isChecked,
     onClearChecked,
     isClearing,
+    showSnoozed = false,
 }: GroupedShoppingListProps) => {
-    // Filter out snoozed items
+    // Filter out snoozed items (unless showSnoozed is true)
     const activeItems = useMemo(() => {
+        if (showSnoozed) return items;
+
         return items.filter((item) => {
             if (!item.snoozed_until) return true;
             const snoozeDate = new Date(item.snoozed_until);
@@ -29,7 +33,7 @@ export const GroupedShoppingList = ({
             today.setHours(0, 0, 0, 0);
             return snoozeDate < today;
         });
-    }, [items]);
+    }, [items, showSnoozed]);
 
     const groups = useMemo(() => {
         const itemGroups: ItemGroup<ShoppingListItemWithDetails>[] = [];

@@ -21,6 +21,7 @@ import {
 } from "../../db/hooks";
 import { useToast } from "../../hooks/useToast";
 import { ShoppingListItemWithDetails, Store } from "../../models/Store";
+import { formatShortDate } from "../../utils/dateUtils";
 import { GenericStoreSelector } from "../shared/GenericStoreSelector";
 import { useShoppingListContext } from "./useShoppingListContext";
 
@@ -107,6 +108,13 @@ export const ShoppingListItem = ({
     const titleToUse = item.is_idea ? item.notes : item.item_name;
     const notesToUse = item.is_idea ? "" : item.notes;
 
+    // Check if item is snoozed
+    const isSnoozed =
+        item.snoozed_until && new Date(item.snoozed_until) > new Date();
+    const formattedSnoozeDate = isSnoozed
+        ? formatShortDate(item.snoozed_until!)
+        : null;
+
     return (
         <IonItem style={itemStyle} button={false}>
             <div
@@ -135,9 +143,9 @@ export const ShoppingListItem = ({
                 <>
                     <h2 className={isNewlyImported ? "shimmer-text" : ""}>
                         {titleToUse}{" "}
-                        {(item.qty > 1 || item.unit_abbreviation) && (
+                        {(item.qty !== null || item.unit_abbreviation) && (
                             <span>
-                                ({item.qty || 1}
+                                ({item.qty !== null ? item.qty : ""}
                                 {item.unit_abbreviation &&
                                     ` ${item.unit_abbreviation}`}
                                 )
@@ -156,6 +164,17 @@ export const ShoppingListItem = ({
                     </h2>
                     {notesToUse && (
                         <p style={{ fontStyle: "italic" }}>{notesToUse}</p>
+                    )}
+                    {isSnoozed && formattedSnoozeDate && (
+                        <p
+                            style={{
+                                fontSize: "0.85em",
+                                color: "var(--ion-color-medium)",
+                                marginTop: notesToUse ? "4px" : "0",
+                            }}
+                        >
+                            Snoozed until {formattedSnoozeDate}
+                        </p>
                     )}
                 </>
             </IonLabel>

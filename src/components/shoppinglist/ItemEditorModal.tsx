@@ -254,8 +254,11 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                 >
                     <form onSubmit={handleSubmit(onSubmit)}>
                         {isIdea ? (
-                            // Idea mode - only notes
-                            <NotesInput />
+                            // Idea mode - only notes and snooze date
+                            <>
+                                <NotesInput />
+                                <SnoozeDateSelector />
+                            </>
                         ) : (
                             // Regular Item mode - all fields
                             <>
@@ -275,7 +278,7 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                             isIdea={isIdea}
                         />
 
-                        {editingItem && !isIdea && (
+                        {editingItem && (
                             <IonButton
                                 expand="block"
                                 color="danger"
@@ -294,7 +297,9 @@ export const ItemEditorModal = ({ storeId }: ItemEditorModalProps) => {
                     isOpen={showDeleteAlert}
                     onDidDismiss={() => setShowDeleteAlert(false)}
                     header={`Remove ${isIdea ? "Idea" : "Item"}`}
-                    message={`Permanently remove "${editingItem?.item_name}" from your store and shopping list?`}
+                    message={`Permanently remove "${
+                        editingItem?.item_name || editingItem?.notes
+                    }" from your store and shopping list?`}
                     buttons={[
                         {
                             text: "Cancel",

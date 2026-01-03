@@ -2,12 +2,10 @@
 
 ## Overview
 
-The app now uses a hamburger menu accessible from every page, replacing the Settings tab. The system provides:
+The app uses a two-tier menu system following mobile app standards:
 
-1. **Consistent header across all pages** with hamburger menu button
-2. **Configurable back button** per page
-3. **Custom menu items** that pages can add/remove dynamically
-4. **Auto-cleanup** of custom menu items on route changes
+1. **App-level hamburger menu** (left side) - Static menu with app branding and Settings access
+2. **Page-level overflow menu** (right side) - Dynamic 3-dot menu for page-specific actions
 
 ## Architecture
 
@@ -16,20 +14,31 @@ The app now uses a hamburger menu accessible from every page, replacing the Sett
 -   **AppHeaderContext.tsx** - Context definition
 -   **AppHeaderProvider.tsx** - Provider with state management
 -   **useAppHeader.ts** - Hook to access context
--   **AppHeader.tsx** - Reusable header component
--   **AppMenu.tsx** - Side menu component
+-   **AppHeader.tsx** - Reusable header component with hamburger and page menu
+-   **AppMenu.tsx** - Side hamburger menu (app-level)
 
 ### Context API
 
 ```typescript
+interface PageMenuItemConfig {
+    id: string;
+    icon: string;
+    label: string;
+    onClick: () => void;
+    color?: string;
+}
+
 interface AppHeaderContextValue {
-    isMenuOpen: boolean;
-    openMenu: () => void;
-    closeMenu: () => void;
-    customMenuItems: MenuItemConfig[];
-    addMenuItem: (id: string, content: React.ReactNode) => void;
-    removeMenuItem: (id: string) => void;
-    clearMenuItems: () => void;
+    // Settings modal control
+    isSettingsOpen: boolean;
+    openSettings: () => void;
+    closeSettings: () => void;
+
+    // Page menu control
+    pageMenuItems: PageMenuItemConfig[];
+    addPageMenuItem: (config: PageMenuItemConfig) => void;
+    removePageMenuItem: (id: string) => void;
+    clearPageMenuItems: () => void;
 }
 ```
 
@@ -37,7 +46,7 @@ interface AppHeaderContextValue {
 
 ### Basic Page Header
 
-For pages that don't need a back button:
+For pages that don't need a back button or custom menu:
 
 ```typescript
 import { AppHeader } from "../components/layout/AppHeader";
@@ -62,46 +71,59 @@ For pages that need navigation back:
 
 ### Page with Custom Header Buttons
 
-You can add custom buttons to the header by passing children:
+You can add custom buttons to the header by passing children (they appear before the 3-dot menu):
 
 ```typescript
 <AppHeader title="Store Details" showBackButton backButtonHref="/stores">
-    <IonButtons slot="end">
-        <IonButton onClick={handleEdit}>
-            <IonIcon icon={create} />
-        </IonButton>
-    </IonButtons>
+    <IonButton onClick={handleEdit}>
+        <IonIcon icon={create} />
+    </IonButton>
 </AppHeader>
 ```
 
-### Adding Custom Menu Items
+### Adding Page Menu Items
 
-Pages can add custom items to the hamburger menu that appear above the Settings link:
+Pages can add actions to the 3-dot overflow menu using structured config objects:
 
 ```typescript
 import { useEffect } from "react";
-import { IonItem, IonLabel, IonIcon, IonMenuToggle } from "@ionic/react";
-import { trash } from "ionicons/icons";
+import { trash, create, shareSocial } from "ionicons/icons";
 import { useAppHeader } from "../components/layout/useAppHeader";
 
 const StoreDetailPage: React.FC = () => {
-    const { addMenuItem, removeMenuItem } = useAppHeader();
+    const { addPageMenuItem, removePageMenuItem } = useAppHeader();
 
     useEffect(() => {
-        // Add custom menu item when component mounts
-        addMenuItem(
-            "delete-store",
-            <IonMenuToggle autoHide={false}>
-                <IonItem button onClick={handleDelete}>
-                    <IonIcon icon={trash} slot="start" color="danger" />
-                    <IonLabel color="danger">Delete Store</IonLabel>
-                </IonItem>
-            </IonMenuToggle>
-        );
+        // Add page-specific menu items
+        addPageMenuItem({
+            id: "edit-store",
+            icon: create,
+            label: "Edit Store",
+            onClick: handleEdit,
+        });
 
-        // Remove when component unmounts
-        return () => removeMenuItem("delete-store");
-    }, [addMenuItem, removeMenuItem]);
+        addPageMenuItem({
+            id: "share-store",
+            icon: shareSocial,
+            label: "Share Store",
+            onClick: handleShare,
+        });
+
+        addPageMenuItem({
+            id: "delete-store",
+            icon: trash,
+            label: "Delete Store",
+            onClick: handleDelete,
+            color: "danger",
+        });
+
+        // Cleanup on unmount
+        return () => {
+            removePageMenuItem("edit-store");
+            removePageMenuItem("share-store");
+            removePageMenuItem("delete-store");
+        };
+    }, [addPageMenuItem, removePageMenuItem]);
 
     return (
         <IonPage>
@@ -112,19 +134,29 @@ const StoreDetailPage: React.FC = () => {
 };
 ```
 
-**Important**: Custom menu items are automatically cleared on route changes, but you should still manually remove them in cleanup to ensure proper behavior.
+**Important**: Page menu items are automatically cleared on route changes, but you should still manually remove them in cleanup to ensure proper behavior.
 
-### Programmatically Opening the Menu
+## Menu System Details
 
-If you need to open the menu from code (not recommended, but available):
+### Hamburger Menu (App-Level)
 
-```typescript
-const { openMenu } = useAppHeader();
+The hamburger menu is **static** and contains:
 
-const handleSomeAction = () => {
-    openMenu();
-};
-```
+-   App branding (icon + "Basket Bot" title)
+-   Settings link
+
+This menu is accessed from the left side of every page header and provides app-wide functionality.
+
+### Page Menu (Page-Level)
+
+The 3-dot overflow menu is **dynamic** and contains page-specific actions. It:
+
+-   Only appears when a page has added menu items
+-   Automatically hides when empty
+-   Opens as a popover aligned to the top-right
+-   Auto-closes after selecting an action
+
+This menu follows mobile app standards for contextual actions.
 
 ## Implementation Details
 
@@ -133,12 +165,12 @@ const handleSomeAction = () => {
 ```typescript
 const AppContent: React.FC = () => {
     const location = useLocation();
-    const { clearMenuItems } = useAppHeader();
+    const { clearPageMenuItems } = useAppHeader();
 
-    // Auto-clear custom menu items on route change
+    // Auto-clear page menu items on route change
     useEffect(() => {
-        clearMenuItems();
-    }, [location.pathname, clearMenuItems]);
+        clearPageMenuItems();
+    }, [location.pathname, clearPageMenuItems]);
 
     return (
         <>
@@ -156,50 +188,103 @@ const AppContent: React.FC = () => {
 };
 ```
 
-### Menu Structure
+### AppMenu Structure (Hamburger)
 
-The menu renders:
-
-1. Custom menu items (added by pages)
-2. Separator (if custom items exist)
-3. Settings link (always visible)
+The hamburger menu is simple and static:
 
 ```typescript
 <IonMenu contentId="main-content" type="overlay">
+    <IonHeader>
+        <IonToolbar>
+            <IonTitle>
+                <img src="/img/icon.png" />
+                <span>Basket Bot</span>
+            </IonTitle>
+        </IonToolbar>
+    </IonHeader>
     <IonContent>
         <IonList>
-            {/* Custom items */}
-            {customMenuItems.map((item) => (
-                <div key={item.id}>{item.content}</div>
-            ))}
-
-            {/* Separator */}
-            {customMenuItems.length > 0 && <div className="separator" />}
-
-            {/* Settings */}
-            <IonMenuToggle autoHide={false}>
-                <IonItem button routerLink="/settings">
-                    <IonIcon icon={settings} />
-                    <IonLabel>Settings</IonLabel>
-                </IonItem>
-            </IonMenuToggle>
+            <IonItem button onClick={openSettings}>
+                <IonIcon icon={settings} />
+                <IonLabel>Settings</IonLabel>
+            </IonItem>
         </IonList>
     </IonContent>
 </IonMenu>
+```
+
+### AppHeader Structure (Page Menu)
+
+The page header includes the 3-dot menu:
+
+```typescript
+<IonHeader>
+    <IonToolbar>
+        <IonButtons slot="start">
+            <IonMenuButton /> {/* Hamburger */}
+            {showBackButton && <IonBackButton />}
+        </IonButtons>
+        <IonTitle>{title}</IonTitle>
+        <IonButtons slot="end">
+            {children} {/* Custom buttons */}
+            {pageMenuItems.length > 0 && (
+                <IonButton id="page-menu-trigger">
+                    <IonIcon icon={ellipsisVertical} />
+                </IonButton>
+            )}
+        </IonButtons>
+    </IonToolbar>
+</IonHeader>
+```
+
+The page menu uses IonPopover to display items in a dropdown:
+
+```typescript
+<IonPopover
+    trigger="page-menu-trigger"
+    isOpen={showPageMenu}
+    onDidDismiss={() => setShowPageMenu(false)}
+    side="bottom"
+    alignment="end"
+>
+    <IonList>
+        {pageMenuItems.map((item) => (
+            <IonItem
+                key={item.id}
+                button
+                onClick={() => {
+                    item.onClick();
+                    setShowPageMenu(false);
+                }}
+            >
+                <IonIcon icon={item.icon} slot="start" color={item.color} />
+                <IonLabel color={item.color}>{item.label}</IonLabel>
+            </IonItem>
+        ))}
+    </IonList>
+</IonPopover>
 ```
 
 ## Migration Notes
 
 ### Changes from Previous Implementation
 
-1. **Settings removed from tab bar** - Now accessible via hamburger menu
-2. **IonHeader replaced** - Pages now use `<AppHeader>` component
-3. **IonBackButton moved** - Configured via `showBackButton` prop
-4. **Auto route cleanup** - Custom menu items cleared on navigation
+1. **Menu system split** - Hamburger menu (app-level) separated from page menu (page-level)
+2. **Renamed identifiers** - `customMenuItems` → `pageMenuItems`, `addMenuItem` → `addPageMenuItem`, etc.
+3. **Simplified hamburger menu** - Only contains app branding and Settings
+4. **New 3-dot page menu** - Uses IonPopover for page-specific actions
+5. **Structured menu items** - Uses `PageMenuItemConfig` interface instead of raw ReactNode
 
-### Pages Updated
+### Updated Components
 
--   ✅ Settings.tsx - Removed from tab bar, uses AppHeader
+-   ✅ AppHeaderContext.tsx - Renamed to `pageMenuItems` and `PageMenuItemConfig`
+-   ✅ AppHeaderProvider.tsx - Updated method names
+-   ✅ AppMenu.tsx - Simplified to only show Settings
+-   ✅ AppHeader.tsx - Added 3-dot menu with IonPopover
+-   ✅ App.tsx - Updated to call `clearPageMenuItems`
+
+### Pages Using System
+
 -   ✅ ShoppingList.tsx - Uses AppHeader
 -   ✅ StoresList.tsx - Uses AppHeader
 -   ✅ StoreDetail.tsx - Uses AppHeader with custom buttons
@@ -208,57 +293,50 @@ The menu renders:
 
 ## Best Practices
 
-1. **Use IonMenuToggle** - Wrap custom menu items with `<IonMenuToggle autoHide={false}>` to auto-close menu on click
-2. **Unique IDs** - Use descriptive, unique IDs for custom menu items (e.g., "delete-store", not "item1")
-3. **Cleanup in useEffect** - Always remove custom menu items in cleanup function
-4. **Icons** - Use Ionic icons with `slot="start"` for consistency
+1. **Use structured configs** - Always use `PageMenuItemConfig` objects with icon, label, onClick
+2. **Unique IDs** - Use descriptive, unique IDs for page menu items (e.g., "delete-store", not "item1")
+3. **Cleanup in useEffect** - Always remove page menu items in cleanup function
+4. **Icons** - Use ionicons with string names (e.g., `trash`, `create`)
 5. **Destructive actions** - Use `color="danger"` for delete/remove items
+6. **Auto-close behavior** - Popover automatically closes after selection
 
-## Example: Complex Custom Menu
+## Example: Complex Page Menu
 
 ```typescript
 const StoreDetailPage: React.FC = () => {
-    const { addMenuItem, removeMenuItem } = useAppHeader();
+    const { addPageMenuItem, removePageMenuItem } = useAppHeader();
     const history = useHistory();
 
     useEffect(() => {
-        // Multiple custom menu items
-        addMenuItem(
-            "edit-layout",
-            <IonMenuToggle autoHide={false}>
-                <IonItem button routerLink={`/stores/${storeId}/aisles`}>
-                    <IonIcon icon={gridOutline} slot="start" />
-                    <IonLabel>Edit Layout</IonLabel>
-                </IonItem>
-            </IonMenuToggle>
-        );
+        // Multiple page menu items
+        addPageMenuItem({
+            id: "edit-layout",
+            icon: gridOutline,
+            label: "Edit Layout",
+            onClick: () => history.push(`/stores/${storeId}/aisles`),
+        });
 
-        addMenuItem(
-            "manage-items",
-            <IonMenuToggle autoHide={false}>
-                <IonItem button routerLink={`/stores/${storeId}/items`}>
-                    <IonIcon icon={listOutline} slot="start" />
-                    <IonLabel>Manage Items</IonLabel>
-                </IonItem>
-            </IonMenuToggle>
-        );
+        addPageMenuItem({
+            id: "manage-items",
+            icon: listOutline,
+            label: "Manage Items",
+            onClick: () => history.push(`/stores/${storeId}/items`),
+        });
 
-        addMenuItem(
-            "delete-store",
-            <IonMenuToggle autoHide={false}>
-                <IonItem button onClick={handleDeleteStore}>
-                    <IonIcon icon={trash} slot="start" color="danger" />
-                    <IonLabel color="danger">Delete Store</IonLabel>
-                </IonItem>
-            </IonMenuToggle>
-        );
+        addPageMenuItem({
+            id: "delete-store",
+            icon: trash,
+            label: "Delete Store",
+            onClick: handleDeleteStore,
+            color: "danger",
+        });
 
         return () => {
-            removeMenuItem("edit-layout");
-            removeMenuItem("manage-items");
-            removeMenuItem("delete-store");
+            removePageMenuItem("edit-layout");
+            removePageMenuItem("manage-items");
+            removePageMenuItem("delete-store");
         };
-    }, [addMenuItem, removeMenuItem, storeId]);
+    }, [addPageMenuItem, removePageMenuItem, storeId]);
 
     return (
         <IonPage>
@@ -271,6 +349,39 @@ const StoreDetailPage: React.FC = () => {
 
 ## Troubleshooting
 
+### Page menu not appearing
+
+Check that:
+
+1. You're calling `addPageMenuItem()` with a valid config
+2. The page is using `<AppHeader>` component
+3. The menu items array is not empty
+
+### Menu items not clearing on navigation
+
+Ensure:
+
+1. `App.tsx` has the route change cleanup effect
+2. Your page's `useEffect` cleanup function removes items
+3. You're not preventing the effect from running
+
+### Popover positioning issues
+
+The popover is configured with:
+
+-   `side="bottom"` - Opens below the trigger
+-   `alignment="end"` - Aligns to right edge
+-   Auto-closes after selection
+
+These settings follow mobile app standards and shouldn't need customization.
+</IonPage>
+);
+};
+
+```
+
+## Troubleshooting
+
 **Menu items not appearing**: Ensure you're calling `addMenuItem` within `useEffect` and the component is mounted.
 
 **Menu items not clearing**: The `AppContent` component in `App.tsx` automatically clears items on route changes. If items persist, check that `clearMenuItems` is being called in the route change effect.
@@ -278,3 +389,4 @@ const StoreDetailPage: React.FC = () => {
 **Back button not working**: Verify `showBackButton={true}` and `backButtonHref` props are set correctly.
 
 **Menu not opening**: The hamburger icon button automatically calls `openMenu()`. If manually triggering, ensure you're using the `useAppHeader` hook within the `AppHeaderProvider`.
+```

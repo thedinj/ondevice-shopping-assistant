@@ -1,5 +1,6 @@
 # Next
 
+-   Once phone is updated, remove migration v3.
 -   Max field lengths throughout
 -   Sound effects and animations
 

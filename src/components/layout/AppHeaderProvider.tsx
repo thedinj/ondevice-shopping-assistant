@@ -1,41 +1,52 @@
 import { useState, useCallback } from "react";
-import { AppHeaderContext, MenuItemConfig } from "./AppHeaderContext";
+import { AppHeaderContext, PageMenuItemConfig } from "./AppHeaderContext";
 
 export const AppHeaderProvider: React.FC<{ children: React.ReactNode }> = ({
     children,
 }) => {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [customMenuItems, setCustomMenuItems] = useState<MenuItemConfig[]>(
+    const [pageMenuItems, setPageMenuItems] = useState<PageMenuItemConfig[]>(
         []
     );
 
     const openSettings = useCallback(() => setIsSettingsOpen(true), []);
     const closeSettings = useCallback(() => setIsSettingsOpen(false), []);
 
-    const addMenuItem = useCallback((config: MenuItemConfig) => {
-        setCustomMenuItems((prev) => {
-            // Don't add duplicates
-            if (prev.some((item) => item.id === config.id)) return prev;
+    const addPageMenuItem = useCallback((config: PageMenuItemConfig) => {
+        setPageMenuItems((prev) => {
+            // Check if item with this ID already exists
+            const existingIndex = prev.findIndex(
+                (item) => item.id === config.id
+            );
+
+            if (existingIndex >= 0) {
+                // Replace existing item with updated config
+                const newItems = [...prev];
+                newItems[existingIndex] = config;
+                return newItems;
+            }
+
+            // Add new item
             return [...prev, config];
         });
     }, []);
 
-    const removeMenuItem = useCallback((id: string) => {
-        setCustomMenuItems((prev) => prev.filter((item) => item.id !== id));
+    const removePageMenuItem = useCallback((id: string) => {
+        setPageMenuItems((prev) => prev.filter((item) => item.id !== id));
     }, []);
 
-    const clearMenuItems = useCallback(() => {
-        setCustomMenuItems([]);
+    const clearPageMenuItems = useCallback(() => {
+        setPageMenuItems([]);
     }, []);
 
     const value = {
         isSettingsOpen,
         openSettings,
         closeSettings,
-        customMenuItems,
-        addMenuItem,
-        removeMenuItem,
-        clearMenuItems,
+        pageMenuItems,
+        addPageMenuItem,
+        removePageMenuItem,
+        clearPageMenuItems,
     };
 
     return (

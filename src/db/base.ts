@@ -214,7 +214,7 @@ export abstract class BaseDatabase implements Database {
         shoppingListItems.push({
             store_id: storeId,
             store_item_id: frenchBread.id,
-            qty: 1,
+            qty: null,
             unit_id: null,
             notes: null,
         });
@@ -228,7 +228,7 @@ export abstract class BaseDatabase implements Database {
         shoppingListItems.push({
             store_id: storeId,
             store_item_id: pennePasta.id,
-            qty: 1,
+            qty: null,
             unit_id: null,
             notes: null,
         });
