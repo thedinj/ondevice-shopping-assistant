@@ -14,13 +14,14 @@ import {
 } from "@ionic/react";
 import { ellipsisVertical } from "ionicons/icons";
 import { useState } from "react";
-import { useAppHeader } from "./useAppHeader";
+import { PageMenuItemConfig } from "./AppHeaderContext";
 
 interface AppHeaderProps {
     title: string | React.ReactNode;
     showBackButton?: boolean;
     backButtonHref?: string;
     children?: React.ReactNode;
+    menuItems?: PageMenuItemConfig[];
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -28,8 +29,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     showBackButton = false,
     backButtonHref,
     children,
+    menuItems = [],
 }) => {
-    const { pageMenuItems } = useAppHeader();
     const [showPageMenu, setShowPageMenu] = useState(false);
 
     return (
@@ -44,7 +45,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 <IonTitle>{title}</IonTitle>
                 <IonButtons slot="end">
                     {children}
-                    {pageMenuItems.length > 0 && (
+                    {menuItems.length > 0 && (
                         <>
                             <IonButton
                                 id="page-menu-trigger"
@@ -63,7 +64,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                                 alignment="end"
                             >
                                 <IonList>
-                                    {pageMenuItems.map((item) => (
+                                    {menuItems.map((item) => (
                                         <IonItem
                                             key={item.id}
                                             button

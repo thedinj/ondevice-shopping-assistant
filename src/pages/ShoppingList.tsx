@@ -12,10 +12,8 @@ import {
     IonToolbar,
 } from "@ionic/react";
 import { add, eyeOffOutline, eyeOutline } from "ionicons/icons";
-import { useCallback, useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useCallback, useState } from "react";
 import { AppHeader } from "../components/layout/AppHeader";
-import { useAppHeader } from "../components/layout/useAppHeader";
 import { FabSpacer } from "../components/shared/FabSpacer";
 import { useBulkImportModal } from "../components/shoppinglist/BulkImportModal";
 import { CheckedItems } from "../components/shoppinglist/CheckedItems";
@@ -30,9 +28,7 @@ import { LLMFabButton } from "../llm/shared";
 
 const ShoppingListContent: React.FC = () => {
     const { selectedStoreId, openCreateModal } = useShoppingListContext();
-    const { addPageMenuItem, removePageMenuItem } = useAppHeader();
     const { showSnoozed, toggleShowSnoozed } = useShowSnoozedItems();
-    const location = useLocation();
 
     const { data: items, isLoading: isLoadingItems } = useShoppingListItems(
         selectedStoreId || ""
@@ -55,25 +51,6 @@ const ShoppingListContent: React.FC = () => {
             return new Date(item.snoozed_until) > new Date();
         }) || false;
 
-    // Add/remove menu item based on whether we're on this page and have snoozed items
-    useEffect(() => {
-        const isOnShoppingList = location.pathname === "/shoppinglist";
-
-        if (isOnShoppingList && hasSnoozedItems) {
-            addPageMenuItem({
-                id: "toggle-snoozed",
-                icon: showSnoozed ? eyeOffOutline : eyeOutline,
-                label: showSnoozed
-                    ? "Hide Snoozed Items"
-                    : "Show Snoozed Items",
-                onClick: toggleShowSnoozed,
-            });
-        } else {
-            removePageMenuItem("toggle-snoozed");
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showSnoozed, location.pathname, hasSnoozedItems]);
-
     const handleClearChecked = useCallback(() => {
         setShowClearCheckedAlert(true);
     }, []);
@@ -87,9 +64,22 @@ const ShoppingListContent: React.FC = () => {
 
     const isLoading = isLoadingItems;
 
+    const menuItems = hasSnoozedItems
+        ? [
+              {
+                  id: "toggle-snoozed",
+                  icon: showSnoozed ? eyeOffOutline : eyeOutline,
+                  label: showSnoozed
+                      ? "Hide Snoozed Items"
+                      : "Show Snoozed Items",
+                  onClick: toggleShowSnoozed,
+              },
+          ]
+        : [];
+
     return (
         <>
-            <AppHeader title="Shopping List" />
+            <AppHeader title="Shopping List" menuItems={menuItems} />
             <IonToolbar>
                 <StoreSelector />
             </IonToolbar>
