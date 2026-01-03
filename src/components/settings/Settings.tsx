@@ -12,12 +12,12 @@ import {
 } from "@ionic/react";
 import { closeOutline } from "ionicons/icons";
 import { useCallback, useEffect } from "react";
-import { FormPasswordInput } from "../components/form/FormPasswordInput";
-import { useAppHeader } from "../components/layout/useAppHeader";
-import { useResetDatabase } from "../db/hooks";
-import { useToast } from "../hooks/useToast";
-import { LLM_COLOR, LLM_ICON_SRC } from "../llm/shared";
-import { useSettingsForm } from "../settings/useSettingsForm";
+import { FormPasswordInput } from "../form/FormPasswordInput";
+import { useAppHeader } from "../layout/useAppHeader";
+import { useResetDatabase } from "../../db/hooks";
+import { useToast } from "../../hooks/useToast";
+import { LLM_COLOR, LLM_ICON_SRC } from "../../llm/shared";
+import { useSettingsForm } from "../../settings/useSettingsForm";
 
 const Settings: React.FC = () => {
     const { showSuccess } = useToast();

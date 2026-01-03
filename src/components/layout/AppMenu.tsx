@@ -48,11 +48,7 @@ export const AppMenu: React.FC = () => {
                     {/* Custom menu items from pages */}
                     {customMenuItems.map((item) => (
                         <IonMenuToggle key={item.id} autoHide={false}>
-                            <IonItem
-                                button
-                                onClick={item.onClick}
-                                lines="none"
-                            >
+                            <IonItem button onClick={item.onClick} lines="none">
                                 <IonIcon
                                     icon={item.icon}
                                     slot="start"

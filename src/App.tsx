@@ -19,7 +19,7 @@ import { AppMenu } from "./components/layout/AppMenu";
 import { useAppHeader } from "./components/layout/useAppHeader";
 import { DatabaseProvider } from "./db/DatabaseContext";
 import { LLMModalProvider } from "./llm/shared/LLMModalContext";
-import Settings from "./pages/Settings";
+import Settings from "./components/settings/Settings";
 import ShoppingList from "./pages/ShoppingList";
 import StoreAislesPage from "./pages/StoreAislesPage";
 import StoreDetail from "./pages/StoreDetail";

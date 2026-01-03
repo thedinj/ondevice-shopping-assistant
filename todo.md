@@ -1,6 +1,5 @@
 # Next
 
--   Hamburger menu, move settings into a modal there.
 -   Max field lengths throughout
 -   Sound effects and animations
 
