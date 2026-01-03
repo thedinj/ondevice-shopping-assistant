@@ -849,7 +849,7 @@ export class SQLiteDatabase extends BaseDatabase {
             );
 
             const itemRes = await conn.query(
-                `SELECT id, store_id, store_item_id, qty, unit_id, nsnoozed_until, otes,
+                `SELECT id, store_id, store_item_id, qty, unit_id, snoozed_until, notes,
                         is_checked, checked_at, is_sample, is_idea, created_at, updated_at
                  FROM shopping_list_item WHERE id = ?`,
                 [params.id]

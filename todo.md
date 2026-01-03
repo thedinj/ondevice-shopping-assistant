@@ -1,6 +1,6 @@
 # Next
 
--   Once phone is updated, remove migration v3.
+-   Normalize new item names when searching (oranges->orange)
 -   Max field lengths throughout
 -   Sound effects and animations
 
