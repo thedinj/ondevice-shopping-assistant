@@ -24,7 +24,7 @@ const DB_NAME = "shopping_assistant";
 
 const migrations: Array<{ version: number; up: string[] }> = [
     {
-        version: 2, // v1 had shopping_list, but we're pretending that never happened
+        version: 3,
         up: [
             `PRAGMA foreign_keys = ON;`,
 
@@ -121,38 +121,6 @@ const migrations: Array<{ version: number; up: string[] }> = [
          id TEXT PRIMARY KEY,
          store_id TEXT NOT NULL,
          store_item_id TEXT,
-         qty REAL NOT NULL DEFAULT 1,
-         unit_id TEXT,
-         notes TEXT,
-         is_checked INTEGER NOT NULL DEFAULT 0,
-         checked_at TEXT,
-         is_sample INTEGER,
-         is_idea INTEGER NOT NULL DEFAULT 0,
-         created_at TEXT NOT NULL DEFAULT (datetime('now')),
-         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-         FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE CASCADE,
-         FOREIGN KEY (store_item_id) REFERENCES store_item(id) ON DELETE CASCADE,
-         FOREIGN KEY (unit_id) REFERENCES quantity_unit(id) ON DELETE SET NULL
-       );`,
-
-            `CREATE INDEX IF NOT EXISTS ix_list_item_store_checked
-         ON shopping_list_item(store_id, is_checked, updated_at);`,
-        ],
-    },
-    {
-        version: 3,
-        up: [
-            `PRAGMA foreign_keys = ON;`,
-
-            // Add snoozed_until column and make qty nullable
-            `CREATE TABLE shopping_list_item_temp AS SELECT * FROM shopping_list_item;`,
-
-            `DROP TABLE shopping_list_item;`,
-
-            `CREATE TABLE IF NOT EXISTS shopping_list_item (
-         id TEXT PRIMARY KEY,
-         store_id TEXT NOT NULL,
-         store_item_id TEXT,
          qty REAL,
          unit_id TEXT,
          notes TEXT,
@@ -167,18 +135,6 @@ const migrations: Array<{ version: number; up: string[] }> = [
          FOREIGN KEY (store_item_id) REFERENCES store_item(id) ON DELETE CASCADE,
          FOREIGN KEY (unit_id) REFERENCES quantity_unit(id) ON DELETE SET NULL
        );`,
-
-            `INSERT INTO shopping_list_item 
-            (id, store_id, store_item_id, qty, unit_id, notes, 
-             is_checked, checked_at, is_sample, is_idea, 
-             created_at, updated_at)
-         SELECT 
-            id, store_id, store_item_id, qty, unit_id, notes,
-            is_checked, checked_at, is_sample, is_idea,
-            created_at, updated_at
-         FROM shopping_list_item_temp;`,
-
-            `DROP TABLE shopping_list_item_temp;`,
 
             `CREATE INDEX IF NOT EXISTS ix_list_item_store_checked
          ON shopping_list_item(store_id, is_checked, updated_at);`,
