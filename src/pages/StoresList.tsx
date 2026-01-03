@@ -90,7 +90,7 @@ const StoresList: React.FC = () => {
             const exists = stores.some((s) => s.id === lastStoreId);
             if (exists) {
                 // Replace history entry so back button works correctly
-                history.replace(`/stores/${lastStoreId}`);
+                history.replace(`/stores/${encodeURIComponent(lastStoreId)}`);
             } else {
                 // Last store was deleted, clear preference
                 saveLastStore(null);

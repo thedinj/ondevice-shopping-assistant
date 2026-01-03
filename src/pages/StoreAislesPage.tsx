@@ -31,7 +31,7 @@ const StoreAislesPageContent: React.FC<{ storeId: string }> = ({ storeId }) => {
             <AppHeader
                 title={`${store?.name || "Store"} Aisles & Sections`}
                 showBackButton
-                backButtonHref={`/stores/${storeId}`}
+                backButtonHref={`/stores/${encodeURIComponent(storeId)}`}
             />
             <IonContent fullscreen>
                 <AisleSectionList storeId={storeId} />

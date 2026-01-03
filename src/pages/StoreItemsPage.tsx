@@ -41,10 +41,10 @@ import { StoreItemWithDetails } from "../db/types";
 import { useToast } from "../hooks/useToast";
 
 const StoreItemsPage: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
-    const { data: store } = useStore(id);
-    const { data: items, isLoading } = useStoreItemsWithDetails(id);
-    const { data: shoppingListItems } = useShoppingListItems(id);
+    const { id: storeId } = useParams<{ id: string }>();
+    const { data: store } = useStore(storeId);
+    const { data: items, isLoading } = useStoreItemsWithDetails(storeId);
+    const { data: shoppingListItems } = useShoppingListItems(storeId);
     const toggleFavorite = useToggleFavorite();
     const upsertShoppingListItem = useUpsertShoppingListItem();
     const removeShoppingListItem = useRemoveShoppingListItem();
@@ -134,19 +134,22 @@ const StoreItemsPage: React.FC = () => {
     const handleToggleFavorite = useCallback(
         async (item: StoreItemWithDetails) => {
             try {
-                await toggleFavorite.mutateAsync({ id: item.id, storeId: id });
+                await toggleFavorite.mutateAsync({
+                    id: item.id,
+                    storeId: storeId,
+                });
             } catch {
                 showError("Failed to update favorite");
             }
         },
-        [id, showError, toggleFavorite]
+        [storeId, showError, toggleFavorite]
     );
 
     const handleAddToShoppingList = useCallback(
         async (item: StoreItemWithDetails) => {
             try {
                 await upsertShoppingListItem.mutateAsync({
-                    store_id: id,
+                    store_id: storeId,
                     store_item_id: item.id,
                     qty: 1,
                     unit_id: null,
@@ -157,7 +160,7 @@ const StoreItemsPage: React.FC = () => {
                 showError("Failed to add to shopping list");
             }
         },
-        [id, upsertShoppingListItem, showSuccess, showError]
+        [storeId, upsertShoppingListItem, showSuccess, showError]
     );
 
     const confirmRemoveFromShoppingList = useCallback(
@@ -180,7 +183,7 @@ const StoreItemsPage: React.FC = () => {
         try {
             await removeShoppingListItem.mutateAsync({
                 id: removeFromListAlert.shoppingListItemId,
-                storeId: id,
+                storeId: storeId,
             });
             showSuccess("Removed from shopping list");
             setRemoveFromListAlert(null);
@@ -238,7 +241,7 @@ const StoreItemsPage: React.FC = () => {
             <AppHeader
                 title={`${store?.name || "Store"} Items`}
                 showBackButton
-                backButtonHref={`/stores/${id}`}
+                backButtonHref={`/stores/${encodeURIComponent(storeId)}`}
             />
             <IonContent fullscreen>
                 <IonSearchbar
@@ -314,7 +317,7 @@ const StoreItemsPage: React.FC = () => {
                 <StoreItemEditorModal
                     isOpen={isModalOpen}
                     onClose={closeModal}
-                    storeId={id}
+                    storeId={storeId}
                     editingItem={editingItem}
                 />
 

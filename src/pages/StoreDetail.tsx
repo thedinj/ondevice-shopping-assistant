@@ -201,7 +201,11 @@ const StoreDetail: React.FC = () => {
                     <IonItem
                         button
                         detail={true}
-                        onClick={() => history.push(`/stores/${id}/aisles`)}
+                        onClick={() =>
+                            history.push(
+                                `/stores/${encodeURIComponent(id)}/aisles`
+                            )
+                        }
                     >
                         <IonIcon icon={gridOutline} slot="start" />
                         <IonLabel>
@@ -212,7 +216,11 @@ const StoreDetail: React.FC = () => {
                     <IonItem
                         button
                         detail={true}
-                        onClick={() => history.push(`/stores/${id}/items`)}
+                        onClick={() =>
+                            history.push(
+                                `/stores/${encodeURIComponent(id)}/items`
+                            )
+                        }
                     >
                         <IonIcon icon={listOutline} slot="start" />
                         <IonLabel>
